@@ -4,7 +4,7 @@ Configuration management for OpenAI Codegen Adapter
 
 import os
 from typing import Optional
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 class CodegenConfig(BaseSettings):
@@ -12,7 +12,7 @@ class CodegenConfig(BaseSettings):
     
     # Codegen API settings
     api_token: Optional[str] = None
-    org_id: Optional[str] = None
+    org_id: Optional[int] = None  # Changed from str to int
     base_url: str = "https://api.codegen.com"
     
     # Server settings
@@ -126,4 +126,3 @@ if __name__ == "__main__":
     print(f"  Host: {server_config.allow_origins}")
     print(f"  Rate Limiting: {'Enabled' if server_config.rate_limit_enabled else 'Disabled'}")
     print(f"  API Key Required: {'Yes' if server_config.require_api_key else 'No'}")
-

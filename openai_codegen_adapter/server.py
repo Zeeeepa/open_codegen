@@ -96,10 +96,13 @@ server_config = get_server_config()
 # Initialize Codegen client
 try:
     config = get_codegen_config()
-    codegen_client = CodegenClient(
-        org_id=config.org_id or os.getenv("CODEGEN_ORG_ID", "323"),
-        token=config.api_token or os.getenv("CODEGEN_API_TOKEN", "sk-dummy-token")
-    )
+    # Set the values from environment variables if not set in config
+    if not config.org_id:
+        config.org_id = os.getenv("CODEGEN_ORG_ID", "323")
+    if not config.api_token:
+        config.api_token = os.getenv("CODEGEN_API_TOKEN", "sk-dummy-token")
+    
+    codegen_client = CodegenClient(config)
     logger.info("✅ Codegen client initialized successfully")
 except Exception as e:
     logger.error(f"❌ Failed to initialize Codegen client: {e}")
