@@ -10,10 +10,18 @@ cp .env.example .env
 ```
 
 ### 2. Start the Server
+
+**Basic Server:**
 ```bash
 python server.py
 ```
-This starts the OpenAI-compatible server at `http://localhost:8887`
+
+**Enhanced Server (with metrics, health monitoring, and middleware):**
+```bash
+python server_enhanced.py
+```
+
+Both start the server at `http://localhost:8887` with full API compatibility.
 
 ### 3. Test the Server
 
@@ -29,6 +37,18 @@ python test_anthropic.py
 ```
 This tests Anthropic Claude API compatibility.
 
+**Google Gemini API Test:**
+```bash
+python test_google.py
+```
+This tests Google Gemini API compatibility.
+
+**Comprehensive Test Suite:**
+```bash
+python test_all_endpoints.py
+```
+This tests all endpoints (OpenAI, Anthropic, Gemini, health checks, error handling).
+
 ## API Endpoints
 
 ### OpenAI Compatible
@@ -39,6 +59,18 @@ This tests Anthropic Claude API compatibility.
 ### Anthropic Compatible
 - **`/v1/messages`** - Anthropic Claude messages
 - **`/v1/anthropic/completions`** - Anthropic completions
+
+### Google Gemini Compatible
+- **`/v1/gemini/generateContent`** - Google Gemini content generation
+- **`/v1/gemini/completions`** - Google Gemini completions
+
+### Health & Monitoring
+- **`/health`** - Basic health check
+- **`/health/detailed`** - Detailed health with metrics and system info
+- **`/health/metrics`** - Comprehensive metrics and statistics
+- **`/health/readiness`** - Kubernetes-style readiness check
+- **`/health/liveness`** - Kubernetes-style liveness check
+- **`/health/config`** - Configuration status (without sensitive data)
 
 ## Usage Examples
 
@@ -77,6 +109,8 @@ response = requests.post(
 - **`server.py`** - Starts the FastAPI server
 - **`test.py`** - Simple OpenAI client test with modified baseURL
 - **`test_anthropic.py`** - Anthropic API compatibility test
+- **`test_google.py`** - Google Gemini API compatibility test
+- **`test_all_endpoints.py`** - Comprehensive test suite
 - **`.env.example`** - Environment configuration template
 - **`openai_codegen_adapter/`** - Core adapter implementation
 
@@ -88,4 +122,3 @@ response = requests.post(
 4. Responses are transformed back to the appropriate API format
 
 That's it! 🚀
-
