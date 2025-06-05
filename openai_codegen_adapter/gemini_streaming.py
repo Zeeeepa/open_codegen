@@ -36,7 +36,7 @@ async def collect_gemini_streaming_response(
     chunk_count = 0
     
     try:
-        async for chunk in codegen_client.run_task(prompt, stream=False):
+        async for chunk in codegen_client.run_task(prompt, stream=True):
             chunk_count += 1
             if chunk_count == 1:
                 logger.info(f"📦 First response chunk received ({len(chunk)} chars)")
@@ -83,8 +83,13 @@ async def create_gemini_streaming_response(
             chunk_count = 0
             prompt_tokens = estimate_tokens(prompt)
             
-            async for chunk in codegen_client.run_task(prompt, stream=False):
+            async for chunk in codegen_client.run_task(prompt, stream=True):
                 chunk_count += 1
+                if chunk_count == 1:
+                    logger.info(f"📦 First response chunk received ({len(chunk)} chars)")
+                else:
+                    logger.info(f"📦 Chunk {chunk_count} received (Total: {len(full_content + chunk)} chars)")
+                
                 full_content += chunk
                 
                 # Create streaming chunk
@@ -97,7 +102,7 @@ async def create_gemini_streaming_response(
                 )
                 
                 # Send chunk as JSON
-                yield f"data: {json.dumps(stream_chunk)}\n\n"
+                yield f"data: {json.dumps(stream_chunk)}\\n\\n"
                 
                 # Small delay to make streaming visible
                 await asyncio.sleep(0.01)
@@ -109,10 +114,10 @@ async def create_gemini_streaming_response(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=estimate_tokens(full_content)
             )
-            yield f"data: {json.dumps(final_chunk)}\n\n"
+            yield f"data: {json.dumps(final_chunk)}\\n\\n"
             
             # Send done signal
-            yield "data: [DONE]\n\n"
+            yield "data: [DONE]\\n\\n"
             
             logger.info(f"✅ Gemini streaming completed: {chunk_count} chunks, {len(full_content)} chars")
             
@@ -126,7 +131,7 @@ async def create_gemini_streaming_response(
                     "status": "INTERNAL"
                 }
             }
-            yield f"data: {json.dumps(error_chunk)}\n\n"
+            yield f"data: {json.dumps(error_chunk)}\\n\\n"
     
     return StreamingResponse(
         generate_gemini_stream(),

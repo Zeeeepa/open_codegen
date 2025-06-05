@@ -14,36 +14,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 
-from .models import (
+from models import (
     ChatRequest, TextRequest, ChatResponse, TextResponse,
     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
     GeminiRequest, GeminiResponse
 )
-from .config import get_codegen_config, get_server_config
-from .codegen_client import CodegenClient
-from .request_transformer import (
-    chat_request_to_prompt, text_request_to_prompt,
-    extract_generation_params
-)
-from .response_transformer import (
-    create_chat_response, create_text_response,
-    estimate_tokens, clean_content
-)
-from .streaming import create_streaming_response, collect_streaming_response
-from .anthropic_transformer import (
-    anthropic_request_to_prompt, create_anthropic_response,
-    extract_anthropic_generation_params
-)
-from .anthropic_streaming import (
+from streaming import (
+    create_streaming_response, collect_streaming_response,
     create_anthropic_streaming_response, collect_anthropic_streaming_response
 )
-from .gemini_transformer import (
-    gemini_request_to_prompt, create_gemini_response,
-    extract_gemini_generation_params
-)
-from .gemini_streaming import (
+from gemini_streaming import (
     create_gemini_streaming_response, collect_gemini_streaming_response
 )
+from utils import (
+    estimate_tokens, log_request_start, log_request_end,
+    extract_generation_params, extract_anthropic_generation_params,
+    extract_gemini_generation_params, anthropic_request_to_prompt,
+    gemini_request_to_prompt, create_anthropic_response, create_gemini_response
+)
+from codegen_client import CodegenClient
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -80,6 +69,12 @@ def log_request_start(endpoint: str, request_data: dict):
     """Log the start of a request with enhanced details."""
     logger.info(f"🚀 REQUEST START | Endpoint: {endpoint}")
     logger.info(f"   📊 Request Data: {request_data}")
+    logger.info(f"   🕐 Timestamp: {datetime.now().isoformat()}")
+
+def log_request_end(endpoint: str, response_data: dict):
+    """Log the end of a request with enhanced details."""
+    logger.info(f"🚀 REQUEST END | Endpoint: {endpoint}")
+    logger.info(f"   📊 Response Data: {response_data}")
     logger.info(f"   🕐 Timestamp: {datetime.now().isoformat()}")
 
 def log_completion_tracking(task_id: str, status: str, attempt: int, duration: float):
@@ -457,14 +452,15 @@ async def gemini_completions(request: GeminiRequest):
         
         # Extract generation parameters (for future use)
         gen_params = extract_gemini_generation_params(request)
-        logger.debug(f"Generation parameters: {gen_params}")
+        logger.debug(f"⚙️ Generation parameters: {gen_params}")
         
+        # Check if streaming is requested
         if request.stream:
-            # For text completions streaming, we'd need a different streaming format
-            # For now, fall back to non-streaming
-            logger.warning("Streaming not yet implemented for text completions, falling back to non-streaming")
+            # Return streaming response
+            logger.info("🌊 Initiating Gemini streaming response for completions...")
+            return await create_gemini_streaming_response(codegen_client, prompt)
         
-        # Get complete response
+        # Get complete response for non-streaming
         content = await collect_gemini_streaming_response(codegen_client, prompt)
         
         # Estimate token counts
@@ -514,36 +510,33 @@ async def gemini_generate_content(request: GeminiRequest):
         logger.debug(f"⚙️ Generation parameters: {gen_params}")
         
         # Check if streaming is requested
-        is_streaming = gen_params.get("stream", False)
-        
-        if is_streaming:
+        if request.stream:
             # Return streaming response
-            logger.info("🌊 Initiating Gemini streaming response...")
-            return create_gemini_streaming_response(codegen_client, prompt)
-        else:
-            # Return complete response
-            logger.info("📦 Initiating Gemini non-streaming response...")
-            content = await collect_gemini_streaming_response(codegen_client, prompt)
-            
-            # Estimate token counts
-            prompt_tokens = estimate_tokens(prompt)
-            completion_tokens = estimate_tokens(content)
-            
-            logger.info(f"🔢 Token estimation - Input: {prompt_tokens}, Output: {completion_tokens}")
-            
-            response = create_gemini_response(
-                content=content,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens
-            )
-            
-            # Log the Gemini response generation
-            processing_time = time.time() - start_time
-            logger.info(f"📤 Gemini response generated in {processing_time:.2f}s")
-            
-            logger.info(f"✅ Gemini content generation successful in {processing_time:.2f}s")
-            return response
-            
+            logger.info("🌊 Initiating Gemini streaming response for completions...")
+            return await create_gemini_streaming_response(codegen_client, prompt)
+        
+        # Get complete response for non-streaming
+        content = await collect_gemini_streaming_response(codegen_client, prompt)
+        
+        # Estimate token counts
+        prompt_tokens = estimate_tokens(prompt)
+        completion_tokens = estimate_tokens(content)
+        
+        logger.info(f"🔢 Token estimation - Input: {prompt_tokens}, Output: {completion_tokens}")
+        
+        response = create_gemini_response(
+            content=content,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens
+        )
+        
+        # Log the Gemini response generation
+        processing_time = time.time() - start_time
+        logger.info(f"📤 Gemini response generated in {processing_time:.2f}s")
+        
+        logger.info(f"✅ Gemini content generation successful in {processing_time:.2f}s")
+        return response
+        
     except Exception as e:
         processing_time = time.time() - start_time
         logger.error(f"❌ Error in Gemini content generation after {processing_time:.2f}s: {e}")

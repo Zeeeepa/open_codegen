@@ -106,6 +106,7 @@ class GeminiRequest(BaseModel):
     contents: List[GeminiContent]
     generationConfig: Optional[GeminiGenerationConfig] = None
     systemInstruction: Optional[GeminiContent] = None
+    stream: Optional[bool] = False
 
 
 class GeminiUsageMetadata(BaseModel):
