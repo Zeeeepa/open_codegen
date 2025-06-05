@@ -71,20 +71,51 @@ def extract_user_message(messages: List[Message]) -> str:
 
 def chat_request_to_prompt(request: ChatRequest) -> str:
     """
-    Convert a ChatRequest to a prompt string for Codegen.
+    Convert OpenAI chat request to a prompt string for Codegen SDK.
+    Enhanced with better instructions for code generation tasks.
     
     Args:
-        request: OpenAI chat completion request
+        request: ChatRequest object
         
     Returns:
-        Prompt string for Codegen agent
+        str: Formatted prompt string optimized for Codegen
     """
-    if len(request.messages) == 1 and request.messages[0].role == "user":
-        # Simple single user message
-        return request.messages[0].content
-    else:
-        # Multi-turn conversation
-        return messages_to_prompt(request.messages)
+    prompt_parts = []
+    
+    # Enhanced system instruction for better code generation
+    system_instruction = """You are an expert software engineer and coding assistant. When responding to coding questions:
+
+1. Provide clear, well-commented code examples
+2. Explain your reasoning and approach
+3. Consider edge cases and best practices
+4. Use appropriate design patterns when relevant
+5. Provide complete, runnable code when possible
+6. Include error handling where appropriate
+7. Suggest improvements or alternatives when helpful
+
+For non-coding questions, provide thorough, accurate, and helpful responses."""
+    
+    # Check if there's already a system message
+    has_system_message = any(msg.role == "system" for msg in request.messages)
+    
+    if not has_system_message:
+        prompt_parts.append(f"System: {system_instruction}")
+    
+    # Process messages
+    for message in request.messages:
+        if message.role == "system":
+            # Enhance existing system message with coding context
+            enhanced_system = f"{message.content}\n\n{system_instruction}"
+            prompt_parts.append(f"System: {enhanced_system}")
+        elif message.role == "user":
+            prompt_parts.append(f"Human: {message.content}")
+        elif message.role == "assistant":
+            prompt_parts.append(f"Assistant: {message.content}")
+    
+    # Add final assistant prompt with enhanced instruction
+    prompt_parts.append("Assistant: I'll help you with that. Let me provide a comprehensive and well-structured response.")
+    
+    return "\n\n".join(prompt_parts)
 
 
 def text_request_to_prompt(request: TextRequest) -> str:
@@ -141,4 +172,3 @@ def extract_generation_params(request) -> dict:
         params['stop'] = request.stop
     
     return params
-

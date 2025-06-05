@@ -22,6 +22,29 @@ try:
     )
     from config import get_codegen_config, get_server_config
     from codegen_client import CodegenClient
+    from request_transformer import (
+        chat_request_to_prompt, text_request_to_prompt,
+        extract_generation_params
+    )
+    from response_transformer import (
+        create_chat_response, create_text_response,
+        estimate_tokens as estimate_tokens_orig, clean_content
+    )
+    from streaming import create_streaming_response, collect_streaming_response as collect_streaming_response_orig
+    from anthropic_transformer import (
+        anthropic_request_to_prompt, create_anthropic_response,
+        extract_anthropic_generation_params
+    )
+    from anthropic_streaming import (
+        create_anthropic_streaming_response, collect_anthropic_streaming_response
+    )
+    from gemini_transformer import (
+        gemini_request_to_prompt, create_gemini_response,
+        extract_gemini_generation_params
+    )
+    from gemini_streaming import (
+        create_gemini_streaming_response, collect_gemini_streaming_response
+    )
 except ImportError:
     # Fallback for relative imports if needed
     from .models import (
@@ -31,6 +54,29 @@ except ImportError:
     )
     from .config import get_codegen_config, get_server_config
     from .codegen_client import CodegenClient
+    from .request_transformer import (
+        chat_request_to_prompt, text_request_to_prompt,
+        extract_generation_params
+    )
+    from .response_transformer import (
+        create_chat_response, create_text_response,
+        estimate_tokens as estimate_tokens_orig, clean_content
+    )
+    from .streaming import create_streaming_response, collect_streaming_response as collect_streaming_response_orig
+    from .anthropic_transformer import (
+        anthropic_request_to_prompt, create_anthropic_response,
+        extract_anthropic_generation_params
+    )
+    from .anthropic_streaming import (
+        create_anthropic_streaming_response, collect_anthropic_streaming_response
+    )
+    from .gemini_transformer import (
+        gemini_request_to_prompt, create_gemini_response,
+        extract_gemini_generation_params
+    )
+    from .gemini_streaming import (
+        create_gemini_streaming_response, collect_gemini_streaming_response
+    )
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -76,34 +122,32 @@ app.add_middleware(
 )
 
 def log_request_start(endpoint: str, request_data: dict):
-    """Log the start of a request with enhanced details."""
+    """Log the start of a request with enhanced formatting."""
     logger.info(f"🚀 REQUEST START | Endpoint: {endpoint}")
-    logger.info(f"   📊 Request Data: {request_data}")
+    logger.info(f"   📊 Request Data: {str(request_data)[:200]}...")
     logger.info(f"   🕐 Timestamp: {datetime.now().isoformat()}")
+
 
 def log_completion_tracking(task_id: str, status: str, attempt: int, duration: float):
     """Log completion checking process with detailed tracking."""
     logger.info(f"🔍 COMPLETION CHECK | Task: {task_id} | Status: {status} | Attempt: {attempt} | Duration: {duration:.2f}s")
 
+
 def log_openai_response_generation(response_data: dict, processing_time: float):
-    """Log OpenAI API compatible response generation."""
-    logger.info(f"📤 OPENAI RESPONSE GENERATED | Processing Time: {processing_time:.2f}s")
-    logger.info(f"   🆔 Response ID: {response_data.get('id', 'N/A')}")
-    logger.info(f"   ���������� Model: {response_data.get('model', 'N/A')}")
-    logger.info(f"   📝 Choices: {len(response_data.get('choices', []))}")
+    """Log OpenAI response generation with detailed metrics."""
+    logger.info(f"🤖 OPENAI RESPONSE GENERATED")
+    logger.info(f"   ⏱️ Processing Time: {processing_time:.2f}s")
+    logger.info(f"   📝 Response ID: {response_data.get('id', 'N/A')}")
+    logger.info(f"   🎯 Model: {response_data.get('model', 'N/A')}")
     
-    if 'usage' in response_data:
-        usage = response_data['usage']
-        logger.info(f"   🔢 Token Usage - Prompt: {usage.get('prompt_tokens', 0)}, "
-                   f"Completion: {usage.get('completion_tokens', 0)}, "
-                   f"Total: {usage.get('total_tokens', 0)}")
-    
-    # Log first 100 chars of response content
-    if response_data.get('choices') and len(response_data['choices']) > 0:
-        choice = response_data['choices'][0]
-        if 'message' in choice and 'content' in choice['message']:
-            content = choice['message']['content']
-            logger.info(f"   📄 Content Preview: {content[:100]}...")
+    # Log usage statistics if available
+    usage = response_data.get('usage', {})
+    if usage:
+        logger.info(f"   📊 Token Usage:")
+        logger.info(f"      🔤 Prompt Tokens: {usage.get('prompt_tokens', 0)}")
+        logger.info(f"      ✍️ Completion Tokens: {usage.get('completion_tokens', 0)}")
+        logger.info(f"      📈 Total Tokens: {usage.get('total_tokens', 0)}")
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -366,6 +410,132 @@ async def anthropic_messages(request: AnthropicRequest):
     except Exception as e:
         processing_time = time.time() - start_time
         logger.error(f"❌ Error in Anthropic message completion after {processing_time:.2f}s: {e}")
+        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": {
+                    "message": str(e),
+                    "type": "server_error",
+                    "code": "500"
+                }
+            }
+        )
+
+
+@app.post("/v1/gemini/generateContent")
+async def gemini_generate_content(request: GeminiRequest):
+    """
+    Create a Gemini-style content generation using Codegen SDK.
+    Compatible with Google's Gemini API format.
+    """
+    try:
+        log_request_start("/v1/gemini/generateContent", request.dict())
+        
+        # Convert Gemini request to prompt
+        prompt = gemini_request_to_prompt(request)
+        logger.debug(f"Converted Gemini prompt: {prompt[:200]}...")
+        
+        # Extract generation parameters
+        gen_params = extract_gemini_generation_params(request)
+        logger.debug(f"Gemini generation parameters: {gen_params}")
+        
+        if request.stream:
+            # Return streaming response
+            logger.info("🌊 Initiating Gemini streaming response...")
+            return create_gemini_streaming_response(
+                codegen_client,
+                prompt,
+                request.model,
+                f"gemini_{hash(prompt) % 1000000}"
+            )
+        else:
+            # Return complete response
+            logger.info("📦 Initiating Gemini non-streaming response...")
+            content = await collect_gemini_streaming_response(codegen_client, prompt)
+            
+            # Estimate token counts
+            input_tokens = estimate_tokens_orig(prompt)
+            output_tokens = estimate_tokens_orig(content)
+            
+            logger.info(f"🔢 Gemini token estimation - Input: {input_tokens}, Output: {output_tokens}")
+            
+            response = create_gemini_response(
+                content=content,
+                model=request.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens
+            )
+            
+            logger.info(f"✅ Gemini content generation successful")
+            return response
+            
+    except Exception as e:
+        logger.error(f"❌ Error in Gemini content generation: {e}")
+        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": {
+                    "message": str(e),
+                    "type": "server_error",
+                    "code": "500"
+                }
+            }
+        )
+
+
+@app.post("/v1/gemini/completions")
+async def gemini_completions(request: GeminiRequest):
+    """
+    Create a Gemini-style completion using Codegen SDK.
+    Compatible with Google's Gemini API format.
+    """
+    try:
+        log_request_start("/v1/gemini/completions", request.dict())
+        
+        # Convert Gemini request to prompt
+        prompt = gemini_request_to_prompt(request)
+        logger.debug(f"Converted Gemini completion prompt: {prompt[:200]}...")
+        
+        # Extract generation parameters
+        gen_params = extract_gemini_generation_params(request)
+        logger.debug(f"Gemini completion generation parameters: {gen_params}")
+        
+        if request.stream:
+            # Return streaming response
+            logger.info("🌊 Initiating Gemini completion streaming response...")
+            return create_gemini_streaming_response(
+                codegen_client,
+                prompt,
+                request.model,
+                f"gemini_cmpl_{hash(prompt) % 1000000}",
+                completion_format=True
+            )
+        else:
+            # Return complete response
+            logger.info("📦 Initiating Gemini completion non-streaming response...")
+            content = await collect_gemini_streaming_response(codegen_client, prompt)
+            
+            # Estimate token counts
+            input_tokens = estimate_tokens_orig(prompt)
+            output_tokens = estimate_tokens_orig(content)
+            
+            logger.info(f"🔢 Gemini completion token estimation - Input: {input_tokens}, Output: {output_tokens}")
+            
+            response = create_gemini_response(
+                content=content,
+                model=request.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                completion_format=True
+            )
+            
+            logger.info(f"✅ Gemini completion successful")
+            return response
+            
+    except Exception as e:
+        logger.error(f"❌ Error in Gemini completion: {e}")
         logger.error(f"🔍 Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
