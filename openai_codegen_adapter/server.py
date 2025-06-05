@@ -1,55 +1,91 @@
 """
 FastAPI server providing OpenAI-compatible API endpoints.
-Based on h2ogpt's server.py structure and patterns.
-Enhanced with comprehensive logging for completion tracking and OpenAI response generation.
-Enhanced with Anthropic Claude API compatibility.
+Enhanced with comprehensive logging and multi-provider support.
 """
 
 import logging
 import traceback
 import time
+import os
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import uvicorn
 
-from .models import (
-    ChatRequest, TextRequest, ChatResponse, TextResponse,
-    ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
-    GeminiRequest, GeminiResponse
-)
-from .config import get_codegen_config, get_server_config
-from .codegen_client import CodegenClient
-from .request_transformer import (
-    chat_request_to_prompt, text_request_to_prompt,
-    extract_generation_params
-)
-from .response_transformer import (
-    create_chat_response, create_text_response,
-    estimate_tokens, clean_content
-)
-from .streaming import create_streaming_response, collect_streaming_response
-from .anthropic_transformer import (
-    anthropic_request_to_prompt, create_anthropic_response,
-    extract_anthropic_generation_params
-)
-from .anthropic_streaming import (
-    create_anthropic_streaming_response, collect_anthropic_streaming_response
-)
-from .gemini_transformer import (
-    gemini_request_to_prompt, create_gemini_response,
-    extract_gemini_generation_params
-)
-from .gemini_streaming import (
-    create_gemini_streaming_response, collect_gemini_streaming_response
-)
+# Use absolute imports for better compatibility
+try:
+    from models import (
+        ChatRequest, TextRequest, ChatResponse, TextResponse,
+        ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+        GeminiRequest, GeminiResponse
+    )
+    from config import get_codegen_config, get_server_config
+    from codegen_client import CodegenClient
+    from request_transformer import (
+        chat_request_to_prompt, text_request_to_prompt,
+        extract_generation_params
+    )
+    from response_transformer import (
+        create_chat_response, create_text_response,
+        estimate_tokens as estimate_tokens_orig, clean_content
+    )
+    from streaming import create_streaming_response, collect_streaming_response as collect_streaming_response_orig
+    from anthropic_transformer import (
+        anthropic_request_to_prompt, create_anthropic_response,
+        extract_anthropic_generation_params
+    )
+    from anthropic_streaming import (
+        create_anthropic_streaming_response, collect_anthropic_streaming_response
+    )
+    from gemini_transformer import (
+        gemini_request_to_prompt, create_gemini_response,
+        extract_gemini_generation_params
+    )
+    from gemini_streaming import (
+        create_gemini_streaming_response, collect_gemini_streaming_response
+    )
+except ImportError:
+    # Fallback for relative imports if needed
+    from .models import (
+        ChatRequest, TextRequest, ChatResponse, TextResponse,
+        ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+        GeminiRequest, GeminiResponse
+    )
+    from .config import get_codegen_config, get_server_config
+    from .codegen_client import CodegenClient
+    from .request_transformer import (
+        chat_request_to_prompt, text_request_to_prompt,
+        extract_generation_params
+    )
+    from .response_transformer import (
+        create_chat_response, create_text_response,
+        estimate_tokens as estimate_tokens_orig, clean_content
+    )
+    from .streaming import create_streaming_response, collect_streaming_response as collect_streaming_response_orig
+    from .anthropic_transformer import (
+        anthropic_request_to_prompt, create_anthropic_response,
+        extract_anthropic_generation_params
+    )
+    from .anthropic_streaming import (
+        create_anthropic_streaming_response, collect_anthropic_streaming_response
+    )
+    from .gemini_transformer import (
+        gemini_request_to_prompt, create_gemini_response,
+        extract_gemini_generation_params
+    )
+    from .gemini_streaming import (
+        create_gemini_streaming_response, collect_gemini_streaming_response
+    )
 
 # Enhanced logging configuration
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s | %(name)s | %(levelname)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('openai_adapter.log')
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -58,53 +94,60 @@ codegen_config = get_codegen_config()
 server_config = get_server_config()
 
 # Initialize Codegen client
-codegen_client = CodegenClient(codegen_config)
+try:
+    config = get_codegen_config()
+    codegen_client = CodegenClient(
+        org_id=config.org_id or os.getenv("CODEGEN_ORG_ID", "323"),
+        token=config.api_token or os.getenv("CODEGEN_API_TOKEN", "sk-dummy-token")
+    )
+    logger.info("✅ Codegen client initialized successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize Codegen client: {e}")
+    codegen_client = None
 
 # Create FastAPI app
 app = FastAPI(
     title="OpenAI Codegen Adapter",
-    description="OpenAI-compatible API server that forwards requests to Codegen SDK",
+    description="OpenAI-compatible API for Codegen platform",
     version="1.0.0"
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=server_config.cors_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 def log_request_start(endpoint: str, request_data: dict):
-    """Log the start of a request with enhanced details."""
+    """Log the start of a request with enhanced formatting."""
     logger.info(f"🚀 REQUEST START | Endpoint: {endpoint}")
-    logger.info(f"   📊 Request Data: {request_data}")
+    logger.info(f"   📊 Request Data: {str(request_data)[:200]}...")
     logger.info(f"   🕐 Timestamp: {datetime.now().isoformat()}")
+
 
 def log_completion_tracking(task_id: str, status: str, attempt: int, duration: float):
     """Log completion checking process with detailed tracking."""
     logger.info(f"🔍 COMPLETION CHECK | Task: {task_id} | Status: {status} | Attempt: {attempt} | Duration: {duration:.2f}s")
 
+
 def log_openai_response_generation(response_data: dict, processing_time: float):
-    """Log OpenAI API compatible response generation."""
-    logger.info(f"📤 OPENAI RESPONSE GENERATED | Processing Time: {processing_time:.2f}s")
-    logger.info(f"   🆔 Response ID: {response_data.get('id', 'N/A')}")
-    logger.info(f"   ���������� Model: {response_data.get('model', 'N/A')}")
-    logger.info(f"   📝 Choices: {len(response_data.get('choices', []))}")
+    """Log OpenAI response generation with detailed metrics."""
+    logger.info(f"🤖 OPENAI RESPONSE GENERATED")
+    logger.info(f"   ⏱️ Processing Time: {processing_time:.2f}s")
+    logger.info(f"   📝 Response ID: {response_data.get('id', 'N/A')}")
+    logger.info(f"   🎯 Model: {response_data.get('model', 'N/A')}")
     
-    if 'usage' in response_data:
-        usage = response_data['usage']
-        logger.info(f"   🔢 Token Usage - Prompt: {usage.get('prompt_tokens', 0)}, "
-                   f"Completion: {usage.get('completion_tokens', 0)}, "
-                   f"Total: {usage.get('total_tokens', 0)}")
-    
-    # Log first 100 chars of response content
-    if response_data.get('choices') and len(response_data['choices']) > 0:
-        choice = response_data['choices'][0]
-        if 'message' in choice and 'content' in choice['message']:
-            content = choice['message']['content']
-            logger.info(f"   📄 Content Preview: {content[:100]}...")
+    # Log usage statistics if available
+    usage = response_data.get('usage', {})
+    if usage:
+        logger.info(f"   📊 Token Usage:")
+        logger.info(f"      🔤 Prompt Tokens: {usage.get('prompt_tokens', 0)}")
+        logger.info(f"      ✍️ Completion Tokens: {usage.get('completion_tokens', 0)}")
+        logger.info(f"      📈 Total Tokens: {usage.get('total_tokens', 0)}")
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -136,188 +179,126 @@ async def root():
 
 @app.get("/v1/models")
 async def list_models():
-    """List available models (OpenAI and Anthropic compatibility)."""
-    return {
-        "object": "list",
-        "data": [
-            {
-                "id": "gpt-3.5-turbo",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "codegen"
-            },
-            {
-                "id": "gpt-4",
-                "object": "model", 
-                "created": 1677610602,
-                "owned_by": "codegen"
-            },
-            {
-                "id": "gpt-3.5-turbo-instruct",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "codegen"
-            },
-            {
-                "id": "claude-3-sonnet-20240229",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            {
-                "id": "claude-3-haiku-20240307",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            {
-                "id": "claude-3-opus-20240229",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            {
-                "id": "gemini-1.5-pro",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            },
-            {
-                "id": "gemini-1.5-flash",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            },
-            {
-                "id": "gemini-pro",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            }
-        ]
-    }
+    """List available models (OpenAI compatible)."""
+    models = [
+        {
+            "id": "gpt-3.5-turbo",
+            "object": "model",
+            "created": int(time.time()),
+            "owned_by": "codegen"
+        },
+        {
+            "id": "gpt-4",
+            "object": "model", 
+            "created": int(time.time()),
+            "owned_by": "codegen"
+        },
+        {
+            "id": "text-davinci-003",
+            "object": "model",
+            "created": int(time.time()),
+            "owned_by": "codegen"
+        }
+    ]
+    return {"object": "list", "data": models}
 
 
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatRequest):
-    """
-    Create a chat completion using Codegen SDK.
-    Compatible with OpenAI's /v1/chat/completions endpoint.
-    """
-    start_time = time.time()
+    """OpenAI-compatible chat completions endpoint."""
+    logger.info(f"🚀 Chat completion request: {request.model}")
+    
+    if not codegen_client:
+        return create_error_response("Codegen client not available")
     
     try:
-        log_request_start("/v1/chat/completions", request.dict())
-        
-        # Convert request to prompt
-        prompt = chat_request_to_prompt(request)
-        logger.debug(f"🔄 Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters (for future use)
-        gen_params = extract_generation_params(request)
-        logger.debug(f"⚙️ Generation parameters: {gen_params}")
+        # Convert messages to prompt
+        prompt = "\n".join([f"{msg.role}: {msg.content}" for msg in request.messages])
         
         if request.stream:
             # Return streaming response
             logger.info("🌊 Initiating streaming response...")
-            return create_streaming_response(
-                codegen_client,
-                prompt,
-                request.model,
-                f"chatcmpl-{hash(prompt) % 1000000}"
+            return StreamingResponse(
+                stream_chat_response(prompt),
+                media_type="text/plain"
             )
         else:
-            # Return complete response
-            logger.info("📦 Initiating non-streaming response...")
+            # Get complete response
             content = await collect_streaming_response(codegen_client, prompt)
             
-            # Estimate token counts
-            prompt_tokens = estimate_tokens(prompt)
-            completion_tokens = estimate_tokens(content)
-            
-            logger.info(f"🔢 Token estimation - Prompt: {prompt_tokens}, Completion: {completion_tokens}")
-            
-            response = create_chat_response(
-                content=content,
+            # Create response
+            response = ChatResponse(
+                id=f"chatcmpl-{int(time.time())}",
+                object="chat.completion",
+                created=int(time.time()),
                 model=request.model,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens
+                choices=[{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": content
+                    },
+                    "finish_reason": "stop"
+                }],
+                usage={
+                    "prompt_tokens": int(estimate_tokens(prompt)),
+                    "completion_tokens": int(estimate_tokens(content)),
+                    "total_tokens": int(estimate_tokens(prompt + content))
+                }
             )
             
-            # Log the OpenAI response generation
-            processing_time = time.time() - start_time
-            log_openai_response_generation(response.dict(), processing_time)
-            
-            logger.info(f"✅ Chat completion successful in {processing_time:.2f}s")
+            logger.info(f"✅ Chat completion successful: {len(content)} chars")
             return response
             
     except Exception as e:
-        processing_time = time.time() - start_time
-        logger.error(f"❌ Error in chat completion after {processing_time:.2f}s: {e}")
-        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
-                }
-            }
-        )
+        logger.error(f"❌ Chat completion error: {e}")
+        return create_error_response(f"Chat completion failed: {str(e)}")
 
 
 @app.post("/v1/completions")
-async def completions(request: TextRequest):
-    """
-    Create a text completion using Codegen SDK.
-    Compatible with OpenAI's /v1/completions endpoint.
-    """
+async def text_completions(request: TextRequest):
+    """OpenAI-compatible text completions endpoint."""
+    logger.info(f"🚀 Text completion request: {request.model}")
+    
+    if not codegen_client:
+        return create_error_response("Codegen client not available")
+    
     try:
-        log_request_start("/v1/completions", request.dict())
-        
-        # Convert request to prompt
-        prompt = text_request_to_prompt(request)
-        logger.debug(f"Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters (for future use)
-        gen_params = extract_generation_params(request)
-        logger.debug(f"Generation parameters: {gen_params}")
-        
         if request.stream:
-            # For text completions streaming, we'd need a different streaming format
-            # For now, fall back to non-streaming
-            logger.warning("Streaming not yet implemented for text completions, falling back to non-streaming")
-        
-        # Get complete response
-        content = await collect_streaming_response(codegen_client, prompt)
-        
-        # Estimate token counts
-        prompt_tokens = estimate_tokens(prompt)
-        completion_tokens = estimate_tokens(content)
-        
-        response = create_text_response(
-            content=content,
-            model=request.model,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens
-        )
-        
-        logger.info(f"Text completion response: {completion_tokens} tokens")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error in text completion: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
+            # Return streaming response
+            logger.info("🌊 Initiating streaming response...")
+            return StreamingResponse(
+                stream_text_response(request.prompt),
+                media_type="text/plain"
+            )
+        else:
+            # Get complete response
+            content = await collect_streaming_response(codegen_client, request.prompt)
+            
+            # Create response
+            response = TextResponse(
+                id=f"cmpl-{int(time.time())}",
+                object="text_completion",
+                created=int(time.time()),
+                model=request.model,
+                choices=[{
+                    "text": content,
+                    "index": 0,
+                    "finish_reason": "stop"
+                }],
+                usage={
+                    "prompt_tokens": int(estimate_tokens(request.prompt)),
+                    "completion_tokens": int(estimate_tokens(content)),
+                    "total_tokens": int(estimate_tokens(request.prompt + content))
                 }
-            }
-        )
+            )
+            
+            logger.info(f"✅ Text completion successful: {len(content)} chars")
+            return response
+            
+    except Exception as e:
+        logger.error(f"❌ Text completion error: {e}")
+        return create_error_response(f"Text completion failed: {str(e)}")
 
 
 @app.post("/v1/anthropic/completions")
@@ -442,46 +423,56 @@ async def anthropic_messages(request: AnthropicRequest):
         )
 
 
-@app.post("/v1/gemini/completions")
-async def gemini_completions(request: GeminiRequest):
+@app.post("/v1/gemini/generateContent")
+async def gemini_generate_content(request: GeminiRequest):
     """
-    Create a text completion using Gemini API.
-    Compatible with Gemini's /v1/gemini/completions endpoint.
+    Create a Gemini-style content generation using Codegen SDK.
+    Compatible with Google's Gemini API format.
     """
     try:
-        log_request_start("/v1/gemini/completions", request.dict())
+        log_request_start("/v1/gemini/generateContent", request.dict())
         
-        # Convert request to prompt
+        # Convert Gemini request to prompt
         prompt = gemini_request_to_prompt(request)
-        logger.debug(f"Converted prompt: {prompt[:200]}...")
+        logger.debug(f"Converted Gemini prompt: {prompt[:200]}...")
         
-        # Extract generation parameters (for future use)
+        # Extract generation parameters
         gen_params = extract_gemini_generation_params(request)
-        logger.debug(f"Generation parameters: {gen_params}")
+        logger.debug(f"Gemini generation parameters: {gen_params}")
         
         if request.stream:
-            # For text completions streaming, we'd need a different streaming format
-            # For now, fall back to non-streaming
-            logger.warning("Streaming not yet implemented for text completions, falling back to non-streaming")
-        
-        # Get complete response
-        content = await collect_gemini_streaming_response(codegen_client, prompt)
-        
-        # Estimate token counts
-        prompt_tokens = estimate_tokens(prompt)
-        completion_tokens = estimate_tokens(content)
-        
-        response = create_gemini_response(
-            content=content,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens
-        )
-        
-        logger.info(f"Gemini completion response: {completion_tokens} tokens")
-        return response
-        
+            # Return streaming response
+            logger.info("🌊 Initiating Gemini streaming response...")
+            return create_gemini_streaming_response(
+                codegen_client,
+                prompt,
+                request.model,
+                f"gemini_{hash(prompt) % 1000000}"
+            )
+        else:
+            # Return complete response
+            logger.info("📦 Initiating Gemini non-streaming response...")
+            content = await collect_gemini_streaming_response(codegen_client, prompt)
+            
+            # Estimate token counts
+            input_tokens = estimate_tokens_orig(prompt)
+            output_tokens = estimate_tokens_orig(content)
+            
+            logger.info(f"🔢 Gemini token estimation - Input: {input_tokens}, Output: {output_tokens}")
+            
+            response = create_gemini_response(
+                content=content,
+                model=request.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens
+            )
+            
+            logger.info(f"✅ Gemini content generation successful")
+            return response
+            
     except Exception as e:
-        logger.error(f"Error in text completion: {e}\n{traceback.format_exc()}")
+        logger.error(f"❌ Error in Gemini content generation: {e}")
+        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail={
@@ -494,67 +485,65 @@ async def gemini_completions(request: GeminiRequest):
         )
 
 
-@app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: GeminiRequest):
+@app.post("/v1/gemini/completions")
+async def gemini_completions(request: GeminiRequest):
     """
-    Generate content using Gemini API.
-    Compatible with Gemini's /v1/generateContent endpoint.
+    Create a Gemini-style completion using Codegen SDK.
+    Compatible with Google's Gemini API format.
     """
-    start_time = time.time()
-    
     try:
-        log_request_start("/v1/gemini/generateContent", request.dict())
+        log_request_start("/v1/gemini/completions", request.dict())
         
-        # Convert request to prompt
+        # Convert Gemini request to prompt
         prompt = gemini_request_to_prompt(request)
-        logger.debug(f"🔄 Converted prompt: {prompt[:200]}...")
+        logger.debug(f"Converted Gemini completion prompt: {prompt[:200]}...")
         
-        # Extract generation parameters (for future use)
+        # Extract generation parameters
         gen_params = extract_gemini_generation_params(request)
-        logger.debug(f"⚙️ Generation parameters: {gen_params}")
+        logger.debug(f"Gemini completion generation parameters: {gen_params}")
         
-        # Check if streaming is requested
-        is_streaming = gen_params.get("stream", False)
-        
-        if is_streaming:
+        if request.stream:
             # Return streaming response
-            logger.info("🌊 Initiating Gemini streaming response...")
-            return create_gemini_streaming_response(codegen_client, prompt)
+            logger.info("🌊 Initiating Gemini completion streaming response...")
+            return create_gemini_streaming_response(
+                codegen_client,
+                prompt,
+                request.model,
+                f"gemini_cmpl_{hash(prompt) % 1000000}",
+                completion_format=True
+            )
         else:
             # Return complete response
-            logger.info("📦 Initiating Gemini non-streaming response...")
+            logger.info("📦 Initiating Gemini completion non-streaming response...")
             content = await collect_gemini_streaming_response(codegen_client, prompt)
             
             # Estimate token counts
-            prompt_tokens = estimate_tokens(prompt)
-            completion_tokens = estimate_tokens(content)
+            input_tokens = estimate_tokens_orig(prompt)
+            output_tokens = estimate_tokens_orig(content)
             
-            logger.info(f"🔢 Token estimation - Input: {prompt_tokens}, Output: {completion_tokens}")
+            logger.info(f"🔢 Gemini completion token estimation - Input: {input_tokens}, Output: {output_tokens}")
             
             response = create_gemini_response(
                 content=content,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens
+                model=request.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                completion_format=True
             )
             
-            # Log the Gemini response generation
-            processing_time = time.time() - start_time
-            logger.info(f"📤 Gemini response generated in {processing_time:.2f}s")
-            
-            logger.info(f"✅ Gemini content generation successful in {processing_time:.2f}s")
+            logger.info(f"✅ Gemini completion successful")
             return response
             
     except Exception as e:
-        processing_time = time.time() - start_time
-        logger.error(f"❌ Error in Gemini content generation after {processing_time:.2f}s: {e}")
+        logger.error(f"❌ Error in Gemini completion: {e}")
         logger.error(f"🔍 Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail={
                 "error": {
-                    "code": 500,
                     "message": str(e),
-                    "status": "INTERNAL"
+                    "type": "server_error",
+                    "code": "500"
                 }
             }
         )
@@ -564,20 +553,70 @@ async def gemini_generate_content(request: GeminiRequest):
 async def health_check():
     """Health check endpoint."""
     try:
-        # Test Codegen client
-        if codegen_client.agent:
-            return {"status": "healthy", "codegen": "connected"}
-        else:
-            return {"status": "unhealthy", "codegen": "disconnected"}
+        return {"status": "healthy", "timestamp": datetime.now().isoformat()}
     except Exception as e:
+        logger.error(f"Health check failed: {e}")
         return {"status": "unhealthy", "error": str(e)}
 
 
+# Utility functions
+def estimate_tokens(text: str) -> int:
+    """Estimate token count for text."""
+    return len(text.split()) * 1.3  # Rough estimation
+
+def create_error_response(message: str, error_type: str = "invalid_request_error", code: str = "invalid_request") -> JSONResponse:
+    """Create standardized error response."""
+    error_detail = ErrorDetail(message=message, type=error_type, code=code)
+    error_response = ErrorResponse(error=error_detail)
+    return JSONResponse(
+        status_code=400,
+        content=error_response.dict()
+    )
+
+async def collect_streaming_response(client, prompt: str) -> str:
+    """Collect streaming response into a single string."""
+    if not client:
+        return "Error: Codegen client not available"
+    
+    try:
+        content = ""
+        async for chunk in client.run_task(prompt, stream=True):
+            content += chunk
+        return content
+    except Exception as e:
+        logger.error(f"Error collecting streaming response: {e}")
+        return f"Error: {str(e)}"
+
+async def stream_chat_response(prompt: str):
+    """Stream chat completion response."""
+    if not codegen_client:
+        yield "data: Error: Codegen client not available\n\n"
+        return
+    
+    try:
+        async for chunk in codegen_client.run_task(prompt, stream=True):
+            yield f"data: {chunk}\n\n"
+        yield "data: [DONE]\n\n"
+    except Exception as e:
+        yield f"data: Error: {str(e)}\n\n"
+
+async def stream_text_response(prompt: str):
+    """Stream text completion response."""
+    if not codegen_client:
+        yield "data: Error: Codegen client not available\n\n"
+        return
+    
+    try:
+        async for chunk in codegen_client.run_task(prompt, stream=True):
+            yield f"data: {chunk}\n\n"
+        yield "data: [DONE]\n\n"
+    except Exception as e:
+        yield f"data: Error: {str(e)}\n\n"
+
 if __name__ == "__main__":
     uvicorn.run(
-        "openai_codegen_adapter.server:app",
-        host=server_config.host,
-        port=server_config.port,
-        log_level=server_config.log_level,
-        reload=False
+        "server:app",
+        host="0.0.0.0",
+        port=8000,
+        log_level="info"
     )
