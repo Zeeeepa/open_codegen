@@ -7,11 +7,28 @@ import logging
 import traceback
 import time
 import os
+import uuid
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 import uvicorn
+import httpx
+import asyncio
+from dotenv import load_dotenv
+import json
+from typing import List, Dict, Any
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Configuration from environment variables
+CODEGEN_ORG_ID = os.getenv("CODEGEN_ORG_ID", "323")
+CODEGEN_API_TOKEN = os.getenv("CODEGEN_API_TOKEN", "sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99")
+SERVER_HOST = os.getenv("SERVER_HOST", "127.0.0.1")
+SERVER_PORT = int(os.getenv("SERVER_PORT", "19887"))
+LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
+CORS_ORIGINS = json.loads(os.getenv("CORS_ORIGINS", '["*"]'))
 
 # Use absolute imports for better compatibility
 try:
@@ -115,7 +132,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -205,54 +222,49 @@ async def list_models():
 
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatRequest):
-    """OpenAI-compatible chat completions endpoint."""
-    logger.info(f"🚀 Chat completion request: {request.model}")
-    
-    if not codegen_client:
-        return create_error_response("Codegen client not available")
+    """OpenAI-compatible chat completions endpoint that calls the real Codegen API."""
+    logger.info(f"🎯 Chat completion request: {request.model}")
     
     try:
-        # Convert messages to prompt
-        prompt = "\n".join([f"{msg.role}: {msg.content}" for msg in request.messages])
+        # Convert ChatRequest messages to the format expected by Codegen API
+        messages = []
+        for msg in request.messages:
+            messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
         
-        if request.stream:
-            # Return streaming response
-            logger.info("🌊 Initiating streaming response...")
-            return StreamingResponse(
-                stream_chat_response(prompt),
-                media_type="text/plain"
-            )
-        else:
-            # Get complete response
-            content = await collect_streaming_response(codegen_client, prompt)
-            
-            # Create response
-            response = ChatResponse(
-                id=f"chatcmpl-{int(time.time())}",
-                object="chat.completion",
-                created=int(time.time()),
-                model=request.model,
-                choices=[{
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": content
-                    },
-                    "finish_reason": "stop"
-                }],
-                usage={
-                    "prompt_tokens": int(estimate_tokens(prompt)),
-                    "completion_tokens": int(estimate_tokens(content)),
-                    "total_tokens": int(estimate_tokens(prompt + content))
-                }
-            )
-            
-            logger.info(f"✅ Chat completion successful: {len(content)} chars")
-            return response
-            
+        # Call the real Codegen API
+        logger.info(f"🚀 Calling Codegen API with {len(messages)} messages")
+        codegen_response = await call_codegen_api(messages, request.model)
+        
+        # Convert Codegen response to OpenAI format
+        response = ChatResponse(
+            id=codegen_response.get("id", f"chatcmpl-{int(time.time())}"),
+            object="chat.completion",
+            created=int(time.time()),
+            model=request.model,
+            choices=[{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": codegen_response["choices"][0]["message"]["content"]
+                },
+                "finish_reason": codegen_response["choices"][0].get("finish_reason", "stop")
+            }],
+            usage={
+                "prompt_tokens": codegen_response.get("usage", {}).get("prompt_tokens", 0),
+                "completion_tokens": codegen_response.get("usage", {}).get("completion_tokens", 0),
+                "total_tokens": codegen_response.get("usage", {}).get("total_tokens", 0)
+            }
+        )
+        
+        logger.info(f"✅ Successfully returned response from Codegen API")
+        return response
+        
     except Exception as e:
-        logger.error(f"❌ Chat completion error: {e}")
-        return create_error_response(f"Chat completion failed: {str(e)}")
+        logger.error(f"❌ Error in chat completions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/v1/completions")
@@ -356,133 +368,92 @@ async def anthropic_completions(request: AnthropicRequest):
 
 @app.post("/v1/messages")
 async def anthropic_messages(request: AnthropicRequest):
-    """
-    Create a message using Anthropic Claude API.
-    Compatible with Anthropic's /v1/messages endpoint.
-    """
-    start_time = time.time()
+    """Anthropic-compatible messages endpoint that calls the real Codegen API."""
+    logger.info(f"🎯 Anthropic messages request: {request.model}")
     
     try:
-        log_request_start("/v1/messages", request.dict())
+        # Convert Anthropic format to Codegen API format
+        messages = []
+        for msg in request.messages:
+            messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
         
-        # Convert request to prompt
-        prompt = anthropic_request_to_prompt(request)
-        logger.debug(f"🔄 Converted prompt: {prompt[:200]}...")
+        # Call the real Codegen API
+        logger.info(f"🚀 Calling Codegen API with {len(messages)} messages")
+        codegen_response = await call_codegen_api(messages, request.model)
         
-        # Extract generation parameters (for future use)
-        gen_params = extract_anthropic_generation_params(request)
-        logger.debug(f"⚙️ Generation parameters: {gen_params}")
-        
-        if request.stream:
-            # Return streaming response
-            logger.info("🌊 Initiating Anthropic streaming response...")
-            return create_anthropic_streaming_response(
-                codegen_client,
-                prompt,
-                request.model,
-                f"msg_{hash(prompt) % 1000000}"
+        # Convert Codegen response to Anthropic format
+        response = AnthropicResponse(
+            id=codegen_response.get("id", f"msg_{uuid.uuid4().hex[:29]}"),
+            type="message",
+            role="assistant",
+            content=[{
+                "type": "text",
+                "text": codegen_response["choices"][0]["message"]["content"]
+            }],
+            model=request.model,
+            stop_reason=codegen_response["choices"][0].get("finish_reason", "end_turn"),
+            stop_sequence=None,
+            usage=AnthropicUsage(
+                input_tokens=codegen_response.get("usage", {}).get("prompt_tokens", 0),
+                output_tokens=codegen_response.get("usage", {}).get("completion_tokens", 0)
             )
-        else:
-            # Return complete response
-            logger.info("📦 Initiating Anthropic non-streaming response...")
-            content = await collect_anthropic_streaming_response(codegen_client, prompt)
-            
-            # Estimate token counts
-            input_tokens = estimate_tokens(prompt)
-            output_tokens = estimate_tokens(content)
-            
-            logger.info(f"🔢 Token estimation - Input: {input_tokens}, Output: {output_tokens}")
-            
-            response = create_anthropic_response(
-                content=content,
-                model=request.model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens
-            )
-            
-            # Log the Anthropic response generation
-            processing_time = time.time() - start_time
-            logger.info(f"📤 Anthropic response generated in {processing_time:.2f}s")
-            
-            logger.info(f"✅ Anthropic message completion successful in {processing_time:.2f}s")
-            return response
-            
-    except Exception as e:
-        processing_time = time.time() - start_time
-        logger.error(f"❌ Error in Anthropic message completion after {processing_time:.2f}s: {e}")
-        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
-                }
-            }
         )
+        
+        logger.info(f"✅ Successfully returned Anthropic response from Codegen API")
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ Error in Anthropic messages: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/v1/gemini/generateContent")
 async def gemini_generate_content(request: GeminiRequest):
-    """
-    Create a Gemini-style content generation using Codegen SDK.
-    Compatible with Google's Gemini API format.
-    """
+    """Gemini-compatible generateContent endpoint that calls the real Codegen API."""
+    logger.info(f"🎯 Gemini generateContent request: {request.model}")
+    
     try:
-        log_request_start("/v1/gemini/generateContent", request.dict())
+        # Convert Gemini format to Codegen API format
+        messages = []
+        for content in request.contents:
+            for part in content.parts:
+                messages.append({
+                    "role": "user",
+                    "content": part.text
+                })
         
-        # Convert Gemini request to prompt
-        prompt = gemini_request_to_prompt(request)
-        logger.debug(f"Converted Gemini prompt: {prompt[:200]}...")
+        # Call the real Codegen API
+        logger.info(f"🚀 Calling Codegen API with {len(messages)} messages")
+        codegen_response = await call_codegen_api(messages, request.model)
         
-        # Extract generation parameters
-        gen_params = extract_gemini_generation_params(request)
-        logger.debug(f"Gemini generation parameters: {gen_params}")
-        
-        if request.stream:
-            # Return streaming response
-            logger.info("🌊 Initiating Gemini streaming response...")
-            return create_gemini_streaming_response(
-                codegen_client,
-                prompt,
-                request.model,
-                f"gemini_{hash(prompt) % 1000000}"
+        # Convert Codegen response to Gemini format
+        response = GeminiResponse(
+            candidates=[
+                GeminiCandidate(
+                    content=GeminiContent(
+                        parts=[GeminiPart(text=codegen_response["choices"][0]["message"]["content"])],
+                        role="model"
+                    ),
+                    finishReason="STOP",
+                    index=0
+                )
+            ],
+            usageMetadata=GeminiUsageMetadata(
+                promptTokenCount=codegen_response.get("usage", {}).get("prompt_tokens", 0),
+                candidatesTokenCount=codegen_response.get("usage", {}).get("completion_tokens", 0),
+                totalTokenCount=codegen_response.get("usage", {}).get("total_tokens", 0)
             )
-        else:
-            # Return complete response
-            logger.info("📦 Initiating Gemini non-streaming response...")
-            content = await collect_gemini_streaming_response(codegen_client, prompt)
-            
-            # Estimate token counts
-            input_tokens = estimate_tokens_orig(prompt)
-            output_tokens = estimate_tokens_orig(content)
-            
-            logger.info(f"🔢 Gemini token estimation - Input: {input_tokens}, Output: {output_tokens}")
-            
-            response = create_gemini_response(
-                content=content,
-                model=request.model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens
-            )
-            
-            logger.info(f"✅ Gemini content generation successful")
-            return response
-            
-    except Exception as e:
-        logger.error(f"❌ Error in Gemini content generation: {e}")
-        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
-                }
-            }
         )
+        
+        logger.info(f"✅ Successfully returned Gemini response from Codegen API")
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ Error in Gemini generateContent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/v1/gemini/completions")
@@ -613,10 +584,58 @@ async def stream_text_response(prompt: str):
     except Exception as e:
         yield f"data: Error: {str(e)}\n\n"
 
+# Codegen API client
+async def call_codegen_api(messages: List[Dict], model: str = "claude-3-5-sonnet-20241022") -> Dict[str, Any]:
+    """Call the actual Codegen API and return real response"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": 1000,
+                "temperature": 0.7
+            }
+            
+            headers = {
+                "Authorization": f"Bearer {CODEGEN_API_TOKEN}",
+                "Content-Type": "application/json",
+                "X-Organization-ID": CODEGEN_ORG_ID
+            }
+            
+            logger.info(f"🚀 Calling Codegen API with org_id={CODEGEN_ORG_ID}")
+            logger.info(f"📝 Payload: {json.dumps(payload, indent=2)}")
+            
+            response = await client.post(
+                "https://api.codegen.com/v1/chat/completions",
+                json=payload,
+                headers=headers
+            )
+            
+            logger.info(f"📡 Codegen API Response Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                logger.info(f"��� Success! Response: {json.dumps(result, indent=2)}")
+                return result
+            else:
+                error_text = response.text
+                logger.error(f"❌ Codegen API Error {response.status_code}: {error_text}")
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Codegen API error: {error_text}"
+                )
+                
+    except httpx.TimeoutException:
+        logger.error("⏰ Codegen API request timed out")
+        raise HTTPException(status_code=504, detail="Codegen API request timed out")
+    except Exception as e:
+        logger.error(f"💥 Unexpected error calling Codegen API: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 if __name__ == "__main__":
     uvicorn.run(
         "server:app",
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
+        host=SERVER_HOST,
+        port=SERVER_PORT,
+        log_level=LOG_LEVEL
     )
