@@ -17,7 +17,7 @@ def test_openai_chat_completion():
     
     client = OpenAI(
         api_key=os.getenv("CODEGEN_API_TOKEN", "dummy-key"),
-        base_url="http://localhost:8000/v1"
+        base_url="http://localhost:18887/v1"
     )
     
     try:
@@ -45,7 +45,7 @@ def test_openai_streaming():
     
     client = OpenAI(
         api_key=os.getenv("CODEGEN_API_TOKEN", "dummy-key"),
-        base_url="http://localhost:8000/v1"
+        base_url="http://localhost:18887/v1"
     )
     
     try:
@@ -78,7 +78,7 @@ def test_openai_text_completion():
     
     client = OpenAI(
         api_key=os.getenv("CODEGEN_API_TOKEN", "dummy-key"),
-        base_url="http://localhost:8000/v1"
+        base_url="http://localhost:18887/v1"
     )
     
     try:
@@ -103,7 +103,7 @@ def test_health_endpoint():
     
     try:
         import requests
-        response = requests.get("http://localhost:8000/health")
+        response = requests.get("http://localhost:18887/health")
         
         if response.status_code == 200:
             print("✅ Health check successful")
@@ -124,7 +124,7 @@ def test_models_endpoint():
     
     try:
         import requests
-        response = requests.get("http://localhost:8000/v1/models")
+        response = requests.get("http://localhost:18887/v1/models")
         
         if response.status_code == 200:
             models = response.json()
@@ -187,16 +187,16 @@ def main():
     # Check if server is running
     try:
         import requests
-        response = requests.get("http://localhost:8000/health", timeout=5)
+        response = requests.get("http://localhost:18887/health", timeout=5)
         if response.status_code != 200:
-            print("❌ Server not responding at http://localhost:8000")
+            print("❌ Server not responding at http://localhost:18887")
             print("   Please start the server first:")
-            print("   cd openai_codegen_adapter && python -m uvicorn server:app --host 0.0.0.0 --port 8000")
+            print("   cd openai_codegen_adapter && python -m uvicorn server:app --host 0.0.0.0 --port 18887")
             return 1
     except Exception:
-        print("❌ Server not running at http://localhost:8000")
+        print("❌ Server not running at http://localhost:18887")
         print("   Please start the server first:")
-        print("   cd openai_codegen_adapter && python -m uvicorn server:app --host 0.0.0.0 --port 8000")
+        print("   cd openai_codegen_adapter && python -m uvicorn server:app --host 0.0.0.0 --port 18887")
         return 1
     
     print("✅ Server is running, starting tests...\n")
@@ -237,4 +237,3 @@ def main():
 if __name__ == "__main__":
     exit_code = main()
     sys.exit(exit_code)
-

@@ -27,7 +27,7 @@ class CodegenClient:
         try:
             kwargs = {
                 "org_id": self.config.org_id,
-                "token": self.config.token
+                "token": self.config.api_token  # Fixed: use api_token instead of token
             }
             if self.config.base_url:
                 kwargs["base_url"] = self.config.base_url

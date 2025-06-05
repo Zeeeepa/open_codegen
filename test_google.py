@@ -13,7 +13,7 @@ def test_gemini_api():
     print("=" * 50)
     
     # Gemini API endpoint
-    url = "http://localhost:8887/v1/gemini/generateContent"
+    url = "http://localhost:18887/v1/gemini/generateContent"
     
     # Gemini API request format
     payload = {
@@ -75,7 +75,7 @@ def test_gemini_streaming():
     print("=" * 50)
     
     # Gemini API endpoint
-    url = "http://localhost:8887/v1/gemini/generateContent"
+    url = "http://localhost:18887/v1/gemini/generateContent"
     
     # Gemini API request format with streaming
     payload = {
@@ -136,7 +136,7 @@ def test_gemini_with_system_instruction():
     print("=" * 50)
     
     # Gemini API endpoint
-    url = "http://localhost:8887/v1/gemini/generateContent"
+    url = "http://localhost:18887/v1/gemini/generateContent"
     
     # Gemini API request format with system instruction
     payload = {
@@ -196,4 +196,3 @@ if __name__ == "__main__":
     test_gemini_api()
     test_gemini_streaming()
     test_gemini_with_system_instruction()
-
