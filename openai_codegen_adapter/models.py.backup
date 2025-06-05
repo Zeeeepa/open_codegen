@@ -106,7 +106,6 @@ class GeminiRequest(BaseModel):
     contents: List[GeminiContent]
     generationConfig: Optional[GeminiGenerationConfig] = None
     systemInstruction: Optional[GeminiContent] = None
-    stream: Optional[bool] = False
 
 
 class GeminiUsageMetadata(BaseModel):
@@ -186,3 +185,40 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
+
+
+# Google Gemini API Models
+class GeminiContent(BaseModel):
+    parts: List[Dict[str, str]]
+    role: Optional[str] = "user"
+
+
+class GeminiRequest(BaseModel):
+    model: str = "gemini-pro"
+    contents: List[GeminiContent]
+    temperature: Optional[float] = Field(default=0.9, ge=0.0, le=1.0)
+    top_p: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    top_k: Optional[int] = Field(default=None, ge=1)
+    max_output_tokens: Optional[int] = Field(default=None, ge=1)
+    stream: Optional[bool] = False
+    stop_sequences: Optional[List[str]] = None
+    safety_settings: Optional[List[Dict[str, Any]]] = None
+
+
+class GeminiCandidate(BaseModel):
+    content: GeminiContent
+    finish_reason: Optional[str] = "STOP"
+    index: int = 0
+    safety_ratings: Optional[List[Dict[str, Any]]] = None
+
+
+class GeminiUsageMetadata(BaseModel):
+    prompt_token_count: int
+    candidates_token_count: int
+    total_token_count: int
+
+
+class GeminiResponse(BaseModel):
+    candidates: List[GeminiCandidate]
+    usage_metadata: Optional[GeminiUsageMetadata] = None
+    model_version: Optional[str] = None
