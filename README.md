@@ -29,6 +29,12 @@ python test_anthropic.py
 ```
 This tests Anthropic Claude API compatibility.
 
+**Google Gemini API Test:**
+```bash
+python test_google.py
+```
+This tests Google Gemini API compatibility.
+
 ## API Endpoints
 
 ### OpenAI Compatible
@@ -39,6 +45,10 @@ This tests Anthropic Claude API compatibility.
 ### Anthropic Compatible
 - **`/v1/messages`** - Anthropic Claude messages
 - **`/v1/anthropic/completions`** - Anthropic completions
+
+### Google Gemini Compatible
+- **`/v1/gemini/generateContent`** - Google Gemini content generation
+- **`/v1/gemini/completions`** - Google Gemini completions
 
 ## Usage Examples
 
@@ -72,11 +82,50 @@ response = requests.post(
 )
 ```
 
+## Environment Configuration Examples
+
+### OpenAI Environment Setup
+```python
+from openai import OpenAI
+
+def main():
+    client = OpenAI(
+        api_key="dummy-key",  # Server doesn't validate this
+        base_url="http://localhost:8887/v1"  # Point to our server
+    )
+```
+
+### Anthropic Environment Setup
+```python
+import anthropic
+
+def main():
+    client = anthropic.Anthropic(
+        api_key="dummy-key",  # Server doesn't validate this
+        base_url="http://localhost:8887/v1"  # Point to our server
+    )
+```
+
+### Google Gemini Environment Setup
+```python
+import requests
+
+def main():
+    # Point Gemini requests to our server
+    base_url = "http://localhost:8887/v1/gemini"
+    
+    response = requests.post(
+        f"{base_url}/generateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "Hello!"}]}]}
+    )
+```
+
 ## Files
 
 - **`server.py`** - Starts the FastAPI server
 - **`test.py`** - Simple OpenAI client test with modified baseURL
 - **`test_anthropic.py`** - Anthropic API compatibility test
+- **`test_google.py`** - Google Gemini API compatibility test
 - **`.env.example`** - Environment configuration template
 - **`openai_codegen_adapter/`** - Core adapter implementation
 
@@ -88,4 +137,3 @@ response = requests.post(
 4. Responses are transformed back to the appropriate API format
 
 That's it! 🚀
-
