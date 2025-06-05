@@ -1,6 +1,7 @@
 """
 Pydantic models for OpenAI API compatibility.
 Based on h2ogpt's server.py request/response models.
+Enhanced with Anthropic Claude API compatibility.
 """
 
 from typing import List, Optional, Dict, Any, Union, Literal
@@ -39,6 +40,48 @@ class TextRequest(BaseModel):
     stream: Optional[bool] = False
     stop: Optional[Union[str, List[str]]] = None
     user: Optional[str] = None
+
+
+# Anthropic Claude API Models
+class AnthropicMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class AnthropicRequest(BaseModel):
+    model: str = "claude-3-sonnet-20240229"
+    max_tokens: int = Field(default=1024, ge=1)
+    messages: List[AnthropicMessage]
+    temperature: Optional[float] = Field(default=1.0, ge=0.0, le=1.0)
+    top_p: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    top_k: Optional[int] = Field(default=None, ge=1)
+    stream: Optional[bool] = False
+    stop_sequences: Optional[List[str]] = None
+    system: Optional[str] = None
+
+
+class AnthropicUsage(BaseModel):
+    input_tokens: int
+    output_tokens: int
+
+
+class AnthropicResponse(BaseModel):
+    id: str = Field(default_factory=lambda: f"msg_{uuid.uuid4().hex[:29]}")
+    type: str = "message"
+    role: str = "assistant"
+    content: List[Dict[str, str]] = Field(default_factory=lambda: [{"type": "text", "text": ""}])
+    model: str
+    stop_reason: Optional[str] = "end_turn"
+    stop_sequence: Optional[str] = None
+    usage: AnthropicUsage
+
+
+class AnthropicStreamEvent(BaseModel):
+    type: str
+    message: Optional[Dict[str, Any]] = None
+    content_block: Optional[Dict[str, Any]] = None
+    delta: Optional[Dict[str, Any]] = None
+    usage: Optional[AnthropicUsage] = None
 
 
 class Usage(BaseModel):
@@ -100,4 +143,3 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
-

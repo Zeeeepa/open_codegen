@@ -2,6 +2,7 @@
 FastAPI server providing OpenAI-compatible API endpoints.
 Based on h2ogpt's server.py structure and patterns.
 Enhanced with comprehensive logging for completion tracking and OpenAI response generation.
+Enhanced with Anthropic Claude API compatibility.
 """
 
 import logging
@@ -15,7 +16,7 @@ import uvicorn
 
 from .models import (
     ChatRequest, TextRequest, ChatResponse, TextResponse,
-    ErrorResponse, ErrorDetail
+    ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse
 )
 from .config import get_codegen_config, get_server_config
 from .codegen_client import CodegenClient
@@ -28,6 +29,13 @@ from .response_transformer import (
     estimate_tokens, clean_content
 )
 from .streaming import create_streaming_response, collect_streaming_response
+from .anthropic_transformer import (
+    anthropic_request_to_prompt, create_anthropic_response,
+    extract_anthropic_generation_params
+)
+from .anthropic_streaming import (
+    create_anthropic_streaming_response, collect_anthropic_streaming_response
+)
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -74,7 +82,7 @@ def log_openai_response_generation(response_data: dict, processing_time: float):
     """Log OpenAI API compatible response generation."""
     logger.info(f"📤 OPENAI RESPONSE GENERATED | Processing Time: {processing_time:.2f}s")
     logger.info(f"   🆔 Response ID: {response_data.get('id', 'N/A')}")
-    logger.info(f"   🤖 Model: {response_data.get('model', 'N/A')}")
+    logger.info(f"   �������� Model: {response_data.get('model', 'N/A')}")
     logger.info(f"   📝 Choices: {len(response_data.get('choices', []))}")
     
     if 'usage' in response_data:
@@ -120,7 +128,7 @@ async def root():
 
 @app.get("/v1/models")
 async def list_models():
-    """List available models (OpenAI compatibility)."""
+    """List available models (OpenAI and Anthropic compatibility)."""
     return {
         "object": "list",
         "data": [
@@ -141,6 +149,24 @@ async def list_models():
                 "object": "model",
                 "created": 1677610602,
                 "owned_by": "codegen"
+            },
+            {
+                "id": "claude-3-sonnet-20240229",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "anthropic"
+            },
+            {
+                "id": "claude-3-haiku-20240307",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "anthropic"
+            },
+            {
+                "id": "claude-3-opus-20240229",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "anthropic"
             }
         ]
     }
@@ -256,6 +282,128 @@ async def completions(request: TextRequest):
         
     except Exception as e:
         logger.error(f"Error in text completion: {e}\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": {
+                    "message": str(e),
+                    "type": "server_error",
+                    "code": "500"
+                }
+            }
+        )
+
+
+@app.post("/v1/anthropic/completions")
+async def anthropic_completions(request: AnthropicRequest):
+    """
+    Create a text completion using Anthropic Claude API.
+    Compatible with Anthropic's /v1/anthropic/completions endpoint.
+    """
+    try:
+        log_request_start("/v1/anthropic/completions", request.dict())
+        
+        # Convert request to prompt
+        prompt = anthropic_request_to_prompt(request)
+        logger.debug(f"Converted prompt: {prompt[:200]}...")
+        
+        # Extract generation parameters (for future use)
+        gen_params = extract_anthropic_generation_params(request)
+        logger.debug(f"Generation parameters: {gen_params}")
+        
+        if request.stream:
+            # For text completions streaming, we'd need a different streaming format
+            # For now, fall back to non-streaming
+            logger.warning("Streaming not yet implemented for text completions, falling back to non-streaming")
+        
+        # Get complete response
+        content = await collect_anthropic_streaming_response(codegen_client, prompt)
+        
+        # Estimate token counts
+        prompt_tokens = estimate_tokens(prompt)
+        completion_tokens = estimate_tokens(content)
+        
+        response = create_anthropic_response(
+            content=content,
+            model=request.model,
+            input_tokens=prompt_tokens,
+            output_tokens=completion_tokens
+        )
+        
+        logger.info(f"Anthropic completion response: {completion_tokens} tokens")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error in text completion: {e}\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": {
+                    "message": str(e),
+                    "type": "server_error",
+                    "code": "500"
+                }
+            }
+        )
+
+
+@app.post("/v1/messages")
+async def anthropic_messages(request: AnthropicRequest):
+    """
+    Create a message using Anthropic Claude API.
+    Compatible with Anthropic's /v1/messages endpoint.
+    """
+    start_time = time.time()
+    
+    try:
+        log_request_start("/v1/messages", request.dict())
+        
+        # Convert request to prompt
+        prompt = anthropic_request_to_prompt(request)
+        logger.debug(f"🔄 Converted prompt: {prompt[:200]}...")
+        
+        # Extract generation parameters (for future use)
+        gen_params = extract_anthropic_generation_params(request)
+        logger.debug(f"⚙️ Generation parameters: {gen_params}")
+        
+        if request.stream:
+            # Return streaming response
+            logger.info("🌊 Initiating Anthropic streaming response...")
+            return create_anthropic_streaming_response(
+                codegen_client,
+                prompt,
+                request.model,
+                f"msg_{hash(prompt) % 1000000}"
+            )
+        else:
+            # Return complete response
+            logger.info("📦 Initiating Anthropic non-streaming response...")
+            content = await collect_anthropic_streaming_response(codegen_client, prompt)
+            
+            # Estimate token counts
+            input_tokens = estimate_tokens(prompt)
+            output_tokens = estimate_tokens(content)
+            
+            logger.info(f"🔢 Token estimation - Input: {input_tokens}, Output: {output_tokens}")
+            
+            response = create_anthropic_response(
+                content=content,
+                model=request.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens
+            )
+            
+            # Log the Anthropic response generation
+            processing_time = time.time() - start_time
+            logger.info(f"📤 Anthropic response generated in {processing_time:.2f}s")
+            
+            logger.info(f"✅ Anthropic message completion successful in {processing_time:.2f}s")
+            return response
+            
+    except Exception as e:
+        processing_time = time.time() - start_time
+        logger.error(f"❌ Error in Anthropic message completion after {processing_time:.2f}s: {e}")
+        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail={
