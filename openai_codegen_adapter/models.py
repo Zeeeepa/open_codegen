@@ -84,6 +84,48 @@ class AnthropicStreamEvent(BaseModel):
     usage: Optional[AnthropicUsage] = None
 
 
+# Google Gemini API Models
+class GeminiPart(BaseModel):
+    text: str
+
+
+class GeminiContent(BaseModel):
+    role: Optional[str] = "user"
+    parts: List[GeminiPart]
+
+
+class GeminiGenerationConfig(BaseModel):
+    temperature: Optional[float] = Field(default=None, ge=0.0, le=2.0)
+    topP: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    topK: Optional[int] = Field(default=None, ge=1)
+    maxOutputTokens: Optional[int] = Field(default=None, ge=1)
+    stopSequences: Optional[List[str]] = None
+
+
+class GeminiRequest(BaseModel):
+    contents: List[GeminiContent]
+    generationConfig: Optional[GeminiGenerationConfig] = None
+    systemInstruction: Optional[GeminiContent] = None
+
+
+class GeminiUsageMetadata(BaseModel):
+    promptTokenCount: int
+    candidatesTokenCount: int
+    totalTokenCount: int
+
+
+class GeminiCandidate(BaseModel):
+    content: GeminiContent
+    finishReason: Optional[str] = "STOP"
+    index: Optional[int] = 0
+
+
+class GeminiResponse(BaseModel):
+    candidates: List[GeminiCandidate]
+    usageMetadata: Optional[GeminiUsageMetadata] = None
+    modelVersion: Optional[str] = None
+
+
 class Usage(BaseModel):
     prompt_tokens: int
     completion_tokens: int
