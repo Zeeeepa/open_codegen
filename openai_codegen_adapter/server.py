@@ -596,34 +596,80 @@ async def call_codegen_api(messages: List[Dict], model: str = "claude-3-5-sonnet
                 "temperature": 0.7
             }
             
-            headers = {
-                "Authorization": f"Bearer {CODEGEN_API_TOKEN}",
-                "Content-Type": "application/json",
-                "X-Organization-ID": CODEGEN_ORG_ID
-            }
+            # Try different authentication header combinations
+            auth_variants = [
+                {
+                    "Authorization": f"Bearer {CODEGEN_API_TOKEN}",
+                    "Content-Type": "application/json",
+                    "X-Organization-ID": CODEGEN_ORG_ID
+                },
+                {
+                    "Authorization": f"Bearer {CODEGEN_API_TOKEN}",
+                    "Content-Type": "application/json"
+                },
+                {
+                    "Authorization": f"Token {CODEGEN_API_TOKEN}",
+                    "Content-Type": "application/json",
+                    "X-Organization-ID": CODEGEN_ORG_ID
+                },
+                {
+                    "X-API-Key": CODEGEN_API_TOKEN,
+                    "Content-Type": "application/json",
+                    "X-Organization-ID": CODEGEN_ORG_ID
+                }
+            ]
             
             logger.info(f"🚀 Calling Codegen API with org_id={CODEGEN_ORG_ID}")
             logger.info(f"📝 Payload: {json.dumps(payload, indent=2)}")
             
-            response = await client.post(
+            # Try multiple possible API endpoints
+            api_urls = [
                 "https://api.codegen.com/v1/chat/completions",
-                json=payload,
-                headers=headers
+                "https://api.codegen.ai/v1/chat/completions", 
+                "https://codegen.com/api/v1/chat/completions",
+                "https://codegen.ai/api/v1/chat/completions"
+            ]
+            
+            last_error = None
+            for api_url in api_urls:
+                for i, headers in enumerate(auth_variants):
+                    try:
+                        logger.info(f"🔄 Trying API URL: {api_url} with auth variant {i+1}")
+                        response = await client.post(
+                            api_url,
+                            json=payload,
+                            headers=headers
+                        )
+                        
+                        logger.info(f"📡 Response Status: {response.status_code} from {api_url}")
+                        
+                        if response.status_code == 200:
+                            result = response.json()
+                            logger.info(f"✅ Success! Response: {json.dumps(result, indent=2)}")
+                            return result
+                        elif response.status_code == 404:
+                            logger.warning(f"⚠️ 404 Not Found for {api_url} with auth {i+1}")
+                            last_error = f"404 Not Found: {api_url}"
+                            continue
+                        elif response.status_code == 401:
+                            logger.warning(f"⚠️ 401 Unauthorized for {api_url} with auth {i+1}")
+                            last_error = f"401 Unauthorized: {api_url}"
+                            continue
+                        else:
+                            error_text = response.text
+                            logger.error(f"❌ API Error {response.status_code} from {api_url}: {error_text}")
+                            last_error = f"{response.status_code}: {error_text}"
+                            
+                    except httpx.ConnectError as e:
+                        logger.warning(f"⚠️ Connection error for {api_url}: {e}")
+                        last_error = f"Connection error: {e}"
+                        continue
+                        
+            # If we get here, all URLs and auth methods failed
+            raise HTTPException(
+                status_code=500,
+                detail=f"All Codegen API endpoints and auth methods failed. Last error: {last_error}"
             )
-            
-            logger.info(f"📡 Codegen API Response Status: {response.status_code}")
-            
-            if response.status_code == 200:
-                result = response.json()
-                logger.info(f"��� Success! Response: {json.dumps(result, indent=2)}")
-                return result
-            else:
-                error_text = response.text
-                logger.error(f"❌ Codegen API Error {response.status_code}: {error_text}")
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Codegen API error: {error_text}"
-                )
                 
     except httpx.TimeoutException:
         logger.error("⏰ Codegen API request timed out")
