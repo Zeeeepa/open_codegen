@@ -5,7 +5,7 @@ Enhanced with Anthropic Claude API compatibility.
 """
 
 from typing import List, Optional, Dict, Any, Union, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 import time
 import uuid
 
@@ -63,6 +63,14 @@ class AnthropicRequest(BaseModel):
 class AnthropicUsage(BaseModel):
     input_tokens: int
     output_tokens: int
+    
+    @field_validator('input_tokens', 'output_tokens', mode='before')
+    @classmethod
+    def convert_float_to_int(cls, v):
+        """Convert float values to integers for token counts"""
+        if isinstance(v, float):
+            return int(round(v))
+        return v
 
 
 class AnthropicResponse(BaseModel):
@@ -103,6 +111,7 @@ class GeminiGenerationConfig(BaseModel):
 
 
 class GeminiRequest(BaseModel):
+    model: str  # Add missing model field
     contents: List[GeminiContent]
     generationConfig: Optional[GeminiGenerationConfig] = None
     systemInstruction: Optional[GeminiContent] = None
