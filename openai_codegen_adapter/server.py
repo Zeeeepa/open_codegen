@@ -3,6 +3,7 @@ FastAPI server providing OpenAI-compatible API endpoints.
 Based on h2ogpt's server.py structure and patterns.
 Enhanced with comprehensive logging for completion tracking and OpenAI response generation.
 Enhanced with Anthropic Claude API compatibility.
+Enhanced with Web UI for service control.
 """
 
 import logging
@@ -11,8 +12,11 @@ import time
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
+import os
+from pathlib import Path
 
 from .models import (
     ChatRequest, TextRequest, ChatResponse, TextResponse,
@@ -76,6 +80,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add static files for Web UI
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 def log_request_start(endpoint: str, request_data: dict):
     """Log the start of a request with enhanced details."""
     logger.info(f"🚀 REQUEST START | Endpoint: {endpoint}")
@@ -124,14 +131,6 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get("/")
-async def root():
-    """Root endpoint for health check."""
-    return {
-        "message": "OpenAI Codegen Adapter",
-        "version": "1.0.0",
-        "status": "running"
-    }
 
 
 @app.get("/v1/models")
@@ -571,6 +570,112 @@ async def health_check():
             return {"status": "unhealthy", "codegen": "disconnected"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
+
+
+# Service state management
+class ServiceState:
+    def __init__(self):
+        self.is_enabled = True  # Service starts enabled by default
+        self.last_toggled = datetime.now()
+    
+    def toggle(self):
+        self.is_enabled = not self.is_enabled
+        self.last_toggled = datetime.now()
+        logger.info(f"Service {'enabled' if self.is_enabled else 'disabled'} at {self.last_toggled}")
+        return self.is_enabled
+    
+    def get_status(self):
+        return {
+            "status": "on" if self.is_enabled else "off",
+            "last_toggled": self.last_toggled.isoformat(),
+            "uptime": str(datetime.now() - self.last_toggled)
+        }
+
+# Global service state
+service_state = ServiceState()
+
+
+@app.get("/", response_class=HTMLResponse)
+async def web_ui():
+    """Serve the Web UI for service control."""
+    static_path = Path("static/index.html")
+    if static_path.exists():
+        return HTMLResponse(content=static_path.read_text(), status_code=200)
+    else:
+        return HTMLResponse(
+            content="""
+            <html>
+                <body>
+                    <h1>OpenAI Codegen Adapter</h1>
+                    <p>Web UI not found. Please ensure static/index.html exists.</p>
+                    <p><a href="/health">Health Check</a></p>
+                </body>
+            </html>
+            """,
+            status_code=200
+        )
+
+
+@app.get("/api/status")
+async def get_service_status():
+    """Get current service status."""
+    try:
+        status_data = service_state.get_status()
+        
+        # Add health check information
+        health_status = await health_check()
+        status_data["health"] = health_status
+        
+        return status_data
+    except Exception as e:
+        logger.error(f"Error getting service status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get service status")
+
+
+@app.post("/api/toggle")
+async def toggle_service():
+    """Toggle service on/off."""
+    try:
+        new_status = service_state.toggle()
+        status_data = service_state.get_status()
+        
+        logger.info(f"Service toggled to: {'ON' if new_status else 'OFF'}")
+        
+        return {
+            "message": f"Service {'enabled' if new_status else 'disabled'} successfully",
+            **status_data
+        }
+    except Exception as e:
+        logger.error(f"Error toggling service: {e}")
+        raise HTTPException(status_code=500, detail="Failed to toggle service")
+
+
+# Middleware to check service status for API endpoints
+@app.middleware("http")
+async def service_status_middleware(request: Request, call_next):
+    """Middleware to check if service is enabled for API endpoints."""
+    # Allow access to Web UI, status, toggle, and health endpoints
+    allowed_paths = ["/", "/api/status", "/api/toggle", "/health", "/static"]
+    
+    if any(request.url.path.startswith(path) for path in allowed_paths):
+        response = await call_next(request)
+        return response
+    
+    # Check if service is enabled for other endpoints
+    if not service_state.is_enabled:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "message": "Service is currently disabled. Use the Web UI to enable it.",
+                    "type": "service_disabled",
+                    "code": "service_disabled"
+                }
+            }
+        )
+    
+    response = await call_next(request)
+    return response
 
 
 if __name__ == "__main__":

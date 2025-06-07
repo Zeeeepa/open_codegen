@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Codegen Adapter - Control Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            min-width: 400px;
+            max-width: 500px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 300;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .status-section {
+            margin: 40px 0;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .status-on {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .status-off {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .status-loading {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .toggle-button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+            min-width: 150px;
+        }
+
+        .toggle-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .toggle-button:active {
+            transform: translateY(0);
+        }
+
+        .toggle-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .info-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px 0;
+        }
+
+        .info-label {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success-message {
+            background: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Codegen Adapter</h1>
+            <p>Control Panel</p>
+        </div>
+
+        <div class="status-section">
+            <div id="statusIndicator" class="status-indicator status-loading">
+                <div class="status-dot"></div>
+                <span id="statusText">Loading...</span>
+            </div>
+            
+            <button id="toggleButton" class="toggle-button" disabled>
+                <span id="buttonText">Loading...</span>
+            </button>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <div class="info-section">
+            <div class="info-item">
+                <span class="info-label">Server URL:</span>
+                <span class="info-value" id="serverUrl">http://localhost:8887</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">API Endpoint:</span>
+                <span class="info-value">http://localhost:8887/v1</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Last Updated:</span>
+                <span class="info-value" id="lastUpdated">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CodegenController {
+            constructor() {
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.statusText = document.getElementById('statusText');
+                this.toggleButton = document.getElementById('toggleButton');
+                this.buttonText = document.getElementById('buttonText');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.successMessage = document.getElementById('successMessage');
+                this.lastUpdated = document.getElementById('lastUpdated');
+                
+                this.isLoading = false;
+                this.currentStatus = null;
+                
+                this.init();
+            }
+
+            async init() {
+                this.toggleButton.addEventListener('click', () => this.toggleService());
+                await this.updateStatus();
+                
+                // Auto-refresh status every 5 seconds
+                setInterval(() => this.updateStatus(), 5000);
+            }
+
+            async updateStatus() {
+                if (this.isLoading) return;
+                
+                try {
+                    const response = await fetch('/api/status');
+                    const data = await response.json();
+                    
+                    this.currentStatus = data.status;
+                    this.updateUI(data);
+                    this.hideMessages();
+                    
+                } catch (error) {
+                    console.error('Failed to fetch status:', error);
+                    this.showError('Failed to connect to server');
+                    this.setOfflineStatus();
+                }
+            }
+
+            updateUI(data) {
+                const isOn = data.status === 'on';
+                
+                // Update status indicator
+                this.statusIndicator.className = `status-indicator ${isOn ? 'status-on' : 'status-off'}`;
+                this.statusText.textContent = isOn ? 'ON' : 'OFF';
+                
+                // Update toggle button
+                this.toggleButton.disabled = false;
+                this.buttonText.textContent = isOn ? 'Turn Off' : 'Turn On';
+                
+                // Update last updated time
+                this.lastUpdated.textContent = new Date().toLocaleTimeString();
+            }
+
+            setOfflineStatus() {
+                this.statusIndicator.className = 'status-indicator status-off';
+                this.statusText.textContent = 'OFFLINE';
+                this.toggleButton.disabled = true;
+                this.buttonText.textContent = 'Unavailable';
+            }
+
+            async toggleService() {
+                if (this.isLoading) return;
+                
+                this.isLoading = true;
+                this.toggleButton.disabled = true;
+                this.buttonText.innerHTML = '<div class="loading-spinner"></div>Processing...';
+                
+                try {
+                    const response = await fetch('/api/toggle', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.showSuccess(`Service ${data.status === 'on' ? 'started' : 'stopped'} successfully`);
+                        await this.updateStatus();
+                    } else {
+                        this.showError(data.message || 'Failed to toggle service');
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to toggle service:', error);
+                    this.showError('Failed to communicate with server');
+                } finally {
+                    this.isLoading = false;
+                    this.toggleButton.disabled = false;
+                    this.buttonText.textContent = this.currentStatus === 'on' ? 'Turn Off' : 'Turn On';
+                }
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                this.successMessage.style.display = 'none';
+                
+                setTimeout(() => this.hideMessages(), 5000);
+            }
+
+            showSuccess(message) {
+                this.successMessage.textContent = message;
+                this.successMessage.style.display = 'block';
+                this.errorMessage.style.display = 'none';
+                
+                setTimeout(() => this.hideMessages(), 3000);
+            }
+
+            hideMessages() {
+                this.errorMessage.style.display = 'none';
+                this.successMessage.style.display = 'none';
+            }
+        }
+
+        // Initialize the controller when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new CodegenController();
+        });
+    </script>
+</body>
+</html>
+
