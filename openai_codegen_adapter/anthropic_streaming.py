@@ -58,7 +58,7 @@ async def collect_anthropic_streaming_response(
         raise
 
 
-async def create_anthropic_streaming_response(
+def create_anthropic_streaming_response(
     codegen_client: CodegenClient,
     prompt: str,
     model: str,
@@ -145,4 +145,3 @@ async def create_anthropic_streaming_response(
             "Content-Type": "text/event-stream",
         }
     )
-

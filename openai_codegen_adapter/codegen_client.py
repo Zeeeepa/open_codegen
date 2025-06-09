@@ -81,12 +81,68 @@ class CodegenClient:
                         logger.debug(f"🔍 COMPLETION CHECK | Task: {task.id} | Status: {status} | Attempt: {retry_count + 1} | Duration: {elapsed_time:.2f}s")
                         
                         if status == "COMPLETE":
+                            # Try multiple ways to get the task result
+                            result_content = None
+                            
+                            # Method 1: Check task.result
                             if hasattr(task, 'result') and task.result:
-                                logger.info(f"Task {task.id} completed with result")
-                                yield task.result
+                                result_content = task.result
+                                logger.info(f"Task {task.id} completed with result from task.result")
+                            
+                            # Method 2: Check task.output (alternative attribute)
+                            elif hasattr(task, 'output') and task.output:
+                                result_content = task.output
+                                logger.info(f"Task {task.id} completed with result from task.output")
+                            
+                            # Method 3: Check task.response (another alternative)
+                            elif hasattr(task, 'response') and task.response:
+                                result_content = task.response
+                                logger.info(f"Task {task.id} completed with result from task.response")
+                            
+                            # Method 4: Check task.content (yet another alternative)
+                            elif hasattr(task, 'content') and task.content:
+                                result_content = task.content
+                                logger.info(f"Task {task.id} completed with result from task.content")
+                            
+                            # Method 5: Try to refresh and get result again
+                            elif hasattr(task, 'get_result'):
+                                try:
+                                    result_content = task.get_result()
+                                    logger.info(f"Task {task.id} completed with result from task.get_result()")
+                                except Exception as e:
+                                    logger.warning(f"Failed to get result via get_result(): {e}")
+                            
+                            # If we found content, yield it
+                            if result_content:
+                                # Clean and validate the content
+                                if isinstance(result_content, str) and result_content.strip():
+                                    yield result_content.strip()
+                                elif hasattr(result_content, '__str__'):
+                                    content_str = str(result_content).strip()
+                                    if content_str:
+                                        yield content_str
+                                    else:
+                                        logger.warning(f"Task {task.id} result converted to empty string")
+                                        yield "Task completed but returned empty content."
+                                else:
+                                    logger.warning(f"Task {task.id} result is not a string: {type(result_content)}")
+                                    yield f"Task completed with result type: {type(result_content).__name__}"
                             else:
-                                logger.warning(f"Task {task.id} completed but no result found")
-                                yield "Task completed successfully."
+                                # Log all available attributes for debugging
+                                available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
+                                logger.warning(f"Task {task.id} completed but no result found. Available attributes: {available_attrs}")
+                                
+                                # Try to get any text-like attributes
+                                for attr in ['message', 'text', 'data', 'body']:
+                                    if hasattr(task, attr):
+                                        attr_value = getattr(task, attr)
+                                        if attr_value and isinstance(attr_value, str) and attr_value.strip():
+                                            logger.info(f"Found content in task.{attr}")
+                                            yield attr_value.strip()
+                                            break
+                                else:
+                                    # Last resort: return a more informative message
+                                    yield "Task completed successfully but no response content was found. This may indicate an issue with the Codegen API response format."
                             break
                         elif status == "FAILED":
                             error_msg = getattr(task, 'error', 'Task failed with unknown error')

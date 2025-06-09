@@ -518,7 +518,7 @@ async def gemini_generate_content(request: GeminiRequest):
         if is_streaming:
             # Return streaming response
             logger.info("🌊 Initiating Gemini streaming response...")
-            return create_gemini_streaming_response(codegen_client, prompt)
+            return create_gemini_streaming_response(codegen_client, prompt, request.model)
         else:
             # Return complete response
             logger.info("📦 Initiating Gemini non-streaming response...")
