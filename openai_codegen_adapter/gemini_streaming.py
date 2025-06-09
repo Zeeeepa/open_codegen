@@ -58,9 +58,10 @@ async def collect_gemini_streaming_response(
         raise
 
 
-async def create_gemini_streaming_response(
+def create_gemini_streaming_response(
     codegen_client: CodegenClient,
-    prompt: str
+    prompt: str,
+    model: str
 ) -> StreamingResponse:
     """
     Create a streaming response compatible with Gemini's API.
@@ -68,6 +69,7 @@ async def create_gemini_streaming_response(
     Args:
         codegen_client: The Codegen client instance
         prompt: The prompt to send
+        model: Model name to include in response
         
     Returns:
         StreamingResponse: FastAPI streaming response
@@ -137,4 +139,3 @@ async def create_gemini_streaming_response(
             "Content-Type": "text/plain",
         }
     )
-
