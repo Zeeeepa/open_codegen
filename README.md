@@ -1,6 +1,6 @@
 # OpenAI Codegen Adapter
 
-An adapter that provides OpenAI-compatible API endpoints for Codegen, enabling seamless integration with existing OpenAI client libraries and tools.
+A FastAPI-based adapter that provides OpenAI-compatible API endpoints for Codegen, enabling seamless integration with existing OpenAI client libraries and tools. Features comprehensive support for multiple AI service providers including Anthropic Claude, Google Vertex AI, and local development servers.
 
 ## 🌟 Features
 
@@ -10,9 +10,23 @@ An adapter that provides OpenAI-compatible API endpoints for Codegen, enabling s
 - **Multiple Service Providers**: Support for 10+ AI service providers
 - **Local Development Support**: Works with Ollama, LM Studio, vLLM, and more
 - **Comprehensive Configuration**: Easy setup with environment variables and CLI tools
+- **Web UI Dashboard**: Interactive dashboard for testing and monitoring
 - **Real Codegen Integration**: Powered by actual Codegen capabilities, not placeholders
 
 ## 🚀 Quick Start
+
+**Simple one-command launch:**
+
+```bash
+python server.py
+```
+
+That's it! The server will start with all features enabled:
+- 🌐 Web UI at: http://localhost:8887
+- 🔗 OpenAI API at: http://localhost:8887/v1
+- 🔗 Anthropic API at: http://localhost:8887/v1/messages  
+- 🔗 Google API at: http://localhost:8887/v1/gemini
+- 🧪 Test endpoints at: /api/test/{provider}
 
 ### Option 1: Use Official Cloud Providers
 ```bash
@@ -38,6 +52,37 @@ export OPENAI_BASE_URL="http://localhost:11434"
 
 # Start the adapter
 python -m openai_codegen_adapter.main
+```
+
+## 🌐 Web UI Dashboard
+
+The adapter includes a comprehensive web dashboard accessible at http://localhost:8887 after starting the server.
+
+### ✨ Dashboard Features
+- **🔧 Service Configuration**: Configure base URLs for all providers
+- **🧪 Interactive Testing**: One-click test buttons for each service
+- **💬 Real-Time History**: Live display of API calls and responses
+- **📊 Session Statistics**: Track usage, success rates, and timing
+- **🎯 Status Monitoring**: Live service status indicators
+
+### 📱 Dashboard Interface
+```
+🚀 OpenAI Codegen Adapter Dashboard
+┌───────────────────────────────────────────────────────────┐
+│ 🔧 Service Configuration    │ 📊 Session Statistics      │
+│ ┌─────────────────────────┐ │ ┌─────────────────────────┐ │
+│ │ OpenAI API              │ │ │ 4 Total Calls           │ │
+│ │ http://localhost:8887/v1│ │ │ 100% Success Rate       │ │
+│ │ [🟢] [Save] [🤖 Test]   │ │ │ GEMINI Last Service     │ │
+│ └─────────────────────────┘ │ │ 10/06/2025 Last Call    │ │
+│                             │ └─────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│ 💬 Session History                                      │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [06:07] OPENAI: "Hello!" → "Hi there! How can I help?" │ │
+│ │ [06:06] ANTHROPIC: "Test" → "This is a test response"  │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## 🌐 Supported Service Providers
@@ -98,6 +143,7 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 
 - **[Quick Start Guide](docs/QUICK_START_GUIDE.md)** - Get up and running in minutes
 - **[Service Provider Configuration](docs/SERVICE_PROVIDER_CONFIGURATION.md)** - Complete configuration guide
+- **[Web UI Dashboard](docs/WEB_UI_DASHBOARD.md)** - Interactive dashboard for testing and monitoring
 
 ## 🧪 Testing
 
@@ -173,3 +219,28 @@ services:
       - CODEGEN_ORG_ID=${CODEGEN_ORG_ID}
       - CODEGEN_TOKEN=${CODEGEN_TOKEN}
 ```
+
+## API Endpoints
+
+### OpenAI Compatible
+- **`/v1/chat/completions`** - OpenAI chat completions
+- **`/v1/completions`** - OpenAI text completions
+- **`/v1/models`** - List available models
+
+### Anthropic Compatible
+- **`/v1/messages`** - Anthropic Claude messages
+- **`/v1/anthropic/completions`** - Anthropic completions
+
+### Google Gemini Compatible
+- **`/v1/gemini/generateContent`** - Google Gemini content generation
+- **`/v1/gemini/completions`** - Google Gemini completions
+
+## How it Works
+
+1. The server runs on `localhost:8887` and provides both OpenAI and Anthropic-compatible endpoints
+2. Tests use standard clients but point to our local server
+3. Requests are transformed and sent to Codegen API
+4. Responses are transformed back to the appropriate API format
+
+That's it! 🚀
+

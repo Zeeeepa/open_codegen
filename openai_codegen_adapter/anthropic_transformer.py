@@ -11,29 +11,42 @@ import uuid
 
 def anthropic_request_to_prompt(request: AnthropicRequest) -> str:
     """
-    Convert Anthropic API request to a prompt string for Codegen SDK.
-    
-    Args:
-        request: AnthropicRequest object
-        
-    Returns:
-        str: Formatted prompt string
+    Enhanced conversion of Anthropic request to prompt with full content block support.
+    Handles text, images, and system instructions according to official API spec.
     """
     prompt_parts = []
     
-    # Add system message if provided
+    # Add system instruction if provided
     if request.system:
         prompt_parts.append(f"System: {request.system}")
     
-    # Add conversation messages
+    # Process messages with full content block support
     for message in request.messages:
-        if message.role == "user":
-            prompt_parts.append(f"Human: {message.content}")
-        elif message.role == "assistant":
-            prompt_parts.append(f"Assistant: {message.content}")
+        role = message.role.title()
+        
+        if isinstance(message.content, str):
+            # Simple string content
+            prompt_parts.append(f"{role}: {message.content}")
+        elif isinstance(message.content, list):
+            # Content blocks (text, images, etc.)
+            content_parts = []
+            for block in message.content:
+                if block.type == "text" and block.text:
+                    content_parts.append(block.text)
+                elif block.type == "image" and block.source:
+                    # Handle image content - for now, describe it
+                    content_parts.append("[Image content provided]")
+                # Add support for other content types as needed
+            
+            if content_parts:
+                prompt_parts.append(f"{role}: {' '.join(content_parts)}")
     
-    # Add final assistant prompt
-    prompt_parts.append("Assistant:")
+    # Add generation parameters as context
+    if request.temperature is not None and request.temperature != 1.0:
+        prompt_parts.append(f"[Temperature: {request.temperature}]")
+    
+    if request.stop_sequences:
+        prompt_parts.append(f"[Stop sequences: {', '.join(request.stop_sequences)}]")
     
     return "\n\n".join(prompt_parts)
 
@@ -41,65 +54,55 @@ def anthropic_request_to_prompt(request: AnthropicRequest) -> str:
 def create_anthropic_response(
     content: str,
     model: str,
-    input_tokens: int = None,
-    output_tokens: int = None
+    prompt_tokens: int,
+    completion_tokens: int,
+    stop_reason: str = "end_turn",
+    stop_sequence: str = None
 ) -> AnthropicResponse:
     """
-    Create an Anthropic API compatible response.
-    
-    Args:
-        content: The response content
-        model: Model name used
-        input_tokens: Number of input tokens (estimated if not provided)
-        output_tokens: Number of output tokens (estimated if not provided)
-        
-    Returns:
-        AnthropicResponse: Formatted response
+    Enhanced creation of Anthropic response matching official API format.
     """
-    # Clean the content
-    cleaned_content = clean_content(content)
+    from .models import AnthropicResponse, AnthropicResponseContent, AnthropicUsage
     
-    # Estimate tokens if not provided
-    if output_tokens is None:
-        output_tokens = estimate_tokens(cleaned_content)
-    if input_tokens is None:
-        input_tokens = 0  # We don't have the original prompt here
-    
-    # Create the response
-    response = AnthropicResponse(
+    return AnthropicResponse(
+        content=[AnthropicResponseContent(type="text", text=content)],
         model=model,
-        content=[{"type": "text", "text": cleaned_content}],
+        stop_reason=stop_reason,
+        stop_sequence=stop_sequence,
         usage=AnthropicUsage(
-            input_tokens=input_tokens,
-            output_tokens=output_tokens
+            input_tokens=prompt_tokens,
+            output_tokens=completion_tokens
         )
     )
-    
-    return response
 
 
-def extract_anthropic_generation_params(request: AnthropicRequest) -> Dict[str, Any]:
+def extract_anthropic_generation_params(request: AnthropicRequest) -> dict:
     """
-    Extract generation parameters from Anthropic request.
-    
-    Args:
-        request: AnthropicRequest object
-        
-    Returns:
-        Dict[str, Any]: Generation parameters
+    Enhanced extraction of generation parameters with full Anthropic API support.
     """
-    params = {}
+    params = {
+        "stream": request.stream or False,
+        "max_tokens": request.max_tokens,
+        "model": request.model
+    }
     
     if request.temperature is not None:
         params["temperature"] = request.temperature
-    if request.max_tokens is not None:
-        params["max_tokens"] = request.max_tokens
+    
     if request.top_p is not None:
         params["top_p"] = request.top_p
+    
     if request.top_k is not None:
         params["top_k"] = request.top_k
+    
     if request.stop_sequences:
         params["stop_sequences"] = request.stop_sequences
+    
+    if request.system:
+        params["system"] = request.system
+    
+    if request.metadata:
+        params["metadata"] = request.metadata
     
     return params
 
@@ -151,4 +154,3 @@ def create_anthropic_stream_event(
         pass  # No additional data needed
     
     return event
-
