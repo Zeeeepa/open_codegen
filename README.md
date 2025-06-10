@@ -1,5 +1,89 @@
 # OpenAI Codegen Adapter - Simple Setup
 
+## 📚 Documentation
+
+- **[Quick Start Guide](docs/QUICK_START_GUIDE.md)** - Get up and running in minutes
+- **[Service Provider Configuration](docs/SERVICE_PROVIDER_CONFIGURATION.md)** - Complete configuration guide
+- **[Web UI Dashboard](docs/WEB_UI_DASHBOARD.md)** - Interactive dashboard for testing and monitoring
+
+## 🌐 Web UI Dashboard
+
+The adapter includes a comprehensive web dashboard for easy management and testing:
+
+### 🚀 Quick Dashboard Start
+```bash
+# Install dashboard dependencies
+pip install -r requirements-dashboard.txt
+
+# Start the dashboard
+python start_dashboard.py
+
+# Open browser to: http://127.0.0.1:8888
+```
+
+### ✨ Dashboard Features
+- **🔧 Service Configuration**: Configure base URLs for all providers
+- **🧪 Interactive Testing**: One-click test buttons for each service
+- **💬 Real-Time History**: Live display of API calls and responses
+- **📊 Session Statistics**: Track usage, success rates, and timing
+- **🎯 Status Monitoring**: Live service status indicators
+
+### 📱 Dashboard Interface
+```
+🚀 OpenAI Codegen Adapter Dashboard
+┌─────────────────────────────────────────────────────────┐
+│ 🔧 Service Configuration    │ 📊 Session Statistics      │
+│ ┌─────────────────────────┐ │ ┌─────────────────────────┐ │
+│ │ OpenAI API              │ │ │ 4 Total Calls           │ │
+│ │ http://localhost:8887/v1│ │ │ 100% Success Rate       │ │
+│ │ [🟢] [Save] [🤖 Test]   │ │ │ GEMINI Last Service     │ │
+│ └─────────────────────────┘ │ │ 10/06/2025 Last Call    │ │
+│                             │ └─────────────────────────┘ │
+├─────────────────────────────────────────────────────────┤
+│ 💬 Session History                                      │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ GEMINI                    10/06/2025, 00:57:32     │ │
+│ │ Prompt: What are three facts about space?          │ │
+│ │ Response: 🚀 Three Fascinating Space Facts...      │ │
+│ └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 🧪 Testing
+
+### Test with curl
+```bash
+curl -X POST http://localhost:8887/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-3.5-turbo",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
+
+### Test with Python
+```python
+import openai
+
+client = openai.OpenAI(
+    base_url="http://localhost:8887/v1",
+    api_key="dummy"  # Not needed for local development
+)
+
+response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Test with Dashboard
+1. Open http://127.0.0.1:8888 in your browser
+2. Configure service endpoints
+3. Click test buttons to run interactive tests
+4. View real-time results in the message history
+
 ## Quick Start
 
 ### 1. Configure Environment
