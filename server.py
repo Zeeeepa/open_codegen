@@ -3,25 +3,65 @@
 OpenAI Codegen Adapter Server
 ============================
 
-Simple launcher that starts the complete OpenAI Codegen Adapter server
-with Web UI, API endpoints, and testing capabilities.
+A unified server that provides OpenAI-compatible API endpoints for the Codegen service.
+Supports OpenAI, Anthropic, and Google API formats with a built-in web UI.
 
-Usage: python server.py
+Features:
+- OpenAI-compatible chat completions API
+- Anthropic Claude API compatibility  
+- Google Gemini API compatibility
+- Web UI for testing and configuration
+- Real-time service status control
+- Comprehensive API testing tools
+
+Usage:
+    python server.py
+
+The server will start on http://localhost:8887 with all features enabled.
 """
 
 import os
-import sys
 import uvicorn
+import sys
 from pathlib import Path
 
+# Load environment variables from .env file if it exists
+def load_env_file():
+    """Load environment variables from .env file"""
+    env_file = Path('.env')
+    if env_file.exists():
+        print("📄 Loading environment variables from .env file")
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip()
+    else:
+        print("⚠️ No .env file found, using system environment variables")
+
 def setup_environment():
-    """Set up required environment variables."""
-    # Set default credentials if not already set
-    if not os.environ.get('CODEGEN_ORG_ID'):
-        os.environ['CODEGEN_ORG_ID'] = "323"
+    """Setup environment variables with defaults"""
+    load_env_file()
     
-    if not os.environ.get('CODEGEN_TOKEN'):
-        os.environ['CODEGEN_TOKEN'] = "sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99"
+    # Set default values if not provided
+    defaults = {
+        'CODEGEN_ORG_ID': '323',
+        'CODEGEN_TOKEN': 'your-token-here',
+        'HOST': '127.0.0.1',
+        'PORT': '8887'
+    }
+    
+    for key, default_value in defaults.items():
+        if key not in os.environ:
+            os.environ[key] = default_value
+            print(f"🔧 Using default {key}: {default_value}")
+        else:
+            # Don't print the actual token for security
+            if 'TOKEN' in key:
+                print(f"✅ {key}: [CONFIGURED]")
+            else:
+                print(f"✅ {key}: {os.environ[key]}")
 
 def main():
     """Start the OpenAI Codegen Adapter server with all features."""
@@ -72,4 +112,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
