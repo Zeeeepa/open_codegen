@@ -18,6 +18,9 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
 from pathlib import Path
+import sys
+import subprocess
+import json
 
 from .models import (
     ChatRequest, TextRequest, AnthropicRequest, GeminiRequest,
@@ -594,7 +597,9 @@ async def gemini_generate_content(request: GeminiRequest):
         logger.debug(f"��️ Generation parameters: {gen_params}")
         
         # Check if streaming is requested
-        is_streaming = gen_params.get("stream", False)
+        is_streaming = False
+        if request.generationConfig and hasattr(request.generationConfig, 'stream'):
+            is_streaming = request.generationConfig.stream
         
         if is_streaming:
             # Return streaming response
@@ -1049,16 +1054,89 @@ async def toggle_service():
         new_status = service_state.toggle()
         status_data = service_state.get_status()
         
-        logger.info(f"Service toggled to: {'ON' if new_status else 'OFF'}")
-        
         return {
-            "message": f"Service {'enabled' if new_status else 'disabled'} successfully",
-            **status_data
+            "status": new_status,
+            "message": f"Service {'enabled' if new_status else 'disabled'}",
+            "data": status_data
         }
     except Exception as e:
         logger.error(f"Error toggling service: {e}")
         raise HTTPException(status_code=500, detail="Failed to toggle service")
 
+
+@app.post("/api/test/{provider}")
+async def test_provider(provider: str, request: dict):
+    """Test a specific provider using the test scripts."""
+    try:
+        # Validate provider
+        valid_providers = ["openai", "anthropic", "google"]
+        if provider not in valid_providers:
+            raise HTTPException(status_code=400, detail=f"Invalid provider. Must be one of: {valid_providers}")
+        
+        # Get test script path
+        script_path = Path(f"test_{provider}.py")
+        if not script_path.exists():
+            raise HTTPException(status_code=404, detail=f"Test script for {provider} not found")
+        
+        # Prepare command arguments
+        cmd = [sys.executable, str(script_path), "--json"]
+        
+        # Add custom prompt if provided
+        if "prompt" in request and request["prompt"]:
+            cmd.extend(["--prompt", request["prompt"]])
+        
+        # Add base URL if provided
+        if "base_url" in request and request["base_url"]:
+            cmd.extend(["--base-url", request["base_url"]])
+        
+        # Add model if provided
+        if "model" in request and request["model"]:
+            cmd.extend(["--model", request["model"]])
+        
+        # Run the test script
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        # Parse the JSON output
+        if result.stdout:
+            try:
+                test_result = json.loads(result.stdout)
+                return test_result
+            except json.JSONDecodeError:
+                # If JSON parsing fails, return raw output
+                return {
+                    "success": result.returncode == 0,
+                    "service": provider.title(),
+                    "response": result.stdout,
+                    "error": result.stderr if result.returncode != 0 else None
+                }
+        else:
+            return {
+                "success": False,
+                "service": provider.title(),
+                "response": "",
+                "error": result.stderr or "No output from test script"
+            }
+            
+    except subprocess.TimeoutExpired:
+        return {
+            "success": False,
+            "service": provider.title(),
+            "response": "",
+            "error": "Test script timed out after 30 seconds"
+        }
+    except Exception as e:
+        logger.error(f"Error testing {provider}: {e}")
+        return {
+            "success": False,
+            "service": provider.title(),
+            "response": "",
+            "error": str(e)
+        }
 
 # Middleware to check service status for API endpoints
 @app.middleware("http")
