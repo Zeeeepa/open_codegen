@@ -32,7 +32,7 @@ from .models import (
     ImageGenerationRequest, ImageGenerationResponse, ImageData
 )
 from .config import get_codegen_config, get_server_config
-from .codegen_client_fixed import CodegenClientFixed
+from .client import CodegenClient, ClientMode
 from .request_transformer import (
     chat_request_to_prompt, text_request_to_prompt,
     extract_generation_params
@@ -70,7 +70,7 @@ codegen_config = get_codegen_config()
 server_config = get_server_config()
 
 # Initialize Codegen client
-codegen_client = CodegenClientFixed(codegen_config)
+codegen_client = CodegenClient(codegen_config, mode=ClientMode.PRODUCTION)
 
 # Create FastAPI app
 app = FastAPI(
@@ -994,16 +994,18 @@ async def create_image(request: ImageGenerationRequest):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Enhanced health check with unified client statistics."""
     try:
-        # Test Codegen client
-        if codegen_client.agent:
-            return {"status": "healthy", "codegen": "connected"}
-        else:
-            return {"status": "unhealthy", "codegen": "disconnected"}
+        client_stats = codegen_client.get_stats()
+        return {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "client_stats": client_stats,
+            "client_type": "unified"
+        }
     except Exception as e:
+        logger.error(f"❌ Health check failed: {e}")
         return {"status": "unhealthy", "error": str(e)}
-
 
 # Service state management
 class ServiceState:
@@ -1155,6 +1157,50 @@ async def test_provider(provider: str, request: dict):
             "response": "",
             "error": str(e)
         }
+
+@app.post("/admin/clear-cache")
+async def clear_cache():
+    """Clear the response cache for fresh responses."""
+    try:
+        old_stats = codegen_client.get_cache_stats()
+        codegen_client.clear_cache()
+        return {
+            "status": "success",
+            "message": "Cache cleared successfully",
+            "previous_cache_stats": old_stats,
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"❌ Cache clear failed: {e}")
+        return {"status": "error", "error": str(e)}
+
+@app.post("/admin/set-mode")
+async def set_client_mode(mode: str):
+    """Change the client operation mode."""
+    try:
+        # Validate mode
+        try:
+            client_mode = ClientMode(mode.lower())
+        except ValueError:
+            return {
+                "status": "error", 
+                "error": f"Invalid mode. Valid modes: {[m.value for m in ClientMode]}"
+            }
+        
+        old_stats = codegen_client.get_stats()
+        codegen_client.set_mode(client_mode)
+        new_stats = codegen_client.get_stats()
+        
+        return {
+            "status": "success",
+            "message": f"Client mode changed to {mode}",
+            "old_mode": old_stats.get("mode"),
+            "new_mode": new_stats.get("mode"),
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"❌ Mode change failed: {e}")
+        return {"status": "error", "error": str(e)}
 
 # Middleware to check service status for API endpoints
 @app.middleware("http")

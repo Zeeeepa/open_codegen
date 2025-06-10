@@ -8,7 +8,7 @@ import asyncio
 import logging
 from typing import AsyncGenerator
 from fastapi.responses import StreamingResponse
-from .codegen_client import CodegenClient
+from .client import CodegenClient
 from .anthropic_transformer import create_anthropic_stream_event
 from .response_transformer import estimate_tokens
 
