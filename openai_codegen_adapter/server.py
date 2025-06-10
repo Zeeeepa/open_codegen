@@ -32,7 +32,7 @@ from .models import (
     ImageGenerationRequest, ImageGenerationResponse, ImageData
 )
 from .config import get_codegen_config, get_server_config
-from .codegen_client import CodegenClient
+from .codegen_client_enhanced import CodegenClientEnhanced
 from .request_transformer import (
     chat_request_to_prompt, text_request_to_prompt,
     extract_generation_params
@@ -70,7 +70,7 @@ codegen_config = get_codegen_config()
 server_config = get_server_config()
 
 # Initialize Codegen client
-codegen_client = CodegenClient(codegen_config)
+codegen_client = CodegenClientEnhanced(codegen_config)
 
 # Create FastAPI app
 app = FastAPI(
@@ -976,16 +976,34 @@ async def create_image(request: ImageGenerationRequest):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Enhanced health check with cache statistics."""
     try:
-        # Test Codegen client
-        if codegen_client.agent:
-            return {"status": "healthy", "codegen": "connected"}
-        else:
-            return {"status": "unhealthy", "codegen": "disconnected"}
+        cache_stats = codegen_client.get_cache_stats()
+        return {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "cache_stats": cache_stats,
+            "client_type": "enhanced"
+        }
     except Exception as e:
+        logger.error(f"❌ Health check failed: {e}")
         return {"status": "unhealthy", "error": str(e)}
 
+@app.post("/admin/clear-cache")
+async def clear_cache():
+    """Clear the response cache for fresh responses."""
+    try:
+        old_stats = codegen_client.get_cache_stats()
+        codegen_client.clear_cache()
+        return {
+            "status": "success",
+            "message": "Cache cleared successfully",
+            "previous_cache_stats": old_stats,
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"❌ Cache clear failed: {e}")
+        return {"status": "error", "error": str(e)}
 
 # Service state management
 class ServiceState:
