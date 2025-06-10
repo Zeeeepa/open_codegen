@@ -32,7 +32,7 @@ from .models import (
     ImageGenerationRequest, ImageGenerationResponse, ImageData
 )
 from .config import get_codegen_config, get_server_config
-from .codegen_client import CodegenClient
+from .codegen_client_fixed import CodegenClientFixed
 from .request_transformer import (
     chat_request_to_prompt, text_request_to_prompt,
     extract_generation_params
@@ -70,7 +70,7 @@ codegen_config = get_codegen_config()
 server_config = get_server_config()
 
 # Initialize Codegen client
-codegen_client = CodegenClient(codegen_config)
+codegen_client = CodegenClientFixed(codegen_config)
 
 # Create FastAPI app
 app = FastAPI(
@@ -276,34 +276,50 @@ async def chat_completions(request: ChatRequest):
             # Return streaming response
             logger.info("🌊 Initiating streaming response...")
             return create_streaming_response(
-                codegen_client,
-                prompt,
-                request.model,
-                f"chatcmpl-{hash(prompt) % 1000000}"
+                codegen_client, prompt, request.model, 
+                message_id=f"chatcmpl-{int(time.time())}"
             )
         else:
-            # Return complete response
-            logger.info("📦 Initiating non-streaming response...")
-            content = await collect_streaming_response(codegen_client, prompt)
+            # Non-streaming response with improved timeout and error handling
+            logger.info("📝 Generating non-streaming response...")
             
-            # Estimate token counts
-            prompt_tokens = estimate_tokens(prompt)
-            completion_tokens = estimate_tokens(content)
+            # Collect response with timeout
+            response_content = ""
+            start_time = time.time()
             
-            logger.info(f"🔢 Token estimation - Prompt: {prompt_tokens}, Completion: {completion_tokens}")
+            try:
+                async for chunk in codegen_client.run_task(prompt, stream=False):
+                    response_content += chunk
+                    # Log progress for user visibility
+                    elapsed = time.time() - start_time
+                    logger.info(f"📊 Response progress: {len(response_content)} chars in {elapsed:.1f}s")
+                
+                # Ensure we have content
+                if not response_content.strip():
+                    response_content = "I apologize, but I wasn't able to generate a response. Please try rephrasing your request."
+                    logger.warning("⚠️ Empty response generated, using fallback message")
+                
+                logger.info(f"✅ Response completed: {len(response_content)} characters")
+                
+            except Exception as e:
+                logger.error(f"❌ Error generating response: {e}")
+                response_content = f"I encountered an error while processing your request: {str(e)}. Please try again."
+            
+            # Create response with proper token counting
+            prompt_tokens = codegen_client.count_tokens(prompt)
+            completion_tokens = codegen_client.count_tokens(response_content)
             
             response = create_chat_response(
-                content=content,
+                content=response_content,
                 model=request.model,
                 prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens
+                completion_tokens=completion_tokens,
+                finish_reason="stop"
             )
             
-            # Log the OpenAI response generation
-            processing_time = time.time() - start_time
-            log_openai_response_generation(response.dict(), processing_time)
+            # Log response details for debugging
+            logger.info(f"📤 Sending response: {len(response_content)} chars, {completion_tokens} tokens")
             
-            logger.info(f"✅ Chat completion successful in {processing_time:.2f}s")
             return response
             
     except Exception as e:
@@ -477,41 +493,38 @@ async def anthropic_messages(request: AnthropicRequest):
         else:
             # Return complete response
             logger.info("📦 Initiating Anthropic non-streaming response...")
-            content = await collect_anthropic_streaming_response(codegen_client, prompt)
+            response_content = ""
+            start_time = time.time()
             
-            # Estimate token counts
-            prompt_tokens = estimate_tokens(prompt)
-            completion_tokens = estimate_tokens(content)
+            try:
+                async for chunk in codegen_client.run_task(prompt, stream=False):
+                    response_content += chunk
+                    elapsed = time.time() - start_time
+                    logger.info(f"📊 Anthropic response progress: {len(response_content)} chars in {elapsed:.1f}s")
+                
+                if not response_content.strip():
+                    response_content = "I apologize, but I wasn't able to generate a response. Please try rephrasing your request."
+                    logger.warning("⚠️ Empty Anthropic response, using fallback")
+                
+                logger.info(f"✅ Anthropic response completed: {len(response_content)} characters")
+                
+            except Exception as e:
+                logger.error(f"❌ Error generating Anthropic response: {e}")
+                response_content = f"I encountered an error: {str(e)}. Please try again."
             
-            logger.info(f"🔢 Token estimation - Input: {prompt_tokens}, Output: {completion_tokens}")
-            
-            # Determine stop reason based on content and parameters
-            stop_reason = "end_turn"
-            stop_sequence = None
-            
-            if request.stop_sequences:
-                for seq in request.stop_sequences:
-                    if seq in content:
-                        stop_reason = "stop_sequence"
-                        stop_sequence = seq
-                        break
-            
-            if completion_tokens >= request.max_tokens:
-                stop_reason = "max_tokens"
+            # Create Anthropic response
+            input_tokens = codegen_client.count_tokens(prompt)
+            output_tokens = codegen_client.count_tokens(response_content)
             
             response = create_anthropic_response(
-                content=content,
+                content=response_content,
                 model=request.model,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                stop_reason=stop_reason,
-                stop_sequence=stop_sequence
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                message_id=message_id
             )
             
-            # Log the response generation
-            processing_time = time.time() - start_time
-            logger.info(f"📤 Anthropic response generated in {processing_time:.2f}s")
-            
+            logger.info(f"📤 Sending Anthropic response: {len(response_content)} chars, {output_tokens} tokens")
             return response
             
     except Exception as e:
@@ -596,7 +609,7 @@ async def gemini_generate_content(request: GeminiRequest):
         gen_params = extract_gemini_generation_params(request)
         logger.debug(f"��️ Generation parameters: {gen_params}")
         
-        # Check if streaming is requested
+        # Check if streaming is requested via generation config
         is_streaming = False
         if request.generationConfig and hasattr(request.generationConfig, 'stream'):
             is_streaming = request.generationConfig.stream
@@ -608,25 +621,37 @@ async def gemini_generate_content(request: GeminiRequest):
         else:
             # Return complete response
             logger.info("📦 Initiating Gemini non-streaming response...")
-            content = await collect_gemini_streaming_response(codegen_client, prompt)
+            response_content = ""
+            start_time = time.time()
             
-            # Estimate token counts
-            prompt_tokens = estimate_tokens(prompt)
-            completion_tokens = estimate_tokens(content)
+            try:
+                async for chunk in codegen_client.run_task(prompt, stream=False):
+                    response_content += chunk
+                    elapsed = time.time() - start_time
+                    logger.info(f"📊 Gemini response progress: {len(response_content)} chars in {elapsed:.1f}s")
+                
+                if not response_content.strip():
+                    response_content = "I apologize, but I wasn't able to generate a response. Please try rephrasing your request."
+                    logger.warning("⚠️ Empty Gemini response, using fallback")
+                
+                logger.info(f"✅ Gemini response completed: {len(response_content)} characters")
+                
+            except Exception as e:
+                logger.error(f"❌ Error generating Gemini response: {e}")
+                response_content = f"I encountered an error: {str(e)}. Please try again."
             
-            logger.info(f"🔢 Token estimation - Input: {prompt_tokens}, Output: {completion_tokens}")
+            # Create Gemini response
+            input_tokens = codegen_client.count_tokens(prompt)
+            output_tokens = codegen_client.count_tokens(response_content)
             
             response = create_gemini_response(
-                content=content,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens
+                content=response_content,
+                model=request.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens
             )
             
-            # Log the Gemini response generation
-            processing_time = time.time() - start_time
-            logger.info(f"📤 Gemini response generated in {processing_time:.2f}s")
-            
-            logger.info(f"✅ Gemini content generation successful in {processing_time:.2f}s")
+            logger.info(f"📤 Sending Gemini response: {len(response_content)} chars, {output_tokens} tokens")
             return response
             
     except Exception as e:
@@ -697,18 +722,11 @@ async def vertex_ai_generate_content(model: str, request: GeminiRequest):
             
             logger.info(f"🔢 Token estimation - Input: {prompt_tokens}, Output: {completion_tokens}")
             
-            # Determine finish reason
-            finish_reason = "STOP"
-            if request.generationConfig and request.generationConfig.maxOutputTokens:
-                if completion_tokens >= request.generationConfig.maxOutputTokens:
-                    finish_reason = "MAX_TOKENS"
-            
             response = create_gemini_response(
                 content=content,
                 model=model,
                 prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                finish_reason=finish_reason
+                completion_tokens=completion_tokens
             )
             
             # Log the response generation
