@@ -4,7 +4,7 @@ Based on h2ogpt's server.py request/response models.
 Enhanced with Anthropic Claude API compatibility.
 """
 
-from typing import List, Optional, Dict, Any, Union, Literal
+from typing import Optional, List, Union, Any, Dict, Literal
 from pydantic import BaseModel, Field
 import time
 import uuid
@@ -185,3 +185,80 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
+
+
+# Add new request models for missing OpenAI endpoints
+class EmbeddingRequest(BaseModel):
+    """Request model for OpenAI embeddings endpoint."""
+    input: Union[str, List[str]]
+    model: str = "text-embedding-ada-002"
+    encoding_format: Optional[str] = "float"
+    dimensions: Optional[int] = None
+    user: Optional[str] = None
+
+class AudioTranscriptionRequest(BaseModel):
+    """Request model for OpenAI audio transcription endpoint."""
+    file: str  # Base64 encoded audio file
+    model: str = "whisper-1"
+    language: Optional[str] = None
+    prompt: Optional[str] = None
+    response_format: Optional[str] = "json"
+    temperature: Optional[float] = 0
+
+class AudioTranslationRequest(BaseModel):
+    """Request model for OpenAI audio translation endpoint."""
+    file: str  # Base64 encoded audio file
+    model: str = "whisper-1"
+    prompt: Optional[str] = None
+    response_format: Optional[str] = "json"
+    temperature: Optional[float] = 0
+
+class ImageGenerationRequest(BaseModel):
+    """Request model for OpenAI image generation endpoint."""
+    prompt: str
+    model: Optional[str] = "dall-e-3"
+    n: Optional[int] = 1
+    quality: Optional[str] = "standard"
+    response_format: Optional[str] = "url"
+    size: Optional[str] = "1024x1024"
+    style: Optional[str] = "vivid"
+    user: Optional[str] = None
+
+
+# Add new response models for missing OpenAI endpoints
+class EmbeddingData(BaseModel):
+    """Individual embedding data."""
+    object: str = "embedding"
+    embedding: List[float]
+    index: int
+
+class EmbeddingUsage(BaseModel):
+    """Usage information for embeddings."""
+    prompt_tokens: int
+    total_tokens: int
+
+class EmbeddingResponse(BaseModel):
+    """Response model for OpenAI embeddings endpoint."""
+    object: str = "list"
+    data: List[EmbeddingData]
+    model: str
+    usage: EmbeddingUsage
+
+class AudioTranscriptionResponse(BaseModel):
+    """Response model for OpenAI audio transcription endpoint."""
+    text: str
+
+class AudioTranslationResponse(BaseModel):
+    """Response model for OpenAI audio translation endpoint."""
+    text: str
+
+class ImageData(BaseModel):
+    """Individual image data."""
+    url: Optional[str] = None
+    b64_json: Optional[str] = None
+    revised_prompt: Optional[str] = None
+
+class ImageGenerationResponse(BaseModel):
+    """Response model for OpenAI image generation endpoint."""
+    created: int
+    data: List[ImageData]
