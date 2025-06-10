@@ -2,6 +2,21 @@
 
 A FastAPI-based adapter that provides OpenAI API compatibility for the Codegen SDK, with full support for Anthropic Claude and Google Vertex AI APIs.
 
+## 🚀 Quick Start
+
+**Simple one-command launch:**
+
+```bash
+python server.py
+```
+
+That's it! The server will start with all features enabled:
+- 🌐 Web UI at: http://localhost:8887
+- 🔗 OpenAI API at: http://localhost:8887/v1
+- 🔗 Anthropic API at: http://localhost:8887/v1/messages  
+- 🔗 Google API at: http://localhost:8887/v1/gemini
+- 🧪 Test endpoints at: /api/test/{provider}
+
 ## 📚 Documentation
 
 - **[Quick Start Guide](docs/QUICK_START_GUIDE.md)** - Get up and running in minutes
@@ -10,18 +25,7 @@ A FastAPI-based adapter that provides OpenAI API compatibility for the Codegen S
 
 ## 🌐 Web UI Dashboard
 
-The adapter includes a comprehensive web dashboard for easy management and testing:
-
-### 🚀 Quick Dashboard Start
-```bash
-# Install dashboard dependencies
-pip install -r requirements-dashboard.txt
-
-# Start the dashboard
-python start_dashboard.py
-
-# Open browser to: http://127.0.0.1:8888
-```
+The adapter includes a comprehensive web dashboard accessible at http://localhost:8887 after starting the server.
 
 ### ✨ Dashboard Features
 - **🔧 Service Configuration**: Configure base URLs for all providers
@@ -118,6 +122,7 @@ python start_dashboard.py
 | `/health` | GET | Health check | ✅ Working |
 | `/api/status` | GET | Service status | ✅ Working |
 | `/api/toggle` | POST | Toggle service on/off | ✅ Working |
+| `/api/test/{provider}` | POST | Test specific provider | ✅ Working |
 | `/` | GET | Web UI | ✅ Working |
 
 ## 🔧 Installation & Setup
@@ -140,7 +145,7 @@ python start_dashboard.py
    pip install -r requirements.txt
    ```
 
-3. **Configure environment**
+3. **Configure environment (optional)**
    ```bash
    export CODEGEN_API_KEY="your_codegen_api_key"
    export CODEGEN_ORG_ID="your_org_id"
@@ -148,10 +153,10 @@ python start_dashboard.py
 
 4. **Start the server**
    ```bash
-   python -m openai_codegen_adapter.main
+   python server.py
    ```
 
-5. **Access the API**
+5. **Access the services**
    - API Base URL: `http://localhost:8887`
    - Web UI: `http://localhost:8887`
    - Health Check: `http://localhost:8887/health`
@@ -185,11 +190,24 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-### Test with Dashboard
-1. Open http://127.0.0.1:8888 in your browser
-2. Configure service endpoints
+### Test with Web UI
+1. Open http://localhost:8887 in your browser
+2. Configure service endpoints in the URL configuration panel
 3. Click test buttons to run interactive tests
 4. View real-time results in the message history
+
+### Test Scripts
+Run individual test scripts for each provider:
+```bash
+# Test OpenAI endpoint
+python test_openai.py --base-url http://localhost:8887/v1
+
+# Test Anthropic endpoint  
+python test_anthropic.py --base-url http://localhost:8887
+
+# Test Google endpoint
+python test_google.py --base-url http://localhost:8887
+```
 
 ## 📖 Usage Examples
 
@@ -235,30 +253,15 @@ curl -X POST http://localhost:8887/v1/embeddings \
   }'
 ```
 
-## 🧪 Comprehensive Testing
-
-Run the comprehensive test suite to validate all endpoints:
-
-```bash
-python test_comprehensive_api.py
-```
-
-This will test:
-- All OpenAI API endpoints
-- All Anthropic API endpoints
-- All Google Vertex AI endpoints
-- Error handling and response formats
-- Streaming functionality
-
 ## 🔧 Configuration
 
 ### Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `CODEGEN_API_KEY` | Your Codegen API key | ✅ Yes |
-| `CODEGEN_ORG_ID` | Your Codegen organization ID | ✅ Yes |
-| `SERVER_HOST` | Server host (default: 0.0.0.0) | ❌ No |
+| `CODEGEN_API_KEY` | Your Codegen API key | ❌ No (defaults provided) |
+| `CODEGEN_ORG_ID` | Your Codegen organization ID | ❌ No (defaults provided) |
+| `SERVER_HOST` | Server host (default: 127.0.0.1) | ❌ No |
 | `SERVER_PORT` | Server port (default: 8887) | ❌ No |
 
 ### Supported Models
@@ -287,7 +290,6 @@ This will test:
 ```
 openai_codegen_adapter/
 ├── __init__.py              # Package initialization
-├── main.py                  # Application entry point
 ├── server.py                # FastAPI server and endpoints
 ├── models.py                # Pydantic models for requests/responses
 ├── config.py                # Configuration management
@@ -299,6 +301,12 @@ openai_codegen_adapter/
 ├── anthropic_transformer.py # Anthropic format transformations
 ├── gemini_streaming.py      # Gemini streaming support
 └── gemini_transformer.py    # Gemini format transformations
+
+static/
+└── index.html               # Web UI dashboard
+
+test_*.py                    # Individual test scripts
+server.py                    # Simple launcher script
 ```
 
 ### Adding New Endpoints
@@ -306,7 +314,7 @@ openai_codegen_adapter/
 1. **Define models** in `models.py`
 2. **Add endpoint** in `server.py`
 3. **Implement transformers** if needed
-4. **Add tests** in `test_comprehensive_api.py`
+4. **Add tests** in test scripts
 5. **Update documentation**
 
 ## 🤝 Contributing
@@ -326,7 +334,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **Issues**: [GitHub Issues](https://github.com/Zeeeepa/open_codegen/issues)
 - **Documentation**: This README and inline code documentation
-- **Testing**: Use `test_comprehensive_api.py` for validation
+- **Testing**: Use test scripts for validation
 
 ## 🎯 Roadmap
 
