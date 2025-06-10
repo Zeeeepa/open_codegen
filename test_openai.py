@@ -1,129 +1,174 @@
 #!/usr/bin/env python3
 """
-OpenAI API Test
-==============
-
-Comprehensive test for OpenAI-compatible endpoints through the Codegen adapter.
-Supports both CLI and UI integration with custom prompts.
+Test script for OpenAI API endpoint
 """
-
-import os
-import sys
+import requests
 import json
 import argparse
-from openai import OpenAI
+import sys
+import time
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-def test_openai_api(prompt=None, base_url=None, model=None):
-    """
-    Test the OpenAI API endpoint with custom or default parameters.
+def create_session_with_retries():
+    """Create a requests session with retry strategy and timeout handling"""
+    session = requests.Session()
     
-    Args:
-        prompt (str): Custom prompt to test with
-        base_url (str): Custom base URL for the API
-        model (str): Model to use for the test
+    # Define retry strategy
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+    )
     
-    Returns:
-        dict: Test result with success status, response, and metadata
-    """
-    # Default values
-    default_prompt = "Explain quantum computing in simple terms."
-    default_base_url = os.getenv("OPENAI_BASE_URL", "http://localhost:8887/v1")
-    default_model = "gpt-3.5-turbo"
+    # Mount adapter with retry strategy
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
     
-    # Use provided values or defaults
-    test_prompt = prompt or default_prompt
-    test_base_url = base_url or default_base_url
-    test_model = model or default_model
-    api_key = os.getenv("OPENAI_API_KEY", "dummy-key")
+    return session
+
+def test_openai_api(base_url="http://localhost:8887/v1", model="gpt-3.5-turbo", prompt="Hello! Please respond with just 'Hi there!'", timeout=15):
+    """Test OpenAI API endpoint with improved timeout handling"""
+    
+    endpoint = f"{base_url}/chat/completions"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer dummy-key"  # The server doesn't validate this
+    }
+    
+    data = {
+        "model": model,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 50,
+        "temperature": 0.7
+    }
+    
+    session = create_session_with_retries()
     
     try:
-        print(f"🤖 Testing OpenAI API", file=sys.stderr)
-        print(f"📍 Endpoint: {test_base_url}", file=sys.stderr)
-        print(f"🎯 Model: {test_model}", file=sys.stderr)
-        print(f"💬 Prompt: {test_prompt}", file=sys.stderr)
+        print(f"🤖 Testing OpenAI API")
+        print(f"📍 Endpoint: {endpoint}")
+        print(f"🎯 Model: {model}")
+        print(f"💬 Prompt: {prompt}")
+        print(f"⏱️ Timeout: {timeout}s")
+        print("🔄 Making request...")
         
-        client = OpenAI(
-            api_key=api_key,
-            base_url=test_base_url
+        start_time = time.time()
+        
+        response = session.post(
+            endpoint,
+            headers=headers,
+            json=data,
+            timeout=timeout  # Set explicit timeout
         )
         
-        response = client.chat.completions.create(
-            model=test_model,
-            messages=[
-                {"role": "user", "content": test_prompt}
-            ],
-            max_tokens=200,
-            temperature=0.7
-        )
+        end_time = time.time()
+        duration = end_time - start_time
         
-        response_text = response.choices[0].message.content
+        print(f"⏱️ Request completed in {duration:.2f}s")
         
-        result = {
-            "success": True,
-            "service": "OpenAI",
-            "endpoint": f"{test_base_url}/chat/completions",
-            "model": response.model,
-            "prompt": test_prompt,
-            "response": response_text,
-            "usage": {
-                "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                "completion_tokens": response.usage.completion_tokens if response.usage else 0,
-                "total_tokens": response.usage.total_tokens if response.usage else 0
-            },
-            "metadata": {
-                "finish_reason": response.choices[0].finish_reason,
-                "created": response.created,
-                "id": response.id
+        if response.status_code == 200:
+            result = response.json()
+            content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+            usage = result.get('usage', {})
+            
+            return {
+                "success": True,
+                "service": "OpenAI",
+                "endpoint": endpoint,
+                "model": model,
+                "prompt": prompt,
+                "response": content,
+                "duration": duration,
+                "usage": usage,
+                "status_code": response.status_code
             }
-        }
-        
-        print(json.dumps(result))
-        return result
-        
-    except Exception as e:
-        error_msg = str(e)
-        
-        result = {
+        else:
+            return {
+                "success": False,
+                "service": "OpenAI",
+                "endpoint": endpoint,
+                "model": model,
+                "prompt": prompt,
+                "response": "",
+                "error": response.text,
+                "duration": duration,
+                "status_code": response.status_code,
+                "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            }
+            
+    except requests.exceptions.Timeout:
+        return {
             "success": False,
             "service": "OpenAI",
-            "endpoint": f"{test_base_url}/chat/completions",
-            "model": test_model,
-            "prompt": test_prompt,
+            "endpoint": endpoint,
+            "model": model,
+            "prompt": prompt,
             "response": "",
-            "error": error_msg,
+            "error": f"Request timed out after {timeout} seconds",
+            "duration": timeout,
+            "status_code": 0,
             "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         }
-        
-        print(json.dumps(result))
-        return result
+    except requests.exceptions.ConnectionError as e:
+        return {
+            "success": False,
+            "service": "OpenAI",
+            "endpoint": endpoint,
+            "model": model,
+            "prompt": prompt,
+            "response": "",
+            "error": f"Connection error: {str(e)}",
+            "duration": 0,
+            "status_code": 0,
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "service": "OpenAI",
+            "endpoint": endpoint,
+            "model": model,
+            "prompt": prompt,
+            "response": "",
+            "error": str(e),
+            "duration": 0,
+            "status_code": 0,
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        }
 
 def main():
     """Main entry point for CLI usage."""
     parser = argparse.ArgumentParser(description="Test OpenAI API endpoint")
-    parser.add_argument("--prompt", type=str, help="Custom prompt to test with")
-    parser.add_argument("--base-url", type=str, help="Custom base URL for the API")
-    parser.add_argument("--model", type=str, help="Model to use for the test")
+    parser.add_argument("--prompt", default="Hello! Please respond with just 'Hi there!'", help="Custom prompt to test with")
+    parser.add_argument("--base-url", default="http://localhost:8887/v1", help="Custom base URL for the API")
+    parser.add_argument("--model", default="gpt-3.5-turbo", help="Model to use for the test")
+    parser.add_argument("--timeout", type=int, default=15, help="Request timeout in seconds")
     parser.add_argument("--json", action="store_true", help="Output JSON format")
     
     args = parser.parse_args()
     
     result = test_openai_api(
-        prompt=args.prompt,
         base_url=args.base_url,
-        model=args.model
+        model=args.model,
+        prompt=args.prompt,
+        timeout=args.timeout
     )
     
-    if not args.json:
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
         if result["success"]:
-            print(f"✅ OpenAI API Test Successful!", file=sys.stderr)
-            print(f"📝 Response: {result['response']}", file=sys.stderr)
-            print(f"🔢 Tokens: {result['usage']['total_tokens']}", file=sys.stderr)
+            print(f"✅ Success! Response: {result['response']}")
+            print(f"📊 Usage: {result['usage']}")
+            print(f"⏱️ Duration: {result['duration']:.2f}s")
         else:
-            print(f"❌ OpenAI API Test Failed!", file=sys.stderr)
-            print(f"🚨 Error: {result['error']}", file=sys.stderr)
-    
-    sys.exit(0 if result["success"] else 1)
+            print(f"❌ Failed: {result['error']}")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
-
