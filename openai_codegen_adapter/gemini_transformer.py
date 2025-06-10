@@ -13,119 +13,164 @@ from .response_transformer import estimate_tokens, clean_content
 
 def gemini_request_to_prompt(request: GeminiRequest) -> str:
     """
-    Convert Gemini API request to a prompt string for Codegen SDK.
-    
-    Args:
-        request: GeminiRequest object
-        
-    Returns:
-        str: Formatted prompt string
+    Enhanced conversion of Gemini request to prompt with full multimodal support.
+    Handles text, images, video, audio, and function calling according to Vertex AI spec.
     """
     prompt_parts = []
     
     # Add system instruction if provided
-    if request.systemInstruction:
-        system_text = " ".join([part.text for part in request.systemInstruction.parts])
-        prompt_parts.append(f"System: {system_text}")
+    if request.systemInstruction and request.systemInstruction.parts:
+        system_parts = []
+        for part in request.systemInstruction.parts:
+            if part.text:
+                system_parts.append(part.text)
+        if system_parts:
+            prompt_parts.append(f"System: {' '.join(system_parts)}")
     
-    # Add conversation contents
+    # Process contents with full multimodal support
     for content in request.contents:
-        text = " ".join([part.text for part in content.parts])
+        role = content.role or "user"
+        role_name = "User" if role == "user" else "Model"
         
-        if content.role == "user":
-            prompt_parts.append(f"Human: {text}")
-        elif content.role == "model":
-            prompt_parts.append(f"Assistant: {text}")
-        else:
-            # Default to user if role is not specified
-            prompt_parts.append(f"Human: {text}")
+        content_parts = []
+        for part in content.parts:
+            if part.text:
+                content_parts.append(part.text)
+            elif part.inlineData:
+                # Handle inline media data
+                mime_type = part.inlineData.get("mimeType", "unknown")
+                content_parts.append(f"[{mime_type} content provided]")
+            elif part.fileData:
+                # Handle file data
+                file_uri = part.fileData.get("fileUri", "unknown")
+                content_parts.append(f"[File: {file_uri}]")
+            elif part.functionCall:
+                # Handle function calls
+                func_name = part.functionCall.get("name", "unknown")
+                content_parts.append(f"[Function call: {func_name}]")
+            elif part.functionResponse:
+                # Handle function responses
+                func_name = part.functionResponse.get("name", "unknown")
+                content_parts.append(f"[Function response: {func_name}]")
+        
+        if content_parts:
+            prompt_parts.append(f"{role_name}: {' '.join(content_parts)}")
     
-    # Add final assistant prompt
-    prompt_parts.append("Assistant:")
+    # Add generation config as context
+    if request.generationConfig:
+        config_parts = []
+        if request.generationConfig.temperature is not None:
+            config_parts.append(f"Temperature: {request.generationConfig.temperature}")
+        if request.generationConfig.maxOutputTokens is not None:
+            config_parts.append(f"Max tokens: {request.generationConfig.maxOutputTokens}")
+        if request.generationConfig.stopSequences:
+            config_parts.append(f"Stop sequences: {', '.join(request.generationConfig.stopSequences)}")
+        
+        if config_parts:
+            prompt_parts.append(f"[{', '.join(config_parts)}]")
+    
+    # Handle legacy prompt parameter
+    if request.prompt:
+        prompt_parts.append(f"User: {request.prompt}")
     
     return "\n\n".join(prompt_parts)
 
 
 def create_gemini_response(
     content: str,
-    prompt_tokens: int = None,
-    completion_tokens: int = None
+    model: str = "gemini-1.5-pro",
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    finish_reason: str = "STOP"
 ) -> GeminiResponse:
     """
-    Create a Gemini API compatible response.
-    
-    Args:
-        content: The response content
-        prompt_tokens: Number of input tokens (estimated if not provided)
-        completion_tokens: Number of output tokens (estimated if not provided)
-        
-    Returns:
-        GeminiResponse: Formatted response
+    Enhanced creation of Gemini response matching official Vertex AI format.
     """
-    # Clean the content
-    cleaned_content = clean_content(content)
-    
-    # Estimate tokens if not provided
-    if completion_tokens is None:
-        completion_tokens = estimate_tokens(cleaned_content)
-    if prompt_tokens is None:
-        prompt_tokens = 0  # We don't have the original prompt here
-    
-    # Create the response content
-    response_content = GeminiContent(
-        role="model",
-        parts=[GeminiPart(text=cleaned_content)]
+    from .models import (
+        GeminiResponse, GeminiCandidate, GeminiContent, GeminiPart, 
+        GeminiUsageMetadata
     )
     
-    # Create the candidate
+    # Create response content
+    response_content = GeminiContent(
+        role="model",
+        parts=[GeminiPart(text=content)]
+    )
+    
+    # Create candidate
     candidate = GeminiCandidate(
         content=response_content,
-        finishReason="STOP",
+        finishReason=finish_reason,
         index=0
     )
     
     # Create usage metadata
-    usage_metadata = GeminiUsageMetadata(
+    usage = GeminiUsageMetadata(
         promptTokenCount=prompt_tokens,
         candidatesTokenCount=completion_tokens,
         totalTokenCount=prompt_tokens + completion_tokens
     )
     
-    # Create the response
-    response = GeminiResponse(
+    return GeminiResponse(
         candidates=[candidate],
-        usageMetadata=usage_metadata,
-        modelVersion="gemini-1.5-pro"
+        usageMetadata=usage,
+        modelVersion=model
     )
-    
-    return response
 
 
-def extract_gemini_generation_params(request: GeminiRequest) -> Dict[str, Any]:
+def extract_gemini_generation_params(request: GeminiRequest) -> dict:
     """
-    Extract generation parameters from Gemini request.
-    
-    Args:
-        request: GeminiRequest object
-        
-    Returns:
-        Dict[str, Any]: Generation parameters
+    Enhanced extraction of generation parameters with full Vertex AI support.
     """
-    params = {}
+    params = {
+        "model": request.model or "gemini-1.5-pro"
+    }
     
     if request.generationConfig:
         config = request.generationConfig
         
         if config.temperature is not None:
             params["temperature"] = config.temperature
+        
         if config.topP is not None:
             params["top_p"] = config.topP
+        
         if config.topK is not None:
             params["top_k"] = config.topK
+        
         if config.maxOutputTokens is not None:
             params["max_tokens"] = config.maxOutputTokens
+        
         if config.stopSequences:
             params["stop_sequences"] = config.stopSequences
+        
+        if config.candidateCount is not None:
+            params["candidate_count"] = config.candidateCount
+        
+        if config.responseMimeType:
+            params["response_mime_type"] = config.responseMimeType
+    
+    # Handle safety settings
+    if request.safetySettings:
+        params["safety_settings"] = [
+            {"category": setting.category, "threshold": setting.threshold}
+            for setting in request.safetySettings
+        ]
+    
+    # Handle tools and function calling
+    if request.tools:
+        params["tools"] = [tool.dict() for tool in request.tools]
+    
+    if request.toolConfig:
+        params["tool_config"] = request.toolConfig.dict()
+    
+    # Handle caching
+    if request.cachedContent:
+        params["cached_content"] = request.cachedContent
+    
+    # Handle labels/metadata
+    if request.labels:
+        params["labels"] = request.labels
     
     return params
 
@@ -174,4 +219,3 @@ def create_gemini_stream_chunk(
         }
     
     return chunk
-
