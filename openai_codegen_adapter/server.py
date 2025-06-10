@@ -21,41 +21,19 @@ from pathlib import Path
 import sys
 import subprocess
 import json
+import asyncio
+import logging
+from typing import Dict, List, Optional, Any, Union
+from contextlib import asynccontextmanager
 
-from .models import (
-    ChatRequest, TextRequest, AnthropicRequest, GeminiRequest,
-    ChatResponse, TextResponse, AnthropicResponse, GeminiResponse,
-    ErrorResponse, ErrorDetail,
-    EmbeddingRequest, EmbeddingResponse, EmbeddingData, EmbeddingUsage,
-    AudioTranscriptionRequest, AudioTranscriptionResponse,
-    AudioTranslationRequest, AudioTranslationResponse,
-    ImageGenerationRequest, ImageGenerationResponse, ImageData
-)
-from .config import get_codegen_config, get_server_config
-from .codegen_client import CodegenClient
-from .request_transformer import (
-    chat_request_to_prompt, text_request_to_prompt,
-    extract_generation_params
-)
-from .response_transformer import (
-    create_chat_response, create_text_response,
-    estimate_tokens, clean_content
-)
-from .streaming import create_streaming_response, collect_streaming_response
-from .anthropic_transformer import (
-    anthropic_request_to_prompt, create_anthropic_response,
-    extract_anthropic_generation_params
-)
-from .anthropic_streaming import (
-    create_anthropic_streaming_response, collect_anthropic_streaming_response
-)
-from .gemini_transformer import (
-    gemini_request_to_prompt, create_gemini_response,
-    extract_gemini_generation_params
-)
-from .gemini_streaming import (
-    create_gemini_streaming_response, collect_gemini_streaming_response
-)
+# Add context retrieval import
+try:
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from codegen_integration import CodegenClient, get_agent_response_for_context
+    CONTEXT_RETRIEVAL_AVAILABLE = True
+except ImportError:
+    CONTEXT_RETRIEVAL_AVAILABLE = False
+    print("⚠️ Context retrieval not available. Install codegen_integration module.")
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -105,7 +83,7 @@ def log_openai_response_generation(response_data: dict, processing_time: float):
     """Log OpenAI API compatible response generation."""
     logger.info(f"📤 OPENAI RESPONSE GENERATED | Processing Time: {processing_time:.2f}s")
     logger.info(f"   🆔 Response ID: {response_data.get('id', 'N/A')}")
-    logger.info(f"   ���������� Model: {response_data.get('model', 'N/A')}")
+    logger.info(f"   ������������ Model: {response_data.get('model', 'N/A')}")
     logger.info(f"   📝 Choices: {len(response_data.get('choices', []))}")
     
     if 'usage' in response_data:
@@ -1065,77 +1043,200 @@ async def toggle_service():
 
 
 @app.post("/api/test/{provider}")
-async def test_provider(provider: str, request: dict):
-    """Test a specific provider using the test scripts."""
+async def test_provider(provider: str, request: ChatRequest):
+    """Test endpoint for different providers"""
     try:
-        # Validate provider
-        valid_providers = ["openai", "anthropic", "google"]
-        if provider not in valid_providers:
-            raise HTTPException(status_code=400, detail=f"Invalid provider. Must be one of: {valid_providers}")
-        
-        # Get test script path
-        script_path = Path(f"test_{provider}.py")
-        if not script_path.exists():
-            raise HTTPException(status_code=404, detail=f"Test script for {provider} not found")
-        
-        # Prepare command arguments
-        cmd = [sys.executable, str(script_path), "--json"]
-        
-        # Add custom prompt if provided
-        if "prompt" in request and request["prompt"]:
-            cmd.extend(["--prompt", request["prompt"]])
-        
-        # Add base URL if provided
-        if "base_url" in request and request["base_url"]:
-            cmd.extend(["--base-url", request["base_url"]])
-        
-        # Add model if provided
-        if "model" in request and request["model"]:
-            cmd.extend(["--model", request["model"]])
-        
-        # Run the test script
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=30
+        if provider == "openai":
+            return await chat_completions(request)
+        elif provider == "anthropic":
+            anthropic_req = AnthropicRequest(
+                model=request.model,
+                messages=request.messages,
+                max_tokens=request.max_tokens or 1000,
+                temperature=request.temperature,
+                stream=request.stream
+            )
+            return await anthropic_messages(anthropic_req)
+        elif provider == "google":
+            gemini_req = GeminiRequest(
+                model=request.model,
+                messages=request.messages,
+                max_tokens=request.max_tokens or 1000,
+                temperature=request.temperature,
+                stream=request.stream
+            )
+            return await gemini_generate(gemini_req)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+    except Exception as e:
+        logger.error(f"Test endpoint error for {provider}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Context Retrieval Endpoints
+@app.post("/api/context/retrieve")
+async def retrieve_context(request: Dict[str, Any]):
+    """
+    Retrieve context from Codegen agent runs for AI prompting.
+    
+    Request body:
+    {
+        "prompt": "Your prompt for the agent",
+        "max_length": 4000,  // optional, max length of response
+        "timeout": 300       // optional, timeout in seconds
+    }
+    
+    Response:
+    {
+        "success": true,
+        "context_text": "Clean text response...",
+        "length": 1234,
+        "truncated": false,
+        "agent_run_id": 12345,
+        "web_url": "https://..."
+    }
+    """
+    if not CONTEXT_RETRIEVAL_AVAILABLE:
+        raise HTTPException(
+            status_code=503, 
+            detail="Context retrieval not available. Missing codegen_integration module."
         )
+    
+    try:
+        prompt = request.get('prompt', '')
+        max_length = request.get('max_length', 4000)
+        timeout = request.get('timeout', 300)
         
-        # Parse the JSON output
-        if result.stdout:
-            try:
-                test_result = json.loads(result.stdout)
-                return test_result
-            except json.JSONDecodeError:
-                # If JSON parsing fails, return raw output
-                return {
-                    "success": result.returncode == 0,
-                    "service": provider.title(),
-                    "response": result.stdout,
-                    "error": result.stderr if result.returncode != 0 else None
-                }
+        if not prompt:
+            raise HTTPException(status_code=400, detail="Prompt is required")
+        
+        logger.info(f"Creating agent run for context retrieval: {prompt[:100]}...")
+        
+        # Create client and get response
+        client = CodegenClient(timeout=timeout)
+        result = client.create_and_wait(prompt, timeout)
+        
+        if result.status.lower() == 'completed' and result.result:
+            context_text = result.get_context_text(max_length)
+            
+            return {
+                "success": True,
+                "context_text": context_text,
+                "length": len(context_text),
+                "truncated": len(context_text) >= max_length,
+                "agent_run_id": result.agent_run_id,
+                "web_url": result.web_url,
+                "status": result.status
+            }
         else:
             return {
                 "success": False,
-                "service": provider.title(),
-                "response": "",
-                "error": result.stderr or "No output from test script"
+                "error": f"Agent run failed with status: {result.status}",
+                "context_text": "",
+                "length": 0,
+                "truncated": False,
+                "agent_run_id": result.agent_run_id,
+                "web_url": result.web_url,
+                "status": result.status
             }
             
-    except subprocess.TimeoutExpired:
-        return {
-            "success": False,
-            "service": provider.title(),
-            "response": "",
-            "error": "Test script timed out after 30 seconds"
-        }
     except Exception as e:
-        logger.error(f"Error testing {provider}: {e}")
+        logger.error(f"Context retrieval error: {e}")
         return {
             "success": False,
-            "service": provider.title(),
-            "response": "",
-            "error": str(e)
+            "error": str(e),
+            "context_text": "",
+            "length": 0,
+            "truncated": False
+        }
+
+@app.get("/api/context/status/{agent_run_id}")
+async def get_context_status(agent_run_id: int):
+    """
+    Get the status of a context retrieval agent run.
+    
+    Response:
+    {
+        "agent_run_id": 12345,
+        "status": "completed",
+        "result": "Full response text...",
+        "web_url": "https://...",
+        "context_text": "Clean text for AI..."
+    }
+    """
+    if not CONTEXT_RETRIEVAL_AVAILABLE:
+        raise HTTPException(
+            status_code=503, 
+            detail="Context retrieval not available. Missing codegen_integration module."
+        )
+    
+    try:
+        client = CodegenClient()
+        result = client.get_agent_run(agent_run_id)
+        
+        return {
+            "agent_run_id": result.agent_run_id,
+            "status": result.status,
+            "result": result.result,
+            "web_url": result.web_url,
+            "context_text": result.get_context_text(4000) if result.result else "",
+            "error": result.error
+        }
+        
+    except Exception as e:
+        logger.error(f"Status check error for agent run {agent_run_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/context/create")
+async def create_context_run(request: Dict[str, Any]):
+    """
+    Create a new agent run for context retrieval (async).
+    
+    Request body:
+    {
+        "prompt": "Your prompt for the agent"
+    }
+    
+    Response:
+    {
+        "success": true,
+        "agent_run_id": 12345,
+        "status": "running",
+        "web_url": "https://..."
+    }
+    """
+    if not CONTEXT_RETRIEVAL_AVAILABLE:
+        raise HTTPException(
+            status_code=503, 
+            detail="Context retrieval not available. Missing codegen_integration module."
+        )
+    
+    try:
+        prompt = request.get('prompt', '')
+        
+        if not prompt:
+            raise HTTPException(status_code=400, detail="Prompt is required")
+        
+        logger.info(f"Creating async agent run: {prompt[:100]}...")
+        
+        client = CodegenClient()
+        agent_run_id = client.create_agent_run(prompt)
+        
+        # Get initial status
+        result = client.get_agent_run(agent_run_id)
+        
+        return {
+            "success": True,
+            "agent_run_id": agent_run_id,
+            "status": result.status,
+            "web_url": result.web_url
+        }
+        
+    except Exception as e:
+        logger.error(f"Agent run creation error: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "agent_run_id": None
         }
 
 # Middleware to check service status for API endpoints
