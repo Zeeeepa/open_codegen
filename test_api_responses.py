@@ -27,7 +27,7 @@ def test_openai_api():
     
     try:
         start_time = time.time()
-        response = requests.post(url, headers=headers, json=data, timeout=180)
+        response = requests.post(url, headers=headers, json=data, timeout=90)  # Increased timeout
         elapsed = time.time() - start_time
         
         print(f"   Status: {response.status_code}")
@@ -62,7 +62,7 @@ def test_anthropic_api():
     
     try:
         start_time = time.time()
-        response = requests.post(url, headers=headers, json=data, timeout=180)
+        response = requests.post(url, headers=headers, json=data, timeout=90)
         elapsed = time.time() - start_time
         
         print(f"   Status: {response.status_code}")
@@ -96,7 +96,7 @@ def test_google_api():
     
     try:
         start_time = time.time()
-        response = requests.post(url, headers=headers, json=data, timeout=180)
+        response = requests.post(url, headers=headers, json=data, timeout=90)  # Increased timeout
         elapsed = time.time() - start_time
         
         print(f"   Status: {response.status_code}")
@@ -174,4 +174,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -62,7 +62,21 @@ class CodegenClientFixed:
                 async for chunk in self._stream_task_simple(task):
                     yield chunk
             else:
-                # For non-streaming, use simplified completion check
+                # For non-streaming, use simplified completion check with immediate check
+                # First, try an immediate check in case task completes very quickly
+                try:
+                    task.refresh()
+                    status = str(task.status).upper()
+                    if status in ["COMPLETE", "COMPLETED", "FINISHED", "DONE"]:
+                        result = self._extract_result_simple(task)
+                        if result:
+                            logger.info(f"⚡ Task {task.id} completed immediately!")
+                            yield result
+                            return
+                except Exception:
+                    pass  # Continue with normal polling
+                
+                # Normal polling for longer tasks
                 result = await self._wait_for_completion_simple(task)
                 if result:
                     yield result
@@ -79,8 +93,8 @@ class CodegenClientFixed:
         Simplified completion waiting with faster polling and reliable response extraction.
         """
         start_time = time.time()
-        max_wait_time = 120  # 2 minutes max
-        poll_interval = 2   # Poll every 2 seconds (much faster)
+        max_wait_time = 60   # Reduced to 1 minute for faster API responses
+        poll_interval = 1    # Poll every 1 second (even faster)
         max_polls = max_wait_time // poll_interval
         
         logger.info(f"⏳ Waiting for task {task.id} completion (max {max_wait_time}s)")
@@ -109,8 +123,8 @@ class CodegenClientFixed:
                 
             except ApiException as e:
                 if e.status == 429:  # Rate limit
-                    logger.warning(f"⏱️ Rate limit hit, waiting 10s...")
-                    await asyncio.sleep(10)
+                    logger.warning(f"⏱️ Rate limit hit, waiting 5s...")
+                    await asyncio.sleep(5)
                     continue
                 else:
                     logger.error(f"❌ API error: {e}")
@@ -207,8 +221,8 @@ class CodegenClientFixed:
         Simplified streaming with faster updates.
         """
         start_time = time.time()
-        max_wait_time = 120
-        poll_interval = 3  # Poll every 3 seconds for streaming
+        max_wait_time = 60   # Reduced to 1 minute for streaming too
+        poll_interval = 2    # Poll every 2 seconds for streaming
         max_polls = max_wait_time // poll_interval
         last_content = ""
         
@@ -263,4 +277,3 @@ class CodegenClientFixed:
     def count_tokens(self, text: str) -> int:
         """Simple token estimation."""
         return max(1, len(text) // 4)
-
