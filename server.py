@@ -366,8 +366,7 @@ curl -X POST http://localhost:8887/v1/gemini/completions \\
     """, status_code=200)
 
 
-def main():
-    """Main function to run the server."""
+if __name__ == "__main__":
     host = "localhost"
     port = 8887
     
@@ -375,13 +374,9 @@ def main():
     logger.info(f"Supported providers: openai, anthropic, google")
     
     uvicorn.run(
-        "server:app",
+        app,
         host=host,
         port=port,
         log_level="info"
     )
-
-
-if __name__ == "__main__":
-    main()
 

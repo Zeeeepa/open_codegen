@@ -1,79 +1,95 @@
 #!/usr/bin/env python3
 """
-Test the Google/Gemini API endpoint.
+Test script for Google/Gemini API endpoint.
 """
 
-import sys
 import json
 import requests
+import sys
 
-# Define colors for terminal output
+# ANSI color codes for output formatting
+YELLOW = "\033[93m"
 GREEN = "\033[92m"
 RED = "\033[91m"
-YELLOW = "\033[93m"
 RESET = "\033[0m"
 
-# Define the API endpoint
+# API endpoint
 API_URL = "http://localhost:8887/v1/gemini/completions"
+
+# Test message
 TEST_MESSAGE = "Hello, this is a test message."
 
-
-def main():
-    """Run the Google/Gemini API test."""
+def test_google_api():
+    """Test the Google/Gemini API endpoint."""
     print(f"{YELLOW}🧪 Testing Google/Gemini API...{RESET}")
     
-    # Prepare the request payload
+    # Prepare request payload
     payload = {
         "model": "gemini-1.5-pro",
         "messages": [
-            {
-                "role": "user",
-                "content": TEST_MESSAGE
-            }
+            {"role": "user", "content": TEST_MESSAGE}
         ]
     }
     
+    # Send request
+    print(f"{YELLOW}📤 Sending message to {API_URL}...{RESET}")
     try:
-        # Send the request
-        print(f"{YELLOW}📤 Sending message to {API_URL}...{RESET}")
-        response = requests.post(
-            API_URL,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=30
-        )
+        response = requests.post(API_URL, json=payload)
+        response.raise_for_status()  # Raise exception for 4XX/5XX responses
         
-        # Check if the request was successful
-        if response.status_code == 200:
-            data = response.json()
-            print(f"{YELLOW}📥 Received response:{RESET}")
-            print(json.dumps(data, indent=2))
-            
-            # Validate the response format
-            if (
-                "candidates" in data and
-                len(data["candidates"]) > 0 and
-                "content" in data["candidates"][0] and
-                "parts" in data["candidates"][0]["content"] and
-                len(data["candidates"][0]["content"]["parts"]) > 0 and
-                "text" in data["candidates"][0]["content"]["parts"][0]
-            ):
-                content = data["candidates"][0]["content"]["parts"][0]["text"]
-                print(f"{GREEN}✅ Google/Gemini API test passed!{RESET}")
-                print(f"{YELLOW}Response content:{RESET} {content}")
-                return 0
-            else:
-                print(f"{RED}❌ Google/Gemini API returned invalid response format{RESET}")
-                return 1
-        else:
-            print(f"{RED}❌ Google/Gemini API Error: {response.status_code} - {response.text}{RESET}")
-            return 1
-            
+        # Parse response
+        data = response.json()
+        
+        # Pretty print response
+        print(f"{YELLOW}📥 Received response:{RESET}")
+        print(json.dumps(data, indent=2))
+        
+        # Validate response format
+        if not isinstance(data, dict):
+            print(f"{RED}❌ Invalid response format: not a dictionary{RESET}")
+            return False
+        
+        # Check required fields
+        required_fields = ["candidates", "usageMetadata"]
+        for field in required_fields:
+            if field not in data:
+                print(f"{RED}❌ Missing required field: {field}{RESET}")
+                return False
+        
+        # Check candidates
+        if not isinstance(data["candidates"], list) or len(data["candidates"]) == 0:
+            print(f"{RED}❌ Invalid candidates: {data.get('candidates')}{RESET}")
+            return False
+        
+        # Check first candidate
+        candidate = data["candidates"][0]
+        if "content" not in candidate or "parts" not in candidate["content"]:
+            print(f"{RED}❌ Invalid candidate format{RESET}")
+            return False
+        
+        # Check parts
+        parts = candidate["content"]["parts"]
+        if not isinstance(parts, list) or len(parts) == 0 or "text" not in parts[0]:
+            print(f"{RED}❌ Invalid parts format{RESET}")
+            return False
+        
+        # Extract and print content
+        content = parts[0]["text"]
+        print(f"{GREEN}✅ Google/Gemini API test passed!{RESET}")
+        print(f"{YELLOW}Response content:{RESET} {content}")
+        return True
+        
+    except requests.exceptions.RequestException as e:
+        print(f"{RED}❌ Request failed: {e}{RESET}")
+        return False
+    except json.JSONDecodeError:
+        print(f"{RED}❌ Invalid JSON response{RESET}")
+        return False
     except Exception as e:
-        print(f"{RED}❌ Error testing Google/Gemini API: {e}{RESET}")
-        return 1
-
+        print(f"{RED}❌ Test failed: {e}{RESET}")
+        return False
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = test_google_api()
+    sys.exit(0 if success else 1)
 
