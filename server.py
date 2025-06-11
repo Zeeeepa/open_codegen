@@ -8,6 +8,7 @@ import logging
 import time
 import json
 import os
+import sys
 import requests
 import asyncio
 import uuid
@@ -19,6 +20,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # Import Codegen SDK
