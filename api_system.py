@@ -7,6 +7,7 @@ import logging
 import time
 import json
 import os
+import requests
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -41,6 +42,16 @@ static_path = Path("static")
 if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# API endpoints
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+GOOGLE_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+
+# Get API keys from environment variables
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -71,52 +82,75 @@ async def openai_chat_completions(request: Request):
         # Parse request body
         body = await request.json()
         
-        # Extract message
-        messages = body.get("messages", [])
-        if not messages:
-            raise HTTPException(status_code=400, detail="No messages provided")
+        # Check if API key is available
+        api_key = OPENAI_API_KEY
+        if not api_key:
+            logger.warning("OpenAI API key not found. Using simulated response.")
+            return create_simulated_openai_response(body)
         
-        # Get the last user message
-        user_message = None
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                user_message = msg.get("content")
-                break
-        
-        if not user_message:
-            raise HTTPException(status_code=400, detail="No user message found")
-        
-        # Get model
-        model = body.get("model", "gpt-3.5-turbo")
-        
-        # Create mock response
-        response = {
-            "id": "chatcmpl-123456789",
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": model,
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": f"This is a simulated response to: {user_message}"
-                    },
-                    "finish_reason": "stop"
-                }
-            ],
-            "usage": {
-                "prompt_tokens": 0,
-                "completion_tokens": 0,
-                "total_tokens": 0
-            }
+        # Forward request to OpenAI API
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
         }
         
-        return response
+        logger.info(f"Sending request to OpenAI API: {json.dumps(body)}")
+        response = requests.post(OPENAI_API_URL, headers=headers, json=body)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content=response.json() if response.text else {"error": "Unknown error"}
+            )
+        
+        # Return response from OpenAI
+        return response.json()
         
     except Exception as e:
         logger.error(f"OpenAI chat completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def create_simulated_openai_response(body):
+    """Create a simulated OpenAI response for testing."""
+    # Extract message
+    messages = body.get("messages", [])
+    user_message = None
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            user_message = msg.get("content")
+            break
+    
+    if not user_message:
+        user_message = "No message provided"
+    
+    # Get model
+    model = body.get("model", "gpt-3.5-turbo")
+    
+    # Create mock response
+    return {
+        "id": "chatcmpl-123456789",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": f"This is a simulated response to: {user_message}"
+                },
+                "finish_reason": "stop"
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        }
+    }
 
 
 # Anthropic endpoint
@@ -127,48 +161,94 @@ async def anthropic_completions(request: Request):
         # Parse request body
         body = await request.json()
         
-        # Extract message
-        messages = body.get("messages", [])
-        if not messages:
-            raise HTTPException(status_code=400, detail="No messages provided")
+        # Check if API key is available
+        api_key = ANTHROPIC_API_KEY
+        if not api_key:
+            logger.warning("Anthropic API key not found. Using simulated response.")
+            return create_simulated_anthropic_response(body)
         
-        # Get the last user message
-        user_message = None
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                user_message = msg.get("content")
-                break
+        # Convert from our API format to Anthropic's format if needed
+        anthropic_body = convert_to_anthropic_format(body)
         
-        if not user_message:
-            raise HTTPException(status_code=400, detail="No user message found")
-        
-        # Get model
-        model = body.get("model", "claude-3-sonnet-20240229")
-        
-        # Create mock response
-        response = {
-            "id": "msg_012345678",
-            "type": "message",
-            "role": "assistant",
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"This is a simulated Anthropic response to: {user_message}"
-                }
-            ],
-            "model": model,
-            "stop_reason": "end_turn",
-            "usage": {
-                "input_tokens": 10,
-                "output_tokens": 20
-            }
+        # Forward request to Anthropic API
+        headers = {
+            "Content-Type": "application/json",
+            "X-API-Key": api_key,
+            "anthropic-version": "2023-06-01"
         }
         
-        return response
+        logger.info(f"Sending request to Anthropic API: {json.dumps(anthropic_body)}")
+        response = requests.post(ANTHROPIC_API_URL, headers=headers, json=anthropic_body)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Anthropic API error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content=response.json() if response.text else {"error": "Unknown error"}
+            )
+        
+        # Return response from Anthropic
+        return response.json()
         
     except Exception as e:
         logger.error(f"Anthropic completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def convert_to_anthropic_format(body):
+    """Convert from our API format to Anthropic's format."""
+    # Extract messages
+    messages = body.get("messages", [])
+    
+    # If already in Anthropic format, return as is
+    if "model" in body and "messages" in body:
+        return body
+    
+    # Convert to Anthropic format
+    anthropic_body = {
+        "model": body.get("model", "claude-3-sonnet-20240229"),
+        "messages": messages,
+        "max_tokens": body.get("max_tokens", 1024)
+    }
+    
+    return anthropic_body
+
+
+def create_simulated_anthropic_response(body):
+    """Create a simulated Anthropic response for testing."""
+    # Extract message
+    messages = body.get("messages", [])
+    user_message = None
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            user_message = msg.get("content")
+            break
+    
+    if not user_message:
+        user_message = "No message provided"
+    
+    # Get model
+    model = body.get("model", "claude-3-sonnet-20240229")
+    
+    # Create mock response
+    return {
+        "id": "msg_012345678",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+            {
+                "type": "text",
+                "text": f"This is a simulated Anthropic response to: {user_message}"
+            }
+        ],
+        "model": model,
+        "stop_reason": "end_turn",
+        "usage": {
+            "input_tokens": 10,
+            "output_tokens": 20
+        }
+    }
 
 
 # Google/Gemini endpoint
@@ -179,63 +259,125 @@ async def gemini_completions(request: Request):
         # Parse request body
         body = await request.json()
         
+        # Check if API key is available
+        api_key = GOOGLE_API_KEY
+        if not api_key:
+            logger.warning("Google API key not found. Using simulated response.")
+            return create_simulated_gemini_response(body)
+        
         # Extract message from different possible formats
-        user_message = None
-        
-        # Try messages format first (like OpenAI)
-        messages = body.get("messages", [])
-        if messages:
-            for msg in reversed(messages):
-                if msg.get("role") == "user":
-                    user_message = msg.get("content")
-                    break
-        
-        # If not found, try contents format (like Gemini)
-        if not user_message:
-            contents = body.get("contents", [])
-            for content in contents:
-                parts = content.get("parts", [])
-                for part in parts:
-                    if "text" in part:
-                        user_message = part["text"]
-                        break
-                if user_message:
-                    break
-        
-        if not user_message:
-            raise HTTPException(status_code=400, detail="No user message found")
+        user_message = extract_user_message(body)
         
         # Get model
         model = body.get("model", "gemini-1.5-pro")
+        model_endpoint = f"{model}:generateContent"
         
-        # Create mock response
-        response = {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {
-                                "text": f"This is a simulated Gemini response to: {user_message}"
-                            }
-                        ],
-                        "role": "model"
-                    },
-                    "finishReason": "STOP",
-                    "index": 0
-                }
-            ],
-            "usageMetadata": {
-                "promptTokenCount": 10,
-                "candidatesTokenCount": 20,
-                "totalTokenCount": 30
-            }
+        # Prepare Google API request
+        google_url = f"{GOOGLE_API_URL}/{model_endpoint}?key={api_key}"
+        
+        # Convert to Google format
+        google_body = convert_to_google_format(body, user_message)
+        
+        # Forward request to Google API
+        headers = {
+            "Content-Type": "application/json"
         }
         
-        return response
+        logger.info(f"Sending request to Google API: {json.dumps(google_body)}")
+        response = requests.post(google_url, headers=headers, json=google_body)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Google API error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content=response.json() if response.text else {"error": "Unknown error"}
+            )
+        
+        # Return response from Google
+        return response.json()
         
     except Exception as e:
         logger.error(f"Gemini completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def extract_user_message(body):
+    """Extract user message from different possible formats."""
+    user_message = None
+    
+    # Try messages format first (like OpenAI)
+    messages = body.get("messages", [])
+    if messages:
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+    
+    # If not found, try contents format (like Gemini)
+    if not user_message:
+        contents = body.get("contents", [])
+        for content in contents:
+            parts = content.get("parts", [])
+            for part in parts:
+                if "text" in part:
+                    user_message = part["text"]
+                    break
+            if user_message:
+                break
+    
+    return user_message or "No message provided"
+
+
+def convert_to_google_format(body, user_message):
+    """Convert from our API format to Google's format."""
+    # If already in Google format, return as is
+    if "contents" in body:
+        return body
+    
+    # Convert to Google format
+    google_body = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": user_message
+                    }
+                ]
+            }
+        ]
+    }
+    
+    return google_body
+
+
+def create_simulated_gemini_response(body):
+    """Create a simulated Gemini response for testing."""
+    # Extract message
+    user_message = extract_user_message(body)
+    
+    # Create mock response
+    return {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "text": f"This is a simulated Gemini response to: {user_message}"
+                        }
+                    ],
+                    "role": "model"
+                },
+                "finishReason": "STOP",
+                "index": 0
+            }
+        ],
+        "usageMetadata": {
+            "promptTokenCount": 10,
+            "candidatesTokenCount": 20,
+            "totalTokenCount": 30
+        }
+    }
 
 
 # Alternative Gemini endpoint
@@ -447,6 +589,14 @@ def start_server(host="localhost", port=8887):
     """Start the server."""
     logger.info(f"Starting Unified API System on {host}:{port}")
     logger.info(f"Supported providers: openai, anthropic, google")
+    
+    # Check for API keys
+    if not OPENAI_API_KEY:
+        logger.warning("OPENAI_API_KEY not found in environment variables. OpenAI API will use simulated responses.")
+    if not ANTHROPIC_API_KEY:
+        logger.warning("ANTHROPIC_API_KEY not found in environment variables. Anthropic API will use simulated responses.")
+    if not GOOGLE_API_KEY:
+        logger.warning("GOOGLE_API_KEY not found in environment variables. Google API will use simulated responses.")
     
     uvicorn.run(
         app,
