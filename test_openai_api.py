@@ -1,77 +1,89 @@
 #!/usr/bin/env python3
 """
-Test the OpenAI API endpoint.
+Test script for OpenAI API endpoint.
 """
 
-import sys
 import json
 import requests
+import sys
 
-# Define colors for terminal output
+# ANSI color codes for output formatting
+YELLOW = "\033[93m"
 GREEN = "\033[92m"
 RED = "\033[91m"
-YELLOW = "\033[93m"
 RESET = "\033[0m"
 
-# Define the API endpoint
+# API endpoint
 API_URL = "http://localhost:8887/v1/chat/completions"
+
+# Test message
 TEST_MESSAGE = "Hello, this is a test message."
 
-
-def main():
-    """Run the OpenAI API test."""
+def test_openai_api():
+    """Test the OpenAI API endpoint."""
     print(f"{YELLOW}🧪 Testing OpenAI API...{RESET}")
     
-    # Prepare the request payload
+    # Prepare request payload
     payload = {
         "model": "gpt-3.5-turbo",
         "messages": [
-            {
-                "role": "user",
-                "content": TEST_MESSAGE
-            }
+            {"role": "user", "content": TEST_MESSAGE}
         ]
     }
     
+    # Send request
+    print(f"{YELLOW}📤 Sending message to {API_URL}...{RESET}")
     try:
-        # Send the request
-        print(f"{YELLOW}📤 Sending message to {API_URL}...{RESET}")
-        response = requests.post(
-            API_URL,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=30
-        )
+        response = requests.post(API_URL, json=payload)
+        response.raise_for_status()  # Raise exception for 4XX/5XX responses
         
-        # Check if the request was successful
-        if response.status_code == 200:
-            data = response.json()
-            print(f"{YELLOW}📥 Received response:{RESET}")
-            print(json.dumps(data, indent=2))
-            
-            # Validate the response format
-            if (
-                "choices" in data and
-                len(data["choices"]) > 0 and
-                "message" in data["choices"][0] and
-                "content" in data["choices"][0]["message"]
-            ):
-                content = data["choices"][0]["message"]["content"]
-                print(f"{GREEN}✅ OpenAI API test passed!{RESET}")
-                print(f"{YELLOW}Response content:{RESET} {content}")
-                return 0
-            else:
-                print(f"{RED}❌ OpenAI API returned invalid response format{RESET}")
-                return 1
-        else:
-            print(f"{RED}❌ OpenAI API Error: {response.status_code} - {response.text}{RESET}")
-            return 1
-            
+        # Parse response
+        data = response.json()
+        
+        # Pretty print response
+        print(f"{YELLOW}📥 Received response:{RESET}")
+        print(json.dumps(data, indent=2))
+        
+        # Validate response format
+        if not isinstance(data, dict):
+            print(f"{RED}❌ Invalid response format: not a dictionary{RESET}")
+            return False
+        
+        # Check required fields
+        required_fields = ["id", "object", "created", "model", "choices", "usage"]
+        for field in required_fields:
+            if field not in data:
+                print(f"{RED}❌ Missing required field: {field}{RESET}")
+                return False
+        
+        # Check choices
+        if not isinstance(data["choices"], list) or len(data["choices"]) == 0:
+            print(f"{RED}❌ Invalid choices: {data.get('choices')}{RESET}")
+            return False
+        
+        # Check first choice
+        choice = data["choices"][0]
+        if "message" not in choice or "role" not in choice["message"] or "content" not in choice["message"]:
+            print(f"{RED}❌ Invalid message format in choice{RESET}")
+            return False
+        
+        # Extract and print content
+        content = choice["message"]["content"]
+        print(f"{GREEN}✅ OpenAI API test passed!{RESET}")
+        print(f"{YELLOW}Response content:{RESET} {content}")
+        return True
+        
+    except requests.exceptions.RequestException as e:
+        print(f"{RED}❌ Request failed: {e}{RESET}")
+        return False
+    except json.JSONDecodeError:
+        print(f"{RED}❌ Invalid JSON response{RESET}")
+        return False
     except Exception as e:
-        print(f"{RED}❌ Error testing OpenAI API: {e}{RESET}")
-        return 1
-
+        print(f"{RED}❌ Test failed: {e}{RESET}")
+        return False
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = test_openai_api()
+    sys.exit(0 if success else 1)
 

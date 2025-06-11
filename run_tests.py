@@ -1,104 +1,85 @@
 #!/usr/bin/env python3
 """
-Run all API tests for the unified API system.
+Run all API tests and report results.
 """
 
 import os
 import sys
 import subprocess
-import time
 import requests
+import time
 
-# Define colors for terminal output
+# ANSI color codes for output formatting
+YELLOW = "\033[93m"
 GREEN = "\033[92m"
 RED = "\033[91m"
-YELLOW = "\033[93m"
 RESET = "\033[0m"
 
-# Define test files
+# Test files to run
 TEST_FILES = [
     "test_openai_api.py",
     "test_anthropic_api.py",
     "test_google_api.py"
 ]
 
-def check_server():
+def check_server_health():
     """Check if the server is running and healthy."""
     try:
-        response = requests.get("http://localhost:8887/health", timeout=5)
-        if response.status_code == 200 and response.json().get("status") == "healthy":
-            return True
-        return False
-    except Exception:
-        return False
-
-def run_test(test_file):
-    """Run a single test file and return success status."""
-    print(f"{YELLOW}Running {test_file}...{RESET}")
-    try:
-        result = subprocess.run(
-            [sys.executable, test_file],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        
-        # Print the output
-        print(result.stdout)
-        if result.stderr:
-            print(f"{RED}Errors:{RESET}\n{result.stderr}")
-        
-        if result.returncode == 0:
-            print(f"{GREEN}✅ {test_file} passed!{RESET}")
-            return True
-        else:
-            print(f"{RED}❌ {test_file} failed with exit code {result.returncode}{RESET}")
-            return False
-    except subprocess.TimeoutExpired:
-        print(f"{RED}❌ {test_file} timed out after 30 seconds{RESET}")
-        return False
-    except Exception as e:
-        print(f"{RED}❌ {test_file} failed with exception: {e}{RESET}")
+        response = requests.get("http://localhost:8887/health")
+        data = response.json()
+        return data.get("status") == "healthy"
+    except:
         return False
 
-
-def main():
-    """Run all tests."""
+def run_tests():
+    """Run all API tests and report results."""
     print(f"{YELLOW}🧪 Running all API tests...{RESET}")
     
     # Check if server is running
-    if not check_server():
-        print(f"{RED}❌ Server is not running or not healthy.{RESET}")
-        print(f"{YELLOW}Run ./start_server.sh to start the server.{RESET}")
-        return 1
+    if not check_server_health():
+        print(f"{RED}❌ Server is not running or not healthy!{RESET}")
+        print(f"Please start the server with: ./start_server.sh")
+        return False
     
-    # Run all tests
-    results = []
+    results = {}
+    
+    # Run each test file
     for test_file in TEST_FILES:
-        success = run_test(test_file)
-        results.append((test_file, success))
+        print(f"{YELLOW}Running {test_file}...{RESET}")
+        
+        # Run the test script
+        result = subprocess.run(["python", test_file], capture_output=True, text=True)
+        
+        # Print output
+        print(result.stdout)
+        
+        # Store result
+        results[test_file] = result.returncode == 0
+        
+        # Add a newline for separation
+        print()
     
     # Print summary
-    print("\n" + "=" * 50)
+    print("=" * 50)
     print(f"{YELLOW}📊 Test Summary:{RESET}")
-    passed = sum(1 for _, success in results if success)
-    total = len(results)
     
-    for test_file, success in results:
-        status = f"{GREEN}✅ PASSED{RESET}" if success else f"{RED}❌ FAILED{RESET}"
+    all_passed = True
+    for test_file, passed in results.items():
+        status = f"{GREEN}✅ PASSED{RESET}" if passed else f"{RED}❌ FAILED{RESET}"
         print(f"{test_file}: {status}")
+        all_passed = all_passed and passed
     
     print("-" * 50)
-    print(f"Passed: {passed}/{total} tests")
+    print(f"Passed: {sum(results.values())}/{len(results)} tests")
     
-    if passed == total:
+    if all_passed:
         print(f"{GREEN}🎉 All tests passed!{RESET}")
-        return 0
     else:
-        print(f"{RED}❌ Some tests failed.{RESET}")
-        return 1
-
+        print(f"{RED}❌ Some tests failed!{RESET}")
+    
+    return all_passed
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = run_tests()
+    sys.exit(0 if success else 1)
 

@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# Kill any existing server
+pkill -f 'python server.py' 2>/dev/null
+
 # Start the server in the background
 echo -e "\033[1;34m🚀 Starting server on port 8887...\033[0m"
 
 # Start the server in the background and redirect output to a log file
-python server.py > server.log 2>&1 &
+nohup python server.py > server.log 2>&1 &
 
 # Get the PID of the server
 SERVER_PID=$!
@@ -13,6 +16,18 @@ SERVER_PID=$!
 sleep 2
 if ps -p $SERVER_PID > /dev/null; then
     echo "Server started with PID $SERVER_PID (logs in server.log)"
+    
+    # Check if the server is healthy
+    HEALTH_CHECK=$(curl -s http://localhost:8887/health)
+    if [[ $HEALTH_CHECK == *"\"status\":\"healthy\""* ]]; then
+        echo -e "\033[1;32m✅ Server is healthy!\033[0m"
+    else
+        echo -e "\033[1;31m❌ Server health check failed!\033[0m"
+        echo "Health check response: $HEALTH_CHECK"
+        echo "Check server.log for details."
+        exit 1
+    fi
+    
     echo ""
     echo -e "\033[1;32m📋 Access Information:\033[0m"
     echo "------------------------"
