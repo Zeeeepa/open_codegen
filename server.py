@@ -139,10 +139,28 @@ async def openai_chat_completions(request: Request):
             # Use Codegen SDK directly
             logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'openai_proxy', 'model': model})}")
             
-            # For testing purposes, return a mock response
-            # In production, this would use the actual Codegen SDK
-            response_content = f"This is a mock response to: {user_message}"
-            logger.info(f"Mock response: {response_content}")
+            # Send request to Codegen SDK
+            codegen_request = {
+                "prompt": user_message,
+                "source": "openai_proxy",
+                "model": model
+            }
+            
+            response = requests.post(CODEGEN_API_URL, json=codegen_request)
+            
+            # Check response status
+            if response.status_code != 200:
+                logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"error": f"Codegen SDK error: {response.text}"}
+                )
+            
+            # Parse Codegen SDK response
+            codegen_response = response.json()
+            
+            # Extract the generated text from Codegen response
+            response_content = codegen_response.get("response", "No response from Codegen SDK")
             
             return JSONResponse(content={
                 "id": f"chatcmpl-{uuid.uuid4()}",
@@ -218,10 +236,28 @@ async def anthropic_completions(request: Request):
             # Use Codegen SDK directly
             logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'anthropic_proxy', 'model': body.get('model', 'claude-3-sonnet-20240229')})}")
             
-            # For testing purposes, return a mock response
-            # In production, this would use the actual Codegen SDK
-            response_content = f"This is a mock response to: {user_message}"
-            logger.info(f"Mock response: {response_content}")
+            # Send request to Codegen SDK
+            codegen_request = {
+                "prompt": user_message,
+                "source": "anthropic_proxy",
+                "model": body.get("model", "claude-3-sonnet-20240229")
+            }
+            
+            response = requests.post(CODEGEN_API_URL, json=codegen_request)
+            
+            # Check response status
+            if response.status_code != 200:
+                logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"error": f"Codegen SDK error: {response.text}"}
+                )
+            
+            # Parse Codegen SDK response
+            codegen_response = response.json()
+            
+            # Extract the generated text from Codegen response
+            response_content = codegen_response.get("response", "No response from Codegen SDK")
             
             return JSONResponse(content={
                 "id": f"msg_{uuid.uuid4()}",
@@ -293,10 +329,28 @@ async def gemini_completions(request: Request):
             # Use Codegen SDK directly
             logger.info(f"Routing Google request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'google_proxy', 'model': body.get('model', 'gemini-1.5-pro')})}")
             
-            # For testing purposes, return a mock response
-            # In production, this would use the actual Codegen SDK
-            response_content = f"This is a mock response to: {user_message}"
-            logger.info(f"Mock response: {response_content}")
+            # Send request to Codegen SDK
+            codegen_request = {
+                "prompt": user_message,
+                "source": "google_proxy",
+                "model": body.get("model", "gemini-1.5-pro")
+            }
+            
+            response = requests.post(CODEGEN_API_URL, json=codegen_request)
+            
+            # Check response status
+            if response.status_code != 200:
+                logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"error": f"Codegen SDK error: {response.text}"}
+                )
+            
+            # Parse Codegen SDK response
+            codegen_response = response.json()
+            
+            # Extract the generated text from Codegen response
+            response_content = codegen_response.get("response", "No response from Codegen SDK")
             
             return JSONResponse(content={
                 "candidates": [
