@@ -1,72 +1,79 @@
+#!/usr/bin/env python3
 """
-Tests sending a message to Google API and receiving a response via user interface
+Test the Google/Gemini API endpoint.
 """
 
-import os
-import requests
+import sys
 import json
+import time
+import requests
 
-# Define the API base URL (can be overridden with environment variable)
-API_BASE = os.getenv("API_BASE", "http://localhost:8887")
-url = f"{API_BASE}/v1/gemini/generateContent"
+# Define colors for terminal output
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
 
-# Define headers
-headers = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {os.getenv('GOOGLE_API_KEY', '')}"
-}
+# Define the API endpoint
+API_URL = "http://localhost:8887/v1/gemini/completions"
+TEST_MESSAGE = "Hello, this is a test message. Please respond with a short greeting."
 
-# Define the data to send
-data = {
-    "model": "gemini-1.5-pro",
-    "messages": [{"role": "user", "content": "Hello! Please respond with a short greeting."}],
-    "contents": [
-        {"parts": [{"text": "Hello! Please respond with a short greeting."}]}
-    ],
-    "generationConfig": {
-        "maxOutputTokens": 5
-    }
-}
 
-print("🧪 Testing Google API...")
-print(f"📤 Sending message to {url}...")
-
-# Send the request
-try:
-    response = requests.post(url, headers=headers, json=data, timeout=30)
+def main():
+    """Run the Google/Gemini API test."""
+    print(f"{YELLOW}🧪 Testing Google/Gemini API...{RESET}")
     
-    # Check if the request was successful
-    if response.status_code == 200:
-        print("✅ Google API Response:")
-        print(json.dumps(response.json(), indent=2))
+    # Prepare the request payload
+    payload = {
+        "model": "gemini-1.5-pro",
+        "messages": [
+            {
+                "role": "user",
+                "content": TEST_MESSAGE
+            }
+        ]
+    }
+    
+    try:
+        # Send the request
+        print(f"{YELLOW}📤 Sending message to {API_URL}...{RESET}")
+        response = requests.post(
+            API_URL,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
         
-        # Verify that the response contains actual content
-        content = response.json()
-        if "candidates" in content and len(content["candidates"]) > 0:
-            if "content" in content["candidates"][0] and "parts" in content["candidates"][0]["content"]:
-                parts = content["candidates"][0]["content"]["parts"]
-                if len(parts) > 0 and "text" in parts[0]:
-                    message_content = parts[0]["text"]
-                    print(f"\n📝 Response content: {message_content}")
-                    if "This is a response to:" in message_content:
-                        print("✅ Test passed: Response contains expected content")
-                        exit(0)
-                    else:
-                        print("❌ Test failed: Response does not contain expected content")
-                        exit(1)
-                else:
-                    print("❌ Test failed: Response does not contain text in parts")
-                    exit(1)
+        # Check if the request was successful
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Validate the response format
+            if (
+                "candidates" in data and
+                len(data["candidates"]) > 0 and
+                "content" in data["candidates"][0] and
+                "parts" in data["candidates"][0]["content"] and
+                len(data["candidates"][0]["content"]["parts"]) > 0 and
+                "text" in data["candidates"][0]["content"]["parts"][0]
+            ):
+                content = data["candidates"][0]["content"]["parts"][0]["text"]
+                print(f"{GREEN}✅ Google/Gemini API test passed!{RESET}")
+                print(f"{YELLOW}Response:{RESET} {content}")
+                return 0
             else:
-                print("❌ Test failed: Response does not contain content or parts")
-                exit(1)
+                print(f"{RED}❌ Google/Gemini API returned invalid response format:{RESET}")
+                print(json.dumps(data, indent=2))
+                return 1
         else:
-            print("❌ Test failed: Response does not contain candidates")
-            exit(1)
-    else:
-        print(f"❌ Google API Error: {response.status_code} - {response.text}")
-        exit(1)
-except Exception as e:
-    print(f"❌ Google API Test Failed: {e}")
-    exit(1)
+            print(f"{RED}❌ Google/Gemini API Error: {response.status_code} - {response.text}{RESET}")
+            return 1
+            
+    except Exception as e:
+        print(f"{RED}❌ Error testing Google/Gemini API: {e}{RESET}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 

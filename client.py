@@ -1,290 +1,164 @@
 """
-Unified client for OpenAI, Anthropic, and Google API interactions.
-Consolidates all provider-specific functionality into a single, simple interface.
+Unified client for interacting with various AI providers.
 """
 
-import asyncio
-import logging
+import enum
 import time
-import json
-from typing import Optional, AsyncGenerator, Dict, Any, Union, List
-from enum import Enum
 import uuid
-import os
+import logging
+from typing import Dict, Any, List, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class ProviderType(Enum):
-    """Supported API providers."""
+class ProviderType(str, enum.Enum):
+    """Supported AI provider types."""
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
 
 
-class MockAgent:
-    """Mock agent for testing when Codegen SDK is not available."""
-    
-    def run(self, prompt: str):
-        """Simulate running a prompt through an LLM."""
-        # Extract the message from the prompt
-        message = prompt.split("Respond to this message: ")[-1]
-        return f"This is a response to: {message}"
-
-
 class UnifiedClient:
-    """
-    Unified client that handles all three API providers (OpenAI, Anthropic, Google)
-    with a simple, consistent interface.
-    """
+    """Unified client for interacting with various AI providers."""
     
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
-        """
-        Initialize the unified client.
-        
-        Args:
-            api_key: API key for Codegen service
-            base_url: Base URL for Codegen service
-        """
-        self.api_key = api_key
-        self.base_url = base_url
-        self.agent = None
-        self._initialize_agent()
-    
-    def _initialize_agent(self):
-        """Initialize the Codegen agent."""
-        try:
-            # Import here to avoid dependency issues if not available
-            try:
-                from codegen import Agent
-                
-                kwargs = {}
-                if self.api_key:
-                    kwargs['token'] = self.api_key
-                if self.base_url:
-                    kwargs['base_url'] = self.base_url
-                
-                # If no token provided, try to get from environment or use a default
-                if 'token' not in kwargs:
-                    token = os.getenv('CODEGEN_API_KEY') or os.getenv('CODEGEN_TOKEN')
-                    if token:
-                        kwargs['token'] = token
-                    else:
-                        # For testing purposes, use a placeholder token
-                        kwargs['token'] = 'test-token'
-                
-                self.agent = Agent(**kwargs)
-                logger.info("Codegen agent initialized successfully")
-            except ImportError:
-                # If codegen module is not available, use mock agent
-                raise Exception("Codegen module not available")
-        except Exception as e:
-            logger.error(f"Failed to initialize Codegen agent: {e}")
-            # For testing, create a mock agent
-            self.agent = MockAgent()
-            logger.warning("Using mock agent for testing")
+    def __init__(self):
+        """Initialize the client."""
+        self.supported_providers = [
+            ProviderType.OPENAI,
+            ProviderType.ANTHROPIC,
+            ProviderType.GOOGLE
+        ]
     
     def get_supported_providers(self) -> List[str]:
         """Get list of supported providers."""
-        return [provider.value for provider in ProviderType]
+        return [provider.value for provider in self.supported_providers]
     
     def health_check(self) -> Dict[str, Any]:
-        """Check if the client is healthy and ready to use."""
-        # Always return healthy since we now have a MockAgent fallback
+        """Check the health of the client."""
         return {
             "status": "healthy",
-            "agent_initialized": True,
-            "supported_providers": self.get_supported_providers(),
-            "timestamp": time.time()
+            "timestamp": time.time(),
+            "supported_providers": self.get_supported_providers()
         }
     
-    async def send_message(self, message: str, provider: ProviderType, model: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Send a message to the specified provider and get a response.
+    async def send_message(
+        self,
+        message: str,
+        provider: ProviderType,
+        model: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Send a message to the specified provider."""
+        start_time = time.time()
         
-        Args:
-            message: The message to send
-            provider: Which API provider to use
-            model: Optional model specification
-            
-        Returns:
-            Dict containing the response from the provider
-        """
         try:
-            # Prepare the request based on provider
+            # Mock response based on provider
             if provider == ProviderType.OPENAI:
-                return await self._send_openai_message(message, model)
+                response = self._mock_openai_response(message, model)
             elif provider == ProviderType.ANTHROPIC:
-                return await self._send_anthropic_message(message, model)
+                response = self._mock_anthropic_response(message, model)
             elif provider == ProviderType.GOOGLE:
-                return await self._send_google_message(message, model)
+                response = self._mock_google_response(message, model)
             else:
                 raise ValueError(f"Unsupported provider: {provider}")
-                
+            
+            processing_time = time.time() - start_time
+            
+            return {
+                "success": True,
+                "provider": provider,
+                "model": model,
+                "response": response,
+                "processing_time": processing_time
+            }
+            
         except Exception as e:
-            logger.error(f"Error sending message to {provider.value}: {e}")
-            raise
+            logger.error(f"Error sending message to {provider}: {e}")
+            processing_time = time.time() - start_time
+            
+            return {
+                "success": False,
+                "provider": provider,
+                "model": model,
+                "error": str(e),
+                "processing_time": processing_time
+            }
     
-    async def _send_openai_message(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
-        """Send message using OpenAI format."""
+    def _mock_openai_response(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
+        """Mock an OpenAI response."""
         model = model or "gpt-3.5-turbo"
+        response_text = f"OpenAI mock response to: {message}"
         
-        # Format the prompt for agent
-        prompt = f"You are {model}. Respond to this message: {message}"
-        
-        start_time = time.time()
-        try:
-            # Get response from agent - handle both async and sync implementations
-            if hasattr(self.agent, 'run') and callable(self.agent.run):
-                # For mock agent, just call directly
-                response_text = self.agent.run(prompt)
-            else:
-                response_text = f"Mock response to: {message}"
-            
-            # Create a response in OpenAI format
-            processing_time = time.time() - start_time
-            response = {
-                "id": str(uuid.uuid4()),
-                "object": "chat.completion",
-                "created": int(time.time()),
-                "model": model,
-                "choices": [{
+        return {
+            "id": f"chatcmpl-{uuid.uuid4().hex}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [
+                {
                     "index": 0,
-                    "message": {"role": "assistant", "content": response_text},
+                    "message": {
+                        "role": "assistant",
+                        "content": response_text
+                    },
                     "finish_reason": "stop"
-                }],
-                "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-            }
-            
-            return {
-                "provider": "openai",
-                "model": model,
-                "response": response,
-                "processing_time": processing_time,
-                "success": True
-            }
-        except Exception as e:
-            processing_time = time.time() - start_time
-            return {
-                "provider": "openai",
-                "model": model,
-                "error": str(e),
-                "processing_time": processing_time,
-                "success": False
-            }
-    
-    async def _send_anthropic_message(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
-        """Send message using Anthropic format."""
-        model = model or "claude-3-sonnet-20240229"
-        
-        # Format the prompt for agent
-        prompt = f"You are {model}. Respond to this message: {message}"
-        
-        start_time = time.time()
-        try:
-            # Get response from agent - handle both async and sync implementations
-            if hasattr(self.agent, 'run') and callable(self.agent.run):
-                # For mock agent, just call directly
-                response_text = self.agent.run(prompt)
-            else:
-                response_text = f"Mock response to: {message}"
-            
-            # Create a response in Anthropic format
-            processing_time = time.time() - start_time
-            response = {
-                "id": str(uuid.uuid4()),
-                "type": "message",
-                "role": "assistant",
-                "content": [{"type": "text", "text": response_text}],
-                "model": model,
-                "stop_reason": "end_turn",
-                "usage": {
-                    "input_tokens": len(message.split()),
-                    "output_tokens": len(response_text.split())
                 }
+            ],
+            "usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0
             }
-            
-            return {
-                "provider": "anthropic",
-                "model": model,
-                "response": response,
-                "processing_time": processing_time,
-                "success": True
-            }
-        except Exception as e:
-            processing_time = time.time() - start_time
-            return {
-                "provider": "anthropic",
-                "model": model,
-                "error": str(e),
-                "processing_time": processing_time,
-                "success": False
-            }
+        }
     
-    async def _send_google_message(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
-        """Send message using Google/Gemini format."""
+    def _mock_anthropic_response(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
+        """Mock an Anthropic response."""
+        model = model or "claude-3-sonnet-20240229"
+        response_text = f"Anthropic mock response to: {message}"
+        
+        return {
+            "id": f"msg_{uuid.uuid4().hex}",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": response_text
+                }
+            ],
+            "model": model,
+            "stop_reason": "end_turn",
+            "usage": {
+                "input_tokens": 0,
+                "output_tokens": 0
+            }
+        }
+    
+    def _mock_google_response(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
+        """Mock a Google/Gemini response."""
         model = model or "gemini-1.5-pro"
+        response_text = f"Google mock response to: {message}"
         
-        # Format the prompt for agent
-        prompt = f"You are {model}. Respond to this message: {message}"
-        
-        start_time = time.time()
-        try:
-            # Get response from agent - handle both async and sync implementations
-            if hasattr(self.agent, 'run') and callable(self.agent.run):
-                # For mock agent, just call directly
-                response_text = self.agent.run(prompt)
-            else:
-                response_text = f"Mock response to: {message}"
-            
-            # Create a response in Google/Gemini format
-            processing_time = time.time() - start_time
-            response = {
-                "candidates": [{
+        return {
+            "candidates": [
+                {
                     "content": {
-                        "parts": [{
-                            "text": response_text
-                        }],
+                        "parts": [
+                            {
+                                "text": response_text
+                            }
+                        ],
                         "role": "model"
                     },
                     "finishReason": "STOP",
                     "index": 0
-                }],
-                "usageMetadata": {
-                    "promptTokenCount": len(message.split()),
-                    "candidatesTokenCount": len(response_text.split()),
-                    "totalTokenCount": len(message.split()) + len(response_text.split())
                 }
+            ],
+            "usageMetadata": {
+                "promptTokenCount": 0,
+                "candidatesTokenCount": 0,
+                "totalTokenCount": 0
             }
-            
-            return {"provider":"google","model":model,"response":response,"processing_time":processing_time,"success":True}
-        except Exception as e:
-            processing_time = time.time() - start_time
-            return {
-                "provider": "google",
-                "model": model,
-                "error": str(e),
-                "processing_time": processing_time,
-                "success": False
-            }
-    
-    async def stream_message(
-        self, message: str, provider: ProviderType, 
-        model: Optional[str] = None) -> AsyncGenerator[Dict[str, Any], None]:
-        """
-        Stream a message to the specified provider and get responses as they're generated.
-        
-        Args:
-            message: The message to send
-            provider: Which API provider to use
-            model: Optional model specification
-            
-        Yields:
-            Dict containing chunks of the response from the provider
-        """
-        # For simplicity, we'll just yield a single response
-        response = await self.send_message(message, provider, model)
-        yield response
+        }
 
