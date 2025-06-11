@@ -138,10 +138,8 @@ class UnifiedClient:
         try:
             # Get response from agent - handle both async and sync implementations
             if hasattr(self.agent, 'run') and callable(self.agent.run):
-                if asyncio.iscoroutinefunction(self.agent.run):
-                    response_text = await self.agent.run(prompt)
-                else:
-                    response_text = self.agent.run(prompt)
+                # For mock agent, just call directly
+                response_text = self.agent.run(prompt)
             else:
                 response_text = f"Mock response to: {message}"
             
@@ -188,10 +186,8 @@ class UnifiedClient:
         try:
             # Get response from agent - handle both async and sync implementations
             if hasattr(self.agent, 'run') and callable(self.agent.run):
-                if asyncio.iscoroutinefunction(self.agent.run):
-                    response_text = await self.agent.run(prompt)
-                else:
-                    response_text = self.agent.run(prompt)
+                # For mock agent, just call directly
+                response_text = self.agent.run(prompt)
             else:
                 response_text = f"Mock response to: {message}"
             
@@ -199,14 +195,15 @@ class UnifiedClient:
             processing_time = time.time() - start_time
             response = {
                 "id": str(uuid.uuid4()),
-                "object": "chat.completion",
-                "created": int(time.time()),
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": response_text}],
                 "model": model,
-                "choices": [{
-                    "index": 0,
-                    "message": {"role": "assistant", "content": response_text},
-                    "finish_reason": "stop"
-                }]
+                "stop_reason": "end_turn",
+                "usage": {
+                    "input_tokens": len(message.split()),
+                    "output_tokens": len(response_text.split())
+                }
             }
             
             return {
@@ -237,10 +234,8 @@ class UnifiedClient:
         try:
             # Get response from agent - handle both async and sync implementations
             if hasattr(self.agent, 'run') and callable(self.agent.run):
-                if asyncio.iscoroutinefunction(self.agent.run):
-                    response_text = await self.agent.run(prompt)
-                else:
-                    response_text = self.agent.run(prompt)
+                # For mock agent, just call directly
+                response_text = self.agent.run(prompt)
             else:
                 response_text = f"Mock response to: {message}"
             
@@ -251,9 +246,17 @@ class UnifiedClient:
                     "content": {
                         "parts": [{
                             "text": response_text
-                        }]
-                    }
-                }]
+                        }],
+                        "role": "model"
+                    },
+                    "finishReason": "STOP",
+                    "index": 0
+                }],
+                "usageMetadata": {
+                    "promptTokenCount": len(message.split()),
+                    "candidatesTokenCount": len(response_text.split()),
+                    "totalTokenCount": len(message.split()) + len(response_text.split())
+                }
             }
             
             return {"provider":"google","model":model,"response":response,"processing_time":processing_time,"success":True}
