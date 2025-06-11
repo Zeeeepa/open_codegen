@@ -423,8 +423,8 @@ async def anthropic_completions(request: AnthropicRequest):
         response = create_anthropic_response(
             content=content,
             model=request.model,
-            input_tokens=prompt_tokens,
-            output_tokens=completion_tokens
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens
         )
         
         logger.info(f"Anthropic completion response: {completion_tokens} tokens")
@@ -519,8 +519,8 @@ async def anthropic_messages(request: AnthropicRequest):
             response = create_anthropic_response(
                 content=response_content,
                 model=request.model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
+                prompt_tokens=input_tokens,
+                completion_tokens=output_tokens,
                 message_id=message_id
             )
             
@@ -620,7 +620,7 @@ async def gemini_generate_content(request: GeminiRequest):
             return create_gemini_streaming_response(codegen_client, prompt, request.model)
         else:
             # Return complete response
-            logger.info("📦 Initiating Gemini non-streaming response...")
+            logger.info("��� Initiating Gemini non-streaming response...")
             response_content = ""
             start_time = time.time()
             
@@ -647,8 +647,8 @@ async def gemini_generate_content(request: GeminiRequest):
             response = create_gemini_response(
                 content=response_content,
                 model=request.model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens
+                prompt_tokens=input_tokens,
+                completion_tokens=output_tokens
             )
             
             logger.info(f"📤 Sending Gemini response: {len(response_content)} chars, {output_tokens} tokens")
@@ -713,7 +713,7 @@ async def vertex_ai_generate_content(model: str, request: GeminiRequest):
             return create_gemini_streaming_response(codegen_client, prompt, model)
         else:
             # Return complete response
-            logger.info("📦 Initiating Vertex AI non-streaming response...")
+            logger.info("��� Initiating Vertex AI non-streaming response...")
             content = await collect_gemini_streaming_response(codegen_client, prompt)
             
             # Estimate token counts
