@@ -85,11 +85,14 @@ async def api_status():
 
 # OpenAI-compatible endpoints
 @app.post("/v1/chat/completions")
-async def openai_chat_completions(request: Dict[str, Any] = Body(...)):
+async def openai_chat_completions(request: Request):
     """OpenAI-compatible chat completions endpoint."""
     try:
+        # Parse the request body manually to avoid Pydantic model recursion
+        body = await request.json()
+        
         # Extract the last user message
-        messages = request.get("messages", [])
+        messages = body.get("messages", [])
         if not messages:
             raise HTTPException(status_code=400, detail="No messages provided")
         
@@ -102,7 +105,7 @@ async def openai_chat_completions(request: Dict[str, Any] = Body(...)):
         if not last_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        model = request.get("model", "gpt-3.5-turbo")
+        model = body.get("model", "gpt-3.5-turbo")
         
         # Send the message to the client
         result = await unified_client.send_message(
@@ -144,11 +147,14 @@ async def openai_chat_completions(request: Dict[str, Any] = Body(...)):
 
 # Anthropic endpoints
 @app.post("/v1/anthropic/completions")
-async def anthropic_completions(request: Dict[str, Any] = Body(...)):
+async def anthropic_completions(request: Request):
     """Anthropic completions endpoint."""
     try:
+        # Parse the request body manually to avoid Pydantic model recursion
+        body = await request.json()
+        
         # Extract the last user message
-        messages = request.get("messages", [])
+        messages = body.get("messages", [])
         if not messages:
             raise HTTPException(status_code=400, detail="No messages provided")
         
@@ -161,7 +167,7 @@ async def anthropic_completions(request: Dict[str, Any] = Body(...)):
         if not last_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        model = request.get("model", "claude-3-sonnet-20240229")
+        model = body.get("model", "claude-3-sonnet-20240229")
         
         # Send the message to the client
         result = await unified_client.send_message(
@@ -198,19 +204,22 @@ async def anthropic_completions(request: Dict[str, Any] = Body(...)):
 
 
 @app.post("/v1/messages")
-async def anthropic_messages(request: Dict[str, Any] = Body(...)):
+async def anthropic_messages(request: Request):
     """Anthropic messages endpoint (alternative format)."""
     return await anthropic_completions(request)
 
 
 # Google/Gemini endpoints
 @app.post("/v1/gemini/completions")
-async def gemini_completions(request: Dict[str, Any] = Body(...)):
+async def gemini_completions(request: Request):
     """Google Gemini completions endpoint."""
     try:
+        # Parse the request body manually to avoid Pydantic model recursion
+        body = await request.json()
+        
         # Extract the message from the request
-        messages = request.get("messages", [])
-        contents = request.get("contents", [])
+        messages = body.get("messages", [])
+        contents = body.get("contents", [])
         
         last_message = None
         
@@ -235,7 +244,7 @@ async def gemini_completions(request: Dict[str, Any] = Body(...)):
         if not last_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        model = request.get("model", "gemini-1.5-pro")
+        model = body.get("model", "gemini-1.5-pro")
         
         # Send the message to the client
         result = await unified_client.send_message(
@@ -276,19 +285,22 @@ async def gemini_completions(request: Dict[str, Any] = Body(...)):
 
 
 @app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: Dict[str, Any] = Body(...)):
+async def gemini_generate_content(request: Request):
     """Google Gemini generateContent endpoint (alternative format)."""
     return await gemini_completions(request)
 
 
 # Test endpoints for each provider
 @app.post("/api/test/{provider}")
-async def test_provider(provider: str, request: Dict[str, Any] = Body(...)):
+async def test_provider(provider: str, request: Request):
     """Test endpoint for each provider."""
     try:
+        # Parse the request body manually to avoid Pydantic model recursion
+        body = await request.json()
+        
         provider_type = ProviderType(provider.lower())
-        message = request.get("message", "Hello! Please respond with just 'Hi there!'")
-        model = request.get("model")
+        message = body.get("message", "Hello! Please respond with just 'Hi there!'")
+        model = body.get("model")
         
         result = await unified_client.send_message(message, provider_type, model)
         
