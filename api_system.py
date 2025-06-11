@@ -1,6 +1,7 @@
 """
 Unified API System for OpenAI, Anthropic, and Google APIs.
-This module provides a consolidated interface for all three APIs.
+This module routes requests from these APIs to the Codegen SDK and returns responses
+in the format expected by the original API clients.
 """
 
 import logging
@@ -23,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Unified API System",
-    description="Simple server for OpenAI, Anthropic, and Google APIs",
+    title="API Router System",
+    description="Routes requests from OpenAI, Anthropic, and Google APIs to Codegen SDK",
     version="1.0.0"
 )
 
@@ -42,15 +43,8 @@ static_path = Path("static")
 if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# API endpoints
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-GOOGLE_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-
-# Get API keys from environment variables
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+# Codegen SDK API endpoint (default to localhost, can be overridden with env var)
+CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "http://localhost:8000/api/generate")
 
 
 @app.exception_handler(Exception)
@@ -70,232 +64,220 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": time.time(),
-        "providers": ["openai", "anthropic", "google"]
+        "providers": ["openai", "anthropic", "google"],
+        "routing_to": CODEGEN_API_URL
     }
 
 
 # OpenAI endpoint
 @app.post("/v1/chat/completions")
 async def openai_chat_completions(request: Request):
-    """OpenAI chat completions endpoint."""
+    """OpenAI chat completions endpoint - routes to Codegen SDK."""
     try:
         # Parse request body
         body = await request.json()
         
-        # Check if API key is available
-        api_key = OPENAI_API_KEY
-        if not api_key:
-            logger.warning("OpenAI API key not found. Using simulated response.")
-            return create_simulated_openai_response(body)
+        # Extract message content
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
         
-        # Forward request to OpenAI API
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Prepare request to Codegen SDK
+        codegen_request = {
+            "prompt": user_message,
+            "source": "openai_proxy",
+            "model": body.get("model", "gpt-3.5-turbo")
         }
         
-        logger.info(f"Sending request to OpenAI API: {json.dumps(body)}")
-        response = requests.post(OPENAI_API_URL, headers=headers, json=body)
+        # Send request to Codegen SDK
+        logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
-            return JSONResponse(
-                status_code=response.status_code,
-                content=response.json() if response.text else {"error": "Unknown error"}
-            )
+        try:
+            response = requests.post(CODEGEN_API_URL, json=codegen_request)
+            response.raise_for_status()
+            codegen_response = response.json()
+            
+            # Extract the generated text from Codegen response
+            generated_text = codegen_response.get("response", "No response from Codegen SDK")
+            
+        except requests.RequestException as e:
+            logger.error(f"Error calling Codegen SDK: {e}")
+            # If Codegen SDK is unavailable, use a fallback response
+            generated_text = f"Codegen SDK unavailable. Your message was: {user_message}"
         
-        # Return response from OpenAI
-        return response.json()
+        # Format response in OpenAI format
+        openai_response = {
+            "id": f"chatcmpl-{int(time.time())}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": body.get("model", "gpt-3.5-turbo"),
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": generated_text
+                    },
+                    "finish_reason": "stop"
+                }
+            ],
+            "usage": {
+                "prompt_tokens": len(user_message.split()),
+                "completion_tokens": len(generated_text.split()),
+                "total_tokens": len(user_message.split()) + len(generated_text.split())
+            }
+        }
+        
+        return openai_response
         
     except Exception as e:
         logger.error(f"OpenAI chat completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def create_simulated_openai_response(body):
-    """Create a simulated OpenAI response for testing."""
-    # Extract message
-    messages = body.get("messages", [])
-    user_message = None
-    for msg in reversed(messages):
-        if msg.get("role") == "user":
-            user_message = msg.get("content")
-            break
-    
-    if not user_message:
-        user_message = "No message provided"
-    
-    # Get model
-    model = body.get("model", "gpt-3.5-turbo")
-    
-    # Create mock response
-    return {
-        "id": "chatcmpl-123456789",
-        "object": "chat.completion",
-        "created": int(time.time()),
-        "model": model,
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": f"This is a simulated response to: {user_message}"
-                },
-                "finish_reason": "stop"
-            }
-        ],
-        "usage": {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0
-        }
-    }
-
-
 # Anthropic endpoint
 @app.post("/v1/anthropic/completions")
 async def anthropic_completions(request: Request):
-    """Anthropic completions endpoint."""
+    """Anthropic completions endpoint - routes to Codegen SDK."""
     try:
         # Parse request body
         body = await request.json()
         
-        # Check if API key is available
-        api_key = ANTHROPIC_API_KEY
-        if not api_key:
-            logger.warning("Anthropic API key not found. Using simulated response.")
-            return create_simulated_anthropic_response(body)
+        # Extract message
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
         
-        # Convert from our API format to Anthropic's format if needed
-        anthropic_body = convert_to_anthropic_format(body)
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
         
-        # Forward request to Anthropic API
-        headers = {
-            "Content-Type": "application/json",
-            "X-API-Key": api_key,
-            "anthropic-version": "2023-06-01"
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Prepare request to Codegen SDK
+        codegen_request = {
+            "prompt": user_message,
+            "source": "anthropic_proxy",
+            "model": body.get("model", "claude-3-sonnet-20240229")
         }
         
-        logger.info(f"Sending request to Anthropic API: {json.dumps(anthropic_body)}")
-        response = requests.post(ANTHROPIC_API_URL, headers=headers, json=anthropic_body)
+        # Send request to Codegen SDK
+        logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Anthropic API error: {response.status_code} - {response.text}")
-            return JSONResponse(
-                status_code=response.status_code,
-                content=response.json() if response.text else {"error": "Unknown error"}
-            )
+        try:
+            response = requests.post(CODEGEN_API_URL, json=codegen_request)
+            response.raise_for_status()
+            codegen_response = response.json()
+            
+            # Extract the generated text from Codegen response
+            generated_text = codegen_response.get("response", "No response from Codegen SDK")
+            
+        except requests.RequestException as e:
+            logger.error(f"Error calling Codegen SDK: {e}")
+            # If Codegen SDK is unavailable, use a fallback response
+            generated_text = f"Codegen SDK unavailable. Your message was: {user_message}"
         
-        # Return response from Anthropic
-        return response.json()
+        # Format response in Anthropic format
+        anthropic_response = {
+            "id": f"msg_{int(time.time())}",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": generated_text
+                }
+            ],
+            "model": body.get("model", "claude-3-sonnet-20240229"),
+            "stop_reason": "end_turn",
+            "usage": {
+                "input_tokens": len(user_message.split()),
+                "output_tokens": len(generated_text.split())
+            }
+        }
+        
+        return anthropic_response
         
     except Exception as e:
         logger.error(f"Anthropic completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def convert_to_anthropic_format(body):
-    """Convert from our API format to Anthropic's format."""
-    # Extract messages
-    messages = body.get("messages", [])
-    
-    # If already in Anthropic format, return as is
-    if "model" in body and "messages" in body:
-        return body
-    
-    # Convert to Anthropic format
-    anthropic_body = {
-        "model": body.get("model", "claude-3-sonnet-20240229"),
-        "messages": messages,
-        "max_tokens": body.get("max_tokens", 1024)
-    }
-    
-    return anthropic_body
-
-
-def create_simulated_anthropic_response(body):
-    """Create a simulated Anthropic response for testing."""
-    # Extract message
-    messages = body.get("messages", [])
-    user_message = None
-    for msg in reversed(messages):
-        if msg.get("role") == "user":
-            user_message = msg.get("content")
-            break
-    
-    if not user_message:
-        user_message = "No message provided"
-    
-    # Get model
-    model = body.get("model", "claude-3-sonnet-20240229")
-    
-    # Create mock response
-    return {
-        "id": "msg_012345678",
-        "type": "message",
-        "role": "assistant",
-        "content": [
-            {
-                "type": "text",
-                "text": f"This is a simulated Anthropic response to: {user_message}"
-            }
-        ],
-        "model": model,
-        "stop_reason": "end_turn",
-        "usage": {
-            "input_tokens": 10,
-            "output_tokens": 20
-        }
-    }
-
-
 # Google/Gemini endpoint
 @app.post("/v1/gemini/completions")
 async def gemini_completions(request: Request):
-    """Google Gemini completions endpoint."""
+    """Google Gemini completions endpoint - routes to Codegen SDK."""
     try:
         # Parse request body
         body = await request.json()
         
-        # Check if API key is available
-        api_key = GOOGLE_API_KEY
-        if not api_key:
-            logger.warning("Google API key not found. Using simulated response.")
-            return create_simulated_gemini_response(body)
-        
         # Extract message from different possible formats
         user_message = extract_user_message(body)
         
-        # Get model
-        model = body.get("model", "gemini-1.5-pro")
-        model_endpoint = f"{model}:generateContent"
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
         
-        # Prepare Google API request
-        google_url = f"{GOOGLE_API_URL}/{model_endpoint}?key={api_key}"
-        
-        # Convert to Google format
-        google_body = convert_to_google_format(body, user_message)
-        
-        # Forward request to Google API
-        headers = {
-            "Content-Type": "application/json"
+        # Prepare request to Codegen SDK
+        codegen_request = {
+            "prompt": user_message,
+            "source": "google_proxy",
+            "model": body.get("model", "gemini-1.5-pro")
         }
         
-        logger.info(f"Sending request to Google API: {json.dumps(google_body)}")
-        response = requests.post(google_url, headers=headers, json=google_body)
+        # Send request to Codegen SDK
+        logger.info(f"Routing Google request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Google API error: {response.status_code} - {response.text}")
-            return JSONResponse(
-                status_code=response.status_code,
-                content=response.json() if response.text else {"error": "Unknown error"}
-            )
+        try:
+            response = requests.post(CODEGEN_API_URL, json=codegen_request)
+            response.raise_for_status()
+            codegen_response = response.json()
+            
+            # Extract the generated text from Codegen response
+            generated_text = codegen_response.get("response", "No response from Codegen SDK")
+            
+        except requests.RequestException as e:
+            logger.error(f"Error calling Codegen SDK: {e}")
+            # If Codegen SDK is unavailable, use a fallback response
+            generated_text = f"Codegen SDK unavailable. Your message was: {user_message}"
         
-        # Return response from Google
-        return response.json()
+        # Format response in Google/Gemini format
+        gemini_response = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {
+                                "text": generated_text
+                            }
+                        ],
+                        "role": "model"
+                    },
+                    "finishReason": "STOP",
+                    "index": 0
+                }
+            ],
+            "usageMetadata": {
+                "promptTokenCount": len(user_message.split()),
+                "candidatesTokenCount": len(generated_text.split()),
+                "totalTokenCount": len(user_message.split()) + len(generated_text.split())
+            }
+        }
+        
+        return gemini_response
         
     except Exception as e:
         logger.error(f"Gemini completion error: {e}")
@@ -326,58 +308,7 @@ def extract_user_message(body):
             if user_message:
                 break
     
-    return user_message or "No message provided"
-
-
-def convert_to_google_format(body, user_message):
-    """Convert from our API format to Google's format."""
-    # If already in Google format, return as is
-    if "contents" in body:
-        return body
-    
-    # Convert to Google format
-    google_body = {
-        "contents": [
-            {
-                "parts": [
-                    {
-                        "text": user_message
-                    }
-                ]
-            }
-        ]
-    }
-    
-    return google_body
-
-
-def create_simulated_gemini_response(body):
-    """Create a simulated Gemini response for testing."""
-    # Extract message
-    user_message = extract_user_message(body)
-    
-    # Create mock response
-    return {
-        "candidates": [
-            {
-                "content": {
-                    "parts": [
-                        {
-                            "text": f"This is a simulated Gemini response to: {user_message}"
-                        }
-                    ],
-                    "role": "model"
-                },
-                "finishReason": "STOP",
-                "index": 0
-            }
-        ],
-        "usageMetadata": {
-            "promptTokenCount": 10,
-            "candidatesTokenCount": 20,
-            "totalTokenCount": 30
-        }
-    }
+    return user_message
 
 
 # Alternative Gemini endpoint
@@ -407,15 +338,65 @@ async def web_ui():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Unified API System</title>
+        <title>API Router System</title>
         <style>
-            body { font-family: Arial, sans-serif; margin: 40px; }
-            .container { max-width: 800px; margin: 0 auto; }
-            .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
-            .method { color: #007acc; font-weight: bold; }
-            .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-            .healthy { background: #d4edda; color: #155724; }
-            .unhealthy { background: #f8d7da; color: #721c24; }
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0;
+                padding: 0;
+                background-color: #f5f7fa;
+            }
+            .container { 
+                max-width: 800px; 
+                margin: 0 auto;
+                padding: 20px;
+            }
+            header {
+                background-color: #4a6cf7;
+                color: white;
+                padding: 20px 0;
+                text-align: center;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }
+            header h1 {
+                margin: 0;
+                font-size: 2.5rem;
+            }
+            header p {
+                margin: 10px 0 0;
+                font-size: 1.2rem;
+                opacity: 0.9;
+            }
+            .card {
+                background-color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            .endpoint { 
+                background: #f5f5f5; 
+                padding: 10px; 
+                margin: 10px 0; 
+                border-radius: 5px; 
+            }
+            .method { 
+                color: #007acc; 
+                font-weight: bold; 
+            }
+            .status { 
+                padding: 10px; 
+                margin: 10px 0; 
+                border-radius: 5px; 
+            }
+            .healthy { 
+                background: #d4edda; 
+                color: #155724; 
+            }
+            .unhealthy { 
+                background: #f8d7da; 
+                color: #721c24; 
+            }
             .test-button { 
                 padding: 10px 15px; 
                 margin: 5px;
@@ -423,10 +404,24 @@ async def web_ui():
                 border-radius: 5px;
                 cursor: pointer;
                 font-weight: bold;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
             }
-            .openai { background: #10a37f; color: white; }
-            .anthropic { background: #7b2cbf; color: white; }
-            .google { background: #4285f4; color: white; }
+            .test-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            .openai { 
+                background: #10a37f; 
+                color: white; 
+            }
+            .anthropic { 
+                background: #7b2cbf; 
+                color: white; 
+            }
+            .google { 
+                background: #4285f4; 
+                color: white; 
+            }
             #response-container {
                 background: #f8f9fa;
                 padding: 15px;
@@ -435,8 +430,11 @@ async def web_ui():
                 white-space: pre-wrap;
                 max-height: 300px;
                 overflow-y: auto;
+                border: 1px solid #e0e0e0;
             }
-            .hidden { display: none; }
+            .hidden { 
+                display: none; 
+            }
             #status-container {
                 margin-bottom: 20px;
             }
@@ -446,53 +444,117 @@ async def web_ui():
                 margin: 10px 0;
                 border-radius: 5px;
                 border: 1px solid #ddd;
+                font-family: inherit;
+                resize: vertical;
+            }
+            h2 {
+                color: #4a6cf7;
+                border-bottom: 1px solid #e0e0e0;
+                padding-bottom: 10px;
+            }
+            footer {
+                text-align: center;
+                margin-top: 40px;
+                padding: 20px 0;
+                border-top: 1px solid #e0e0e0;
+                color: #666;
+            }
+            .config-info {
+                background-color: #fff8e1;
+                border-left: 4px solid #ffc107;
+                padding: 10px 15px;
+                margin: 15px 0;
+                border-radius: 0 5px 5px 0;
             }
         </style>
     </head>
     <body>
+        <header>
+            <div class="container">
+                <h1>API Router System</h1>
+                <p>Routes requests from OpenAI, Anthropic, and Google APIs to Codegen SDK</p>
+            </div>
+        </header>
+
         <div class="container">
-            <h1>Unified API System</h1>
-            
-            <div id="status-container">
-                <h2>Health Status</h2>
-                <div id="health-status" class="status">Checking...</div>
+            <div class="card">
+                <div id="status-container">
+                    <h2>Health Status</h2>
+                    <div id="health-status" class="status">Checking...</div>
+                </div>
+                
+                <div class="config-info">
+                    <p><strong>Routing to:</strong> <span id="routing-to">Checking...</span></p>
+                    <p>To change the Codegen SDK endpoint, set the <code>CODEGEN_API_URL</code> environment variable.</p>
+                </div>
             </div>
             
-            <h2>Test API Endpoints</h2>
-            <div>
-                <h3>Simple Test</h3>
-                <button class="test-button openai" onclick="testAPI('openai')">🟢 Test OpenAI API</button>
-                <button class="test-button anthropic" onclick="testAPI('anthropic')">🟣 Test Anthropic API</button>
-                <button class="test-button google" onclick="testAPI('google')">🔵 Test Google API</button>
+            <div class="card">
+                <h2>Test API Endpoints</h2>
+                <div>
+                    <h3>Simple Test</h3>
+                    <button class="test-button openai" onclick="testAPI('openai')">🟢 Test OpenAI API</button>
+                    <button class="test-button anthropic" onclick="testAPI('anthropic')">🟣 Test Anthropic API</button>
+                    <button class="test-button google" onclick="testAPI('google')">🔵 Test Google API</button>
+                </div>
+                
+                <div>
+                    <h3>Custom Prompt</h3>
+                    <textarea id="custom-prompt" rows="3" placeholder="Enter your custom prompt here...">Hello! Please respond with a short greeting.</textarea>
+                    <button class="test-button openai" onclick="testAPIWithCustomPrompt('openai')">🟢 Test OpenAI API</button>
+                    <button class="test-button anthropic" onclick="testAPIWithCustomPrompt('anthropic')">🟣 Test Anthropic API</button>
+                    <button class="test-button google" onclick="testAPIWithCustomPrompt('google')">🔵 Test Google API</button>
+                </div>
+                
+                <div id="response-container" class="hidden">
+                    <h3>Response:</h3>
+                    <pre id="response-content"></pre>
+                </div>
             </div>
             
-            <div>
-                <h3>Custom Prompt</h3>
-                <textarea id="custom-prompt" rows="3" placeholder="Enter your custom prompt here...">Hello! Please respond with a short greeting.</textarea>
-                <button class="test-button openai" onclick="testAPIWithCustomPrompt('openai')">🟢 Test OpenAI API</button>
-                <button class="test-button anthropic" onclick="testAPIWithCustomPrompt('anthropic')">🟣 Test Anthropic API</button>
-                <button class="test-button google" onclick="testAPIWithCustomPrompt('google')">🔵 Test Google API</button>
+            <div class="card">
+                <h2>Available Endpoints</h2>
+                <div class="endpoint">
+                    <span class="method">GET</span> /health - Health check
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /v1/chat/completions - OpenAI chat completions
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /v1/anthropic/completions - Anthropic completions
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /v1/gemini/completions - Google Gemini completions
+                </div>
             </div>
             
-            <div id="response-container" class="hidden">
-                <h3>Response:</h3>
-                <pre id="response-content"></pre>
-            </div>
-            
-            <h2>Available Endpoints</h2>
-            <div class="endpoint">
-                <span class="method">GET</span> /health - Health check
-            </div>
-            <div class="endpoint">
-                <span class="method">POST</span> /v1/chat/completions - OpenAI chat completions
-            </div>
-            <div class="endpoint">
-                <span class="method">POST</span> /v1/anthropic/completions - Anthropic completions
-            </div>
-            <div class="endpoint">
-                <span class="method">POST</span> /v1/gemini/completions - Google Gemini completions
+            <div class="card">
+                <h2>How to Use</h2>
+                <p>To use this API router with your existing applications:</p>
+                <ol>
+                    <li>Start this server on your desired host and port</li>
+                    <li>In your application that uses OpenAI, Anthropic, or Google APIs, change the API base URL to point to this server</li>
+                    <li>No API keys or other configuration needed - all requests will be routed to the Codegen SDK</li>
+                </ol>
+                
+                <h3>Example Configuration</h3>
+                <div class="endpoint">
+                    <strong>OpenAI:</strong> <code>OPENAI_API_BASE=http://localhost:8887/v1</code>
+                </div>
+                <div class="endpoint">
+                    <strong>Anthropic:</strong> <code>ANTHROPIC_API_URL=http://localhost:8887/v1</code>
+                </div>
+                <div class="endpoint">
+                    <strong>Google/Gemini:</strong> <code>GEMINI_API_URL=http://localhost:8887/v1</code>
+                </div>
             </div>
         </div>
+
+        <footer>
+            <div class="container">
+                <p>API Router System &copy; 2024</p>
+            </div>
+        </footer>
         
         <script>
             // Check server health on page load
@@ -503,9 +565,15 @@ async def web_ui():
                     .then(response => response.json())
                     .then(data => {
                         const statusElement = document.getElementById('health-status');
+                        const routingElement = document.getElementById('routing-to');
+                        
                         if (data.status === 'healthy') {
                             statusElement.className = 'status healthy';
                             statusElement.innerHTML = '✅ Server is healthy';
+                            
+                            if (data.routing_to) {
+                                routingElement.textContent = data.routing_to;
+                            }
                         } else {
                             statusElement.className = 'status unhealthy';
                             statusElement.innerHTML = '❌ Server is unhealthy';
@@ -587,16 +655,9 @@ async def web_ui():
 
 def start_server(host="localhost", port=8887):
     """Start the server."""
-    logger.info(f"Starting Unified API System on {host}:{port}")
+    logger.info(f"Starting API Router System on {host}:{port}")
+    logger.info(f"Routing requests to Codegen SDK at: {CODEGEN_API_URL}")
     logger.info(f"Supported providers: openai, anthropic, google")
-    
-    # Check for API keys
-    if not OPENAI_API_KEY:
-        logger.warning("OPENAI_API_KEY not found in environment variables. OpenAI API will use simulated responses.")
-    if not ANTHROPIC_API_KEY:
-        logger.warning("ANTHROPIC_API_KEY not found in environment variables. Anthropic API will use simulated responses.")
-    if not GOOGLE_API_KEY:
-        logger.warning("GOOGLE_API_KEY not found in environment variables. Google API will use simulated responses.")
     
     uvicorn.run(
         app,
