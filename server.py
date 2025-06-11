@@ -312,11 +312,7 @@ async def openai_chat_completions(request: Request):
         
         try:
             # Run the agent with the prompt
-            task = agent.run(
-                prompt=user_message,
-                source="openai_proxy",
-                model=body.get("model", "gpt-3.5-turbo")
-            )
+            task = agent.run(prompt=user_message)
             
             # Wait for the task to complete (with timeout)
             start_time = time.time()
@@ -395,11 +391,7 @@ async def anthropic_completions(request: Request):
         
         try:
             # Run the agent with the prompt
-            task = agent.run(
-                prompt=user_message,
-                source="anthropic_proxy",
-                model=body.get("model", "claude-3-sonnet-20240229")
-            )
+            task = agent.run(prompt=user_message)
             
             # Wait for the task to complete (with timeout)
             start_time = time.time()
@@ -465,11 +457,7 @@ async def gemini_completions(request: Request):
         
         try:
             # Run the agent with the prompt
-            task = agent.run(
-                prompt=user_message,
-                source="google_proxy",
-                model=body.get("model", "gemini-1.5-pro")
-            )
+            task = agent.run(prompt=user_message)
             
             # Wait for the task to complete (with timeout)
             start_time = time.time()
