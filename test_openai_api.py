@@ -1,46 +1,77 @@
+#!/usr/bin/env python3
 """
-Tests sending a message to OpenAI API and receiving a response via user interface
+Test the OpenAI API endpoint.
 """
 
-import os
-import requests
+import sys
 import json
+import requests
 
-# Define the API base URL (can be overridden with environment variable)
-API_BASE = os.getenv("API_BASE", "http://localhost:8887")
-url = f"{API_BASE}/v1/chat/completions"
+# Define colors for terminal output
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
 
-# Define headers
-headers = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY', '')}"
-}
+# Define the API endpoint
+API_URL = "http://localhost:8887/v1/chat/completions"
+TEST_MESSAGE = "Hello, this is a test message."
 
-# Define the data to send
-data = {
-    "model": "gpt-3.5-turbo",
-    "messages": [
-        {"role": "user", "content": "This is a test message."}
-    ],
-    "max_tokens": 5
-}
 
-print("🧪 Testing OpenAI API...")
-print(f"📤 Sending message to {url}...")
-
-# Send the request
-try:
-    response = requests.post(url, headers=headers, json=data, timeout=30)
+def main():
+    """Run the OpenAI API test."""
+    print(f"{YELLOW}🧪 Testing OpenAI API...{RESET}")
     
-    # Check if the request was successful
-    if response.status_code == 200:
-        print("✅ OpenAI API Response:")
-        print(json.dumps(response.json(), indent=2))
-        exit(0)
-    else:
-        print(f"❌ OpenAI API Error: {response.status_code} - {response.text}")
-        exit(1)
-except Exception as e:
-    print(f"❌ OpenAI API Test Failed: {e}")
-    exit(1)
+    # Prepare the request payload
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {
+                "role": "user",
+                "content": TEST_MESSAGE
+            }
+        ]
+    }
+    
+    try:
+        # Send the request
+        print(f"{YELLOW}📤 Sending message to {API_URL}...{RESET}")
+        response = requests.post(
+            API_URL,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            data = response.json()
+            print(f"{YELLOW}📥 Received response:{RESET}")
+            print(json.dumps(data, indent=2))
+            
+            # Validate the response format
+            if (
+                "choices" in data and
+                len(data["choices"]) > 0 and
+                "message" in data["choices"][0] and
+                "content" in data["choices"][0]["message"]
+            ):
+                content = data["choices"][0]["message"]["content"]
+                print(f"{GREEN}✅ OpenAI API test passed!{RESET}")
+                print(f"{YELLOW}Response content:{RESET} {content}")
+                return 0
+            else:
+                print(f"{RED}❌ OpenAI API returned invalid response format{RESET}")
+                return 1
+        else:
+            print(f"{RED}❌ OpenAI API Error: {response.status_code} - {response.text}{RESET}")
+            return 1
+            
+    except Exception as e:
+        print(f"{RED}❌ Error testing OpenAI API: {e}{RESET}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 

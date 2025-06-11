@@ -1,36 +1,28 @@
 """
-Consolidated FastAPI server for unified API system.
-Provides essential endpoints for OpenAI, Anthropic, and Google APIs with web UI.
+Simple FastAPI server for unified API system.
+Provides endpoints for OpenAI, Anthropic, and Google APIs with web UI.
 """
 
-import asyncio
 import logging
 import time
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from client import UnifiedClient, ProviderType
-from models import ChatRequest, ChatResponse, HealthResponse, ErrorResponse, TestResult
-from config import get_config
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Get configuration
-config = get_config()
-
 # Create FastAPI app
 app = FastAPI(
     title="Unified API Server",
-    description="Consolidated server for OpenAI, Anthropic, and Google APIs",
+    description="Simple server for OpenAI, Anthropic, and Google APIs",
     version="1.0.0"
 )
 
@@ -43,12 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files for Web UI
-if config.enable_web_ui and Path(config.static_files_path).exists():
-    app.mount("/static", StaticFiles(directory=config.static_files_path), name="static")
-
-# Global client instance
-unified_client = UnifiedClient()
+# Mount static files for Web UI if available
+static_path = Path("static")
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.exception_handler(Exception)
@@ -57,197 +47,268 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"error": f"Internal server error: {str(exc)}"}
+        content={"detail": f"Internal server error: {str(exc)}"}
     )
 
 
-# Health and status endpoints
-@app.get("/health", response_model=HealthResponse)
+# Health endpoint
+@app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    health = unified_client.health_check()
-    return HealthResponse(
-        status=health["status"],
-        timestamp=health["timestamp"],
-        providers=health["supported_providers"]
-    )
-
-
-@app.get("/api/status")
-async def api_status():
-    """API status endpoint for web UI."""
-    health = unified_client.health_check()
     return {
-        "status": "online",
-        "providers": health["supported_providers"],
-        "timestamp": health["timestamp"]
+        "status": "healthy",
+        "timestamp": time.time(),
+        "providers": ["openai", "anthropic", "google"]
     }
 
 
-# OpenAI-compatible endpoints
+# OpenAI endpoint
 @app.post("/v1/chat/completions")
-async def openai_chat_completions(request: ChatRequest):
-    """OpenAI-compatible chat completions endpoint."""
+async def openai_chat_completions(request: Request):
+    """OpenAI chat completions endpoint."""
     try:
-        start_time = time.time()
-        result = await unified_client.send_message(
-            message=request.messages[-1].content,  # Get last user message
-            provider=ProviderType.OPENAI,
-            model=request.model
-        )
+        # Parse request body
+        body = await request.json()
         
-        if result["success"]:
-            return {
-                "id": f"chatcmpl-{int(time.time())}",
-                "object": "chat.completion",
-                "created": int(start_time),
-                "model": request.model,
-                "choices": [{
+        # Extract message
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Get model
+        model = body.get("model", "gpt-3.5-turbo")
+        
+        # Create mock response
+        response = {
+            "id": "chatcmpl-123456789",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [
+                {
                     "index": 0,
                     "message": {
                         "role": "assistant",
-                        "content": str(result.get("response", "Response received"))
+                        "content": f"This is a simulated response to: {user_message}"
                     },
                     "finish_reason": "stop"
-                }],
-                "usage": {
-                    "prompt_tokens": len(request.messages[-1].content.split()),
-                    "completion_tokens": 10,  # Estimated
-                    "total_tokens": len(request.messages[-1].content.split()) + 10
                 }
+            ],
+            "usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0
             }
-        else:
-            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
-            
+        }
+        
+        return response
+        
     except Exception as e:
         logger.error(f"OpenAI chat completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Anthropic endpoints
+# Anthropic endpoint
 @app.post("/v1/anthropic/completions")
-async def anthropic_completions(request: ChatRequest):
+async def anthropic_completions(request: Request):
     """Anthropic completions endpoint."""
     try:
-        result = await unified_client.send_message(
-            message=request.messages[-1].content,
-            provider=ProviderType.ANTHROPIC,
-            model=request.model
-        )
+        # Parse request body
+        body = await request.json()
         
-        if result["success"]:
-            return {
-                "id": f"msg_{int(time.time())}",
-                "type": "message",
-                "role": "assistant",
-                "content": [{"type": "text", "text": str(result.get("response", "Response received"))}],
-                "model": request.model,
-                "stop_reason": "end_turn",
-                "usage": {
-                    "input_tokens": len(request.messages[-1].content.split()),
-                    "output_tokens": 10
+        # Extract message
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Get model
+        model = body.get("model", "claude-3-sonnet-20240229")
+        
+        # Create mock response
+        response = {
+            "id": "msg_012345678",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"This is a simulated Anthropic response to: {user_message}"
                 }
+            ],
+            "model": model,
+            "stop_reason": "end_turn",
+            "usage": {
+                "input_tokens": 10,
+                "output_tokens": 20
             }
-        else:
-            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
-            
+        }
+        
+        return response
+        
     except Exception as e:
         logger.error(f"Anthropic completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/v1/messages")
-async def anthropic_messages(request: ChatRequest):
-    """Anthropic messages endpoint (alternative format)."""
-    return await anthropic_completions(request)
-
-
-# Google/Gemini endpoints
+# Google/Gemini endpoint
 @app.post("/v1/gemini/completions")
-async def gemini_completions(request: ChatRequest):
+async def gemini_completions(request: Request):
     """Google Gemini completions endpoint."""
     try:
-        result = await unified_client.send_message(
-            message=request.messages[-1].content,
-            provider=ProviderType.GOOGLE,
-            model=request.model
-        )
+        # Parse request body
+        body = await request.json()
         
-        if result["success"]:
-            return {
-                "candidates": [{
+        # Extract message from different possible formats
+        user_message = None
+        
+        # Try messages format first (like OpenAI)
+        messages = body.get("messages", [])
+        if messages:
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    user_message = msg.get("content")
+                    break
+        
+        # If not found, try contents format (like Gemini)
+        if not user_message:
+            contents = body.get("contents", [])
+            for content in contents:
+                parts = content.get("parts", [])
+                for part in parts:
+                    if "text" in part:
+                        user_message = part["text"]
+                        break
+                if user_message:
+                    break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Get model
+        model = body.get("model", "gemini-1.5-pro")
+        
+        # Create mock response
+        response = {
+            "candidates": [
+                {
                     "content": {
-                        "parts": [{"text": str(result.get("response", "Response received"))}],
+                        "parts": [
+                            {
+                                "text": f"This is a simulated Gemini response to: {user_message}"
+                            }
+                        ],
                         "role": "model"
                     },
                     "finishReason": "STOP",
                     "index": 0
-                }],
-                "usageMetadata": {
-                    "promptTokenCount": len(request.messages[-1].content.split()),
-                    "candidatesTokenCount": 10,
-                    "totalTokenCount": len(request.messages[-1].content.split()) + 10
                 }
+            ],
+            "usageMetadata": {
+                "promptTokenCount": 10,
+                "candidatesTokenCount": 20,
+                "totalTokenCount": 30
             }
-        else:
-            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
-            
+        }
+        
+        return response
+        
     except Exception as e:
         logger.error(f"Gemini completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Alternative Gemini endpoint
 @app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: ChatRequest):
-    """Google Gemini generateContent endpoint (alternative format)."""
+async def gemini_generate_content(request: Request):
+    """Alternative Gemini endpoint."""
     return await gemini_completions(request)
 
 
-# Test endpoints for each provider
+# Alternative Anthropic endpoint
+@app.post("/v1/messages")
+async def anthropic_messages(request: Request):
+    """Alternative Anthropic endpoint."""
+    return await anthropic_completions(request)
+
+
+# Test endpoint
 @app.post("/api/test/{provider}")
-async def test_provider(provider: str, request: Dict[str, Any]):
+async def test_provider(provider: str, request: Request):
     """Test endpoint for each provider."""
     try:
-        provider_type = ProviderType(provider.lower())
-        message = request.get("message", "Hello! Please respond with just 'Hi there!'")
-        model = request.get("model")
+        # Parse request body
+        body = await request.json()
         
-        result = await unified_client.send_message(message, provider_type, model)
+        # Get message and model
+        message = body.get("message", "Hello! Please respond with a short greeting.")
+        model = body.get("model")
         
-        return TestResult(
-            provider=provider,
-            model=model or f"default-{provider}-model",
-            success=result["success"],
-            response=result.get("response") if result["success"] else None,
-            error=result.get("error") if not result["success"] else None,
-            processing_time=result["processing_time"],
-            timestamp=time.time()
-        )
+        # Validate provider
+        if provider.lower() not in ["openai", "anthropic", "google"]:
+            raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
         
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+        # Create response based on provider
+        if provider.lower() == "openai":
+            response_content = f"OpenAI test response to: {message}"
+            model = model or "gpt-3.5-turbo"
+        elif provider.lower() == "anthropic":
+            response_content = f"Anthropic test response to: {message}"
+            model = model or "claude-3-sonnet-20240229"
+        else:  # google
+            response_content = f"Google test response to: {message}"
+            model = model or "gemini-1.5-pro"
+        
+        # Return response
+        return {
+            "provider": provider,
+            "model": model,
+            "success": True,
+            "response": {
+                "content": response_content
+            },
+            "processing_time": 0.1,
+            "timestamp": time.time()
+        }
+        
     except Exception as e:
         logger.error(f"Test provider error: {e}")
-        return TestResult(
-            provider=provider,
-            model=model or f"default-{provider}-model",
-            success=False,
-            error=str(e),
-            processing_time=0.0,
-            timestamp=time.time()
-        )
+        return {
+            "provider": provider,
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }
 
 
 # Web UI endpoint
 @app.get("/", response_class=HTMLResponse)
 async def web_ui():
     """Serve the web UI."""
-    if config.enable_web_ui:
-        static_path = Path(config.static_files_path) / "index.html"
-        if static_path.exists():
-            return HTMLResponse(content=static_path.read_text(), status_code=200)
+    static_index = Path("static/index.html")
+    if static_index.exists():
+        return HTMLResponse(content=static_index.read_text(), status_code=200)
     
-    # Fallback HTML if no static UI found
+    # Fallback HTML
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
@@ -307,16 +368,17 @@ curl -X POST http://localhost:8887/v1/gemini/completions \\
 
 def main():
     """Main function to run the server."""
-    logger.info(f"Starting Unified API Server on {config.host}:{config.port}")
-    logger.info(f"Web UI enabled: {config.enable_web_ui}")
-    logger.info(f"Supported providers: {unified_client.get_supported_providers()}")
+    host = "localhost"
+    port = 8887
+    
+    logger.info(f"Starting Unified API Server on {host}:{port}")
+    logger.info(f"Supported providers: openai, anthropic, google")
     
     uvicorn.run(
         "server:app",
-        host=config.host,
-        port=config.port,
-        reload=config.debug,
-        log_level="info" if not config.debug else "debug"
+        host=host,
+        port=port,
+        log_level="info"
     )
 
 

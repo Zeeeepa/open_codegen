@@ -1,108 +1,75 @@
 """
-Simplified data models for the unified API system.
-Contains only the essential models needed for the three providers.
+Data models for the unified API system.
 """
 
-from typing import List, Dict, Any, Optional, Union
-from pydantic import BaseModel
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
 from enum import Enum
 
 
 class MessageRole(str, Enum):
-    """Message roles for chat completions."""
+    """Message role in a chat conversation."""
+    SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
-    SYSTEM = "system"
+    FUNCTION = "function"
 
 
-class ChatMessage(BaseModel):
-    """A single chat message."""
-    role: MessageRole
-    content: str
+class Message(BaseModel):
+    """Message in a chat conversation."""
+    role: MessageRole = Field(..., description="Role of the message sender")
+    content: str = Field(..., description="Content of the message")
+    name: Optional[str] = Field(None, description="Name of the sender (optional)")
 
 
 class ChatRequest(BaseModel):
-    """Unified chat completion request for all providers."""
-    model: str
-    messages: List[ChatMessage]
-    max_tokens: Optional[int] = 150
-    temperature: Optional[float] = 0.7
-    stream: Optional[bool] = False
+    """Request for chat completion."""
+    model: str = Field(..., description="Model to use for completion")
+    messages: List[Message] = Field(..., description="Messages in the conversation")
+    max_tokens: Optional[int] = Field(None, description="Maximum number of tokens to generate")
+    temperature: Optional[float] = Field(None, description="Sampling temperature")
+    top_p: Optional[float] = Field(None, description="Nucleus sampling parameter")
+    n: Optional[int] = Field(None, description="Number of completions to generate")
+    stream: Optional[bool] = Field(None, description="Whether to stream the response")
+    stop: Optional[List[str]] = Field(None, description="Sequences where the API will stop generating")
+    presence_penalty: Optional[float] = Field(None, description="Presence penalty")
+    frequency_penalty: Optional[float] = Field(None, description="Frequency penalty")
+    logit_bias: Optional[Dict[str, float]] = Field(None, description="Logit bias")
+    user: Optional[str] = Field(None, description="User identifier")
 
 
 class ChatResponse(BaseModel):
-    """Unified chat completion response."""
-    id: str
-    object: str = "chat.completion"
-    created: int
-    model: str
-    choices: List[Dict[str, Any]]
-    usage: Optional[Dict[str, int]] = None
+    """Response from chat completion."""
+    id: str = Field(..., description="Unique identifier for the completion")
+    object: str = Field(..., description="Object type")
+    created: int = Field(..., description="Unix timestamp of when the completion was created")
+    model: str = Field(..., description="Model used for completion")
+    choices: List[Dict[str, Any]] = Field(..., description="List of completion choices")
+    usage: Dict[str, int] = Field(..., description="Token usage information")
 
 
 class HealthResponse(BaseModel):
-    """Health check response."""
-    status: str
-    timestamp: float
-    providers: List[str]
+    """Response from health check endpoint."""
+    status: str = Field(..., description="Health status (healthy or unhealthy)")
+    timestamp: float = Field(..., description="Unix timestamp of when the health check was performed")
+    providers: List[str] = Field(..., description="List of supported providers")
 
 
 class ErrorResponse(BaseModel):
-    """Error response model."""
-    error: str
-    provider: Optional[str] = None
-    timestamp: float
+    """Error response."""
+    error: str = Field(..., description="Error message")
+    code: Optional[int] = Field(None, description="Error code")
+    param: Optional[str] = Field(None, description="Parameter that caused the error")
+    type: Optional[str] = Field(None, description="Error type")
 
 
 class TestResult(BaseModel):
-    """Test result model."""
-    provider: str
-    model: str
-    success: bool
-    response: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    processing_time: float
-    timestamp: float
-
-
-# Provider-specific models (simplified)
-class OpenAIRequest(ChatRequest):
-    """OpenAI-specific request model."""
-    pass
-
-
-class AnthropicRequest(ChatRequest):
-    """Anthropic-specific request model."""
-    pass
-
-
-class GoogleRequest(ChatRequest):
-    """Google/Gemini-specific request model."""
-    pass
-
-
-# Model lists for each provider
-OPENAI_MODELS = [
-    "gpt-3.5-turbo",
-    "gpt-4",
-    "gpt-4-turbo"
-]
-
-ANTHROPIC_MODELS = [
-    "claude-3-sonnet-20240229",
-    "claude-3-opus-20240229",
-    "claude-3-haiku-20240307"
-]
-
-GOOGLE_MODELS = [
-    "gemini-1.5-pro",
-    "gemini-1.5-flash",
-    "gemini-pro"
-]
-
-ALL_MODELS = {
-    "openai": OPENAI_MODELS,
-    "anthropic": ANTHROPIC_MODELS,
-    "google": GOOGLE_MODELS
-}
+    """Result of a provider test."""
+    provider: str = Field(..., description="Provider name")
+    model: str = Field(..., description="Model used for test")
+    success: bool = Field(..., description="Whether the test was successful")
+    response: Optional[Any] = Field(None, description="Response from the provider")
+    error: Optional[str] = Field(None, description="Error message if the test failed")
+    processing_time: float = Field(..., description="Time taken to process the request")
+    timestamp: float = Field(..., description="Unix timestamp of when the test was performed")
 
