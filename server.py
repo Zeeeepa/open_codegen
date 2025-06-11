@@ -6,8 +6,9 @@ Provides endpoints for OpenAI, Anthropic, and Google APIs with web UI.
 import logging
 import time
 import json
+import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -319,13 +320,73 @@ async def web_ui():
             .container { max-width: 800px; margin: 0 auto; }
             .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
             .method { color: #007acc; font-weight: bold; }
+            .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+            .healthy { background: #d4edda; color: #155724; }
+            .unhealthy { background: #f8d7da; color: #721c24; }
+            .test-button { 
+                padding: 10px 15px; 
+                margin: 5px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+            }
+            .openai { background: #10a37f; color: white; }
+            .anthropic { background: #7b2cbf; color: white; }
+            .google { background: #4285f4; color: white; }
+            #response-container {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin-top: 20px;
+                white-space: pre-wrap;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            .hidden { display: none; }
+            #status-container {
+                margin-bottom: 20px;
+            }
+            #custom-prompt {
+                width: 100%;
+                padding: 10px;
+                margin: 10px 0;
+                border-radius: 5px;
+                border: 1px solid #ddd;
+            }
         </style>
     </head>
     <body>
         <div class="container">
             <h1>Unified API Server</h1>
-            <p>Server is running! Available endpoints:</p>
             
+            <div id="status-container">
+                <h2>Health Status</h2>
+                <div id="health-status" class="status">Checking...</div>
+            </div>
+            
+            <h2>Test API Endpoints</h2>
+            <div>
+                <h3>Simple Test</h3>
+                <button class="test-button openai" onclick="testAPI('openai')">🟢 Test OpenAI API</button>
+                <button class="test-button anthropic" onclick="testAPI('anthropic')">🟣 Test Anthropic API</button>
+                <button class="test-button google" onclick="testAPI('google')">🔵 Test Google API</button>
+            </div>
+            
+            <div>
+                <h3>Custom Prompt</h3>
+                <textarea id="custom-prompt" rows="3" placeholder="Enter your custom prompt here...">Hello! Please respond with a short greeting.</textarea>
+                <button class="test-button openai" onclick="testAPIWithCustomPrompt('openai')">🟢 Test OpenAI API</button>
+                <button class="test-button anthropic" onclick="testAPIWithCustomPrompt('anthropic')">🟣 Test Anthropic API</button>
+                <button class="test-button google" onclick="testAPIWithCustomPrompt('google')">🔵 Test Google API</button>
+            </div>
+            
+            <div id="response-container" class="hidden">
+                <h3>Response:</h3>
+                <pre id="response-content"></pre>
+            </div>
+            
+            <h2>Available Endpoints</h2>
             <div class="endpoint">
                 <span class="method">GET</span> /health - Health check
             </div>
@@ -338,29 +399,94 @@ async def web_ui():
             <div class="endpoint">
                 <span class="method">POST</span> /v1/gemini/completions - Google Gemini completions
             </div>
-            <div class="endpoint">
-                <span class="method">POST</span> /api/test/{provider} - Test provider (openai, anthropic, google)
-            </div>
-            
-            <h2>Quick Test</h2>
-            <p>Test the APIs using curl:</p>
-            <pre>
-# Test OpenAI
-curl -X POST http://localhost:8887/v1/chat/completions \\
-  -H "Content-Type: application/json" \\
-  -d '{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"Hello!"}]}'
-
-# Test Anthropic  
-curl -X POST http://localhost:8887/v1/anthropic/completions \\
-  -H "Content-Type: application/json" \\
-  -d '{"model":"claude-3-sonnet-20240229","messages":[{"role":"user","content":"Hello!"}]}'
-
-# Test Google
-curl -X POST http://localhost:8887/v1/gemini/completions \\
-  -H "Content-Type: application/json" \\
-  -d '{"model":"gemini-1.5-pro","messages":[{"role":"user","content":"Hello!"}]}'
-            </pre>
         </div>
+        
+        <script>
+            // Check server health on page load
+            document.addEventListener('DOMContentLoaded', checkHealth);
+            
+            function checkHealth() {
+                fetch('/health')
+                    .then(response => response.json())
+                    .then(data => {
+                        const statusElement = document.getElementById('health-status');
+                        if (data.status === 'healthy') {
+                            statusElement.className = 'status healthy';
+                            statusElement.innerHTML = '✅ Server is healthy';
+                        } else {
+                            statusElement.className = 'status unhealthy';
+                            statusElement.innerHTML = '❌ Server is unhealthy';
+                        }
+                    })
+                    .catch(error => {
+                        const statusElement = document.getElementById('health-status');
+                        statusElement.className = 'status unhealthy';
+                        statusElement.innerHTML = '❌ Server is unhealthy';
+                        console.error('Error checking health:', error);
+                    });
+            }
+            
+            function testAPI(provider) {
+                const defaultPrompt = "Hello! Please respond with a short greeting.";
+                sendRequest(provider, defaultPrompt);
+            }
+            
+            function testAPIWithCustomPrompt(provider) {
+                const prompt = document.getElementById('custom-prompt').value.trim();
+                if (!prompt) {
+                    alert('Please enter a prompt');
+                    return;
+                }
+                sendRequest(provider, prompt);
+            }
+            
+            function sendRequest(provider, message) {
+                const responseContainer = document.getElementById('response-container');
+                const responseContent = document.getElementById('response-content');
+                
+                responseContainer.className = ''; // Show container
+                responseContent.textContent = 'Sending request...';
+                
+                let endpoint = '';
+                let payload = {};
+                
+                if (provider === 'openai') {
+                    endpoint = '/v1/chat/completions';
+                    payload = {
+                        model: 'gpt-3.5-turbo',
+                        messages: [{ role: 'user', content: message }]
+                    };
+                } else if (provider === 'anthropic') {
+                    endpoint = '/v1/anthropic/completions';
+                    payload = {
+                        model: 'claude-3-sonnet-20240229',
+                        messages: [{ role: 'user', content: message }]
+                    };
+                } else if (provider === 'google') {
+                    endpoint = '/v1/gemini/completions';
+                    payload = {
+                        model: 'gemini-1.5-pro',
+                        messages: [{ role: 'user', content: message }]
+                    };
+                }
+                
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    responseContent.textContent = 'Request successful!\nResponse:\n' + JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    responseContent.textContent = 'Error: ' + error.message;
+                    console.error('Error:', error);
+                });
+            }
+        </script>
     </body>
     </html>
     """, status_code=200)
