@@ -1,7 +1,6 @@
 """
-Unified API System for OpenAI, Anthropic, and Google APIs.
-This module routes requests from these APIs to the Codegen SDK and returns responses
-in the format expected by the original API clients.
+API Router System for OpenAI, Anthropic, and Google APIs.
+Routes requests from these APIs to the Codegen SDK.
 """
 
 import logging
@@ -102,18 +101,21 @@ async def openai_chat_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        try:
-            response = requests.post(CODEGEN_API_URL, json=codegen_request)
-            response.raise_for_status()
-            codegen_response = response.json()
-            
-            # Extract the generated text from Codegen response
-            generated_text = codegen_response.get("response", "No response from Codegen SDK")
-            
-        except requests.RequestException as e:
-            logger.error(f"Error calling Codegen SDK: {e}")
-            # If Codegen SDK is unavailable, use a fallback response
-            generated_text = f"Codegen SDK unavailable. Your message was: {user_message}"
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in OpenAI format
         openai_response = {
@@ -178,18 +180,21 @@ async def anthropic_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        try:
-            response = requests.post(CODEGEN_API_URL, json=codegen_request)
-            response.raise_for_status()
-            codegen_response = response.json()
-            
-            # Extract the generated text from Codegen response
-            generated_text = codegen_response.get("response", "No response from Codegen SDK")
-            
-        except requests.RequestException as e:
-            logger.error(f"Error calling Codegen SDK: {e}")
-            # If Codegen SDK is unavailable, use a fallback response
-            generated_text = f"Codegen SDK unavailable. Your message was: {user_message}"
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in Anthropic format
         anthropic_response = {
@@ -241,18 +246,21 @@ async def gemini_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing Google request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        try:
-            response = requests.post(CODEGEN_API_URL, json=codegen_request)
-            response.raise_for_status()
-            codegen_response = response.json()
-            
-            # Extract the generated text from Codegen response
-            generated_text = codegen_response.get("response", "No response from Codegen SDK")
-            
-        except requests.RequestException as e:
-            logger.error(f"Error calling Codegen SDK: {e}")
-            # If Codegen SDK is unavailable, use a fallback response
-            generated_text = f"Codegen SDK unavailable. Your message was: {user_message}"
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in Google/Gemini format
         gemini_response = {

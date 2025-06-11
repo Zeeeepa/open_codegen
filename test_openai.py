@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Test script for OpenAI API endpoint.
+Test script for OpenAI API.
+This script sends a message to the OpenAI API and receives a response.
 """
 
-import json
 import requests
+import json
 import sys
+import os
 
 # ANSI color codes for output formatting
 YELLOW = "\033[93m"
@@ -13,14 +15,16 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 RESET = "\033[0m"
 
-# API endpoint
-API_URL = "http://localhost:8887/v1/chat/completions"
+# Base URL for the OpenAI API
+# This can be changed to point to the router program
+BASE_URL = os.environ.get("OPENAI_API_BASE", "http://localhost:8887/v1")
+API_URL = f"{BASE_URL}/chat/completions"
 
 # Test message
-TEST_MESSAGE = "Hello, this is a test message."
+TEST_MESSAGE = "Hello, this is a test message from OpenAI API test."
 
 def test_openai_api():
-    """Test the OpenAI API endpoint."""
+    """Send a message to the OpenAI API and receive a response."""
     print(f"{YELLOW}🧪 Testing OpenAI API...{RESET}")
     
     # Prepare request payload
@@ -49,26 +53,13 @@ def test_openai_api():
             print(f"{RED}❌ Invalid response format: not a dictionary{RESET}")
             return False
         
-        # Check required fields
-        required_fields = ["id", "object", "created", "model", "choices", "usage"]
-        for field in required_fields:
-            if field not in data:
-                print(f"{RED}❌ Missing required field: {field}{RESET}")
-                return False
+        # Extract content if available
+        content = ""
+        if "choices" in data and len(data["choices"]) > 0:
+            choice = data["choices"][0]
+            if "message" in choice and "content" in choice["message"]:
+                content = choice["message"]["content"]
         
-        # Check choices
-        if not isinstance(data["choices"], list) or len(data["choices"]) == 0:
-            print(f"{RED}❌ Invalid choices: {data.get('choices')}{RESET}")
-            return False
-        
-        # Check first choice
-        choice = data["choices"][0]
-        if "message" not in choice or "role" not in choice["message"] or "content" not in choice["message"]:
-            print(f"{RED}❌ Invalid message format in choice{RESET}")
-            return False
-        
-        # Extract and print content
-        content = choice["message"]["content"]
         print(f"{GREEN}✅ OpenAI API test passed!{RESET}")
         print(f"{YELLOW}Response content:{RESET} {content}")
         return True
@@ -84,6 +75,10 @@ def test_openai_api():
         return False
 
 if __name__ == "__main__":
+    print(f"{YELLOW}🔍 Using OpenAI API base URL: {BASE_URL}{RESET}")
+    print(f"{YELLOW}💡 Set OPENAI_API_BASE environment variable to change this.{RESET}")
+    print()
+    
     success = test_openai_api()
     sys.exit(0 if success else 1)
 

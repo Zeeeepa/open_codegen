@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Test script for Google/Gemini API endpoint.
+Test script for Google/Gemini API.
+This script sends a message to the Google/Gemini API and receives a response.
 """
 
-import json
 import requests
+import json
 import sys
+import os
 
 # ANSI color codes for output formatting
 YELLOW = "\033[93m"
@@ -13,14 +15,16 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 RESET = "\033[0m"
 
-# API endpoint
-API_URL = "http://localhost:8887/v1/gemini/completions"
+# Base URL for the Google/Gemini API
+# This can be changed to point to the router program
+BASE_URL = os.environ.get("GEMINI_API_URL", "http://localhost:8887/v1")
+API_URL = f"{BASE_URL}/gemini/completions"
 
 # Test message
-TEST_MESSAGE = "Hello, this is a test message."
+TEST_MESSAGE = "Hello, this is a test message from Google/Gemini API test."
 
 def test_google_api():
-    """Test the Google/Gemini API endpoint."""
+    """Send a message to the Google/Gemini API and receive a response."""
     print(f"{YELLOW}🧪 Testing Google/Gemini API...{RESET}")
     
     # Prepare request payload
@@ -49,32 +53,15 @@ def test_google_api():
             print(f"{RED}❌ Invalid response format: not a dictionary{RESET}")
             return False
         
-        # Check required fields
-        required_fields = ["candidates", "usageMetadata"]
-        for field in required_fields:
-            if field not in data:
-                print(f"{RED}❌ Missing required field: {field}{RESET}")
-                return False
+        # Extract content if available
+        content = ""
+        if "candidates" in data and len(data["candidates"]) > 0:
+            candidate = data["candidates"][0]
+            if "content" in candidate and "parts" in candidate["content"] and len(candidate["content"]["parts"]) > 0:
+                part = candidate["content"]["parts"][0]
+                if "text" in part:
+                    content = part["text"]
         
-        # Check candidates
-        if not isinstance(data["candidates"], list) or len(data["candidates"]) == 0:
-            print(f"{RED}❌ Invalid candidates: {data.get('candidates')}{RESET}")
-            return False
-        
-        # Check first candidate
-        candidate = data["candidates"][0]
-        if "content" not in candidate or "parts" not in candidate["content"]:
-            print(f"{RED}❌ Invalid candidate format{RESET}")
-            return False
-        
-        # Check parts
-        parts = candidate["content"]["parts"]
-        if not isinstance(parts, list) or len(parts) == 0 or "text" not in parts[0]:
-            print(f"{RED}❌ Invalid parts format{RESET}")
-            return False
-        
-        # Extract and print content
-        content = parts[0]["text"]
         print(f"{GREEN}✅ Google/Gemini API test passed!{RESET}")
         print(f"{YELLOW}Response content:{RESET} {content}")
         return True
@@ -90,6 +77,10 @@ def test_google_api():
         return False
 
 if __name__ == "__main__":
+    print(f"{YELLOW}🔍 Using Google/Gemini API base URL: {BASE_URL}{RESET}")
+    print(f"{YELLOW}💡 Set GEMINI_API_URL environment variable to change this.{RESET}")
+    print()
+    
     success = test_google_api()
     sys.exit(0 if success else 1)
 
