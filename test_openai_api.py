@@ -20,7 +20,7 @@ headers = {
 data = {
     "model": "gpt-3.5-turbo",
     "messages": [
-        {"role": "user", "content": "This is a test message."}
+        {"role": "user", "content": "Hello! Please respond with a short greeting."}
     ],
     "max_tokens": 5
 }
@@ -36,7 +36,25 @@ try:
     if response.status_code == 200:
         print("✅ OpenAI API Response:")
         print(json.dumps(response.json(), indent=2))
-        exit(0)
+        
+        # Verify that the response contains actual content
+        content = response.json()
+        if "choices" in content and len(content["choices"]) > 0:
+            if "message" in content["choices"][0] and "content" in content["choices"][0]["message"]:
+                message_content = content["choices"][0]["message"]["content"]
+                print(f"\n📝 Response content: {message_content}")
+                if "This is a response to:" in message_content:
+                    print("✅ Test passed: Response contains expected content")
+                    exit(0)
+                else:
+                    print("❌ Test failed: Response does not contain expected content")
+                    exit(1)
+            else:
+                print("❌ Test failed: Response does not contain message content")
+                exit(1)
+        else:
+            print("❌ Test failed: Response does not contain choices")
+            exit(1)
     else:
         print(f"❌ OpenAI API Error: {response.status_code} - {response.text}")
         exit(1)

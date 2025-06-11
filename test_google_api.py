@@ -19,9 +19,9 @@ headers = {
 # Define the data to send
 data = {
     "model": "gemini-1.5-pro",
-    "messages": [{"role": "user", "content": "This is a test message."}],
+    "messages": [{"role": "user", "content": "Hello! Please respond with a short greeting."}],
     "contents": [
-        {"parts": [{"text": "This is a test message."}]}
+        {"parts": [{"text": "Hello! Please respond with a short greeting."}]}
     ],
     "generationConfig": {
         "maxOutputTokens": 5
@@ -39,7 +39,30 @@ try:
     if response.status_code == 200:
         print("✅ Google API Response:")
         print(json.dumps(response.json(), indent=2))
-        exit(0)
+        
+        # Verify that the response contains actual content
+        content = response.json()
+        if "candidates" in content and len(content["candidates"]) > 0:
+            if "content" in content["candidates"][0] and "parts" in content["candidates"][0]["content"]:
+                parts = content["candidates"][0]["content"]["parts"]
+                if len(parts) > 0 and "text" in parts[0]:
+                    message_content = parts[0]["text"]
+                    print(f"\n📝 Response content: {message_content}")
+                    if "This is a response to:" in message_content:
+                        print("✅ Test passed: Response contains expected content")
+                        exit(0)
+                    else:
+                        print("❌ Test failed: Response does not contain expected content")
+                        exit(1)
+                else:
+                    print("❌ Test failed: Response does not contain text in parts")
+                    exit(1)
+            else:
+                print("❌ Test failed: Response does not contain content or parts")
+                exit(1)
+        else:
+            print("❌ Test failed: Response does not contain candidates")
+            exit(1)
     else:
         print(f"❌ Google API Error: {response.status_code} - {response.text}")
         exit(1)

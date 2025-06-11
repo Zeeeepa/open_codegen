@@ -20,7 +20,7 @@ headers = {
 data = {
     "model": "claude-3-sonnet-20240229",
     "messages": [
-        {"role": "user", "content": "This is a test message."}
+        {"role": "user", "content": "Hello! Please respond with a short greeting."}
     ],
     "max_tokens": 5
 }
@@ -36,7 +36,25 @@ try:
     if response.status_code == 200:
         print("✅ Anthropic API Response:")
         print(json.dumps(response.json(), indent=2))
-        exit(0)
+        
+        # Verify that the response contains actual content
+        content = response.json()
+        if "content" in content and len(content["content"]) > 0:
+            if "text" in content["content"][0]:
+                message_content = content["content"][0]["text"]
+                print(f"\n📝 Response content: {message_content}")
+                if "This is a response to:" in message_content:
+                    print("✅ Test passed: Response contains expected content")
+                    exit(0)
+                else:
+                    print("❌ Test failed: Response does not contain expected content")
+                    exit(1)
+            else:
+                print("❌ Test failed: Response does not contain text content")
+                exit(1)
+        else:
+            print("❌ Test failed: Response does not contain content")
+            exit(1)
     else:
         print(f"❌ Anthropic API Error: {response.status_code} - {response.text}")
         exit(1)
