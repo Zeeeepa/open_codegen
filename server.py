@@ -9,14 +9,21 @@ import time
 import json
 import os
 import requests
+import asyncio
+import uuid
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
+import sys
 
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import uvicorn
+
+# Import Codegen SDK
+from codegen import Agent
+from codegen.agents.agent import AgentTask
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -43,8 +50,24 @@ static_path = Path("static")
 if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Codegen SDK API endpoint (default to localhost, can be overridden with env var)
+# Load environment variables
+CODEGEN_ORG_ID = os.environ.get("CODEGEN_ORG_ID")
+CODEGEN_TOKEN = os.environ.get("CODEGEN_TOKEN")
 CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "http://localhost:8000/api/generate")
+SERVER_HOST = os.environ.get("SERVER_HOST", "localhost")
+SERVER_PORT = int(os.environ.get("SERVER_PORT", 8887))
+
+# Initialize Codegen SDK Agent
+try:
+    if not CODEGEN_ORG_ID or not CODEGEN_TOKEN:
+        logger.warning("CODEGEN_ORG_ID or CODEGEN_TOKEN not set. SDK integration will not work.")
+        codegen_agent = None
+    else:
+        codegen_agent = Agent(token=CODEGEN_TOKEN, org_id=int(CODEGEN_ORG_ID))
+        logger.info(f"Initialized Codegen SDK Agent with org_id: {CODEGEN_ORG_ID}")
+except Exception as e:
+    logger.error(f"Failed to initialize Codegen SDK Agent: {e}")
+    codegen_agent = None
 
 
 @app.exception_handler(Exception)
@@ -61,11 +84,16 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
+    sdk_status = "initialized" if codegen_agent is not None else "not_initialized"
+    
     return {
         "status": "healthy",
-        "timestamp": time.time(),
-        "providers": ["openai", "anthropic", "google"],
-        "routing_to": CODEGEN_API_URL
+        "version": "1.0.0",
+        "codegen_sdk": {
+            "status": sdk_status,
+            "org_id": CODEGEN_ORG_ID if CODEGEN_ORG_ID else None
+        },
+        "supported_providers": ["openai", "anthropic", "google"]
     }
 
 
@@ -93,59 +121,77 @@ async def openai_chat_completions(request: Request):
             raise HTTPException(status_code=400, detail="No user message found")
         
         # Prepare request to Codegen SDK
-        codegen_request = {
-            "prompt": user_message,
-            "source": "openai_proxy",
-            "model": body.get("model", "gpt-3.5-turbo")
-        }
+        model = body.get("model", "gpt-3.5-turbo")
         
-        # Send request to Codegen SDK
-        logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps(codegen_request)}")
-        
-        response = requests.post(CODEGEN_API_URL, json=codegen_request)
-        
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+        # Check if Codegen SDK Agent is initialized
+        if codegen_agent is None:
+            logger.error("Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN.")
             return JSONResponse(
-                status_code=response.status_code,
-                content={"error": f"Codegen SDK error: {response.text}"}
+                status_code=500,
+                content={"error": "Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN."}
             )
         
-        # Parse Codegen SDK response
-        codegen_response = response.json()
-        
-        # Extract the generated text from Codegen response
-        generated_text = codegen_response.get("response", "No response from Codegen SDK")
-        
-        # Format response in OpenAI format
-        openai_response = {
-            "id": f"chatcmpl-{int(time.time())}",
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": body.get("model", "gpt-3.5-turbo"),
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": generated_text
-                    },
-                    "finish_reason": "stop"
+        try:
+            # Use Codegen SDK directly
+            logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'openai_proxy', 'model': model})}")
+            
+            # Run the agent with the user message
+            task = codegen_agent.run(prompt=user_message)
+            
+            # Wait for the task to complete (simple polling)
+            max_retries = 10
+            retry_count = 0
+            
+            while task.status != "completed" and retry_count < max_retries:
+                task.refresh()
+                retry_count += 1
+                await asyncio.sleep(1)  # Wait for 1 second before checking again
+            
+            if task.status != "completed":
+                logger.error(f"Codegen SDK task did not complete in time: {task.status}")
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": "Codegen SDK task did not complete in time"}
+                )
+            
+            # Format the response in OpenAI format
+            response_content = task.result if hasattr(task, 'result') else "No result available"
+            
+            return JSONResponse(content={
+                "id": f"chatcmpl-{uuid.uuid4()}",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": response_content
+                        },
+                        "finish_reason": "stop"
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": len(user_message) // 4,  # Rough estimate
+                    "completion_tokens": len(response_content) // 4,  # Rough estimate
+                    "total_tokens": (len(user_message) + len(response_content)) // 4  # Rough estimate
                 }
-            ],
-            "usage": {
-                "prompt_tokens": len(user_message.split()),
-                "completion_tokens": len(generated_text.split()),
-                "total_tokens": len(user_message.split()) + len(generated_text.split())
-            }
-        }
-        
-        return openai_response
-        
+            })
+            
+        except Exception as e:
+            logger.error(f"OpenAI chat completion error: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Error processing request: {str(e)}"}
+            )
+            
     except Exception as e:
         logger.error(f"OpenAI chat completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error processing request: {str(e)}"}
+        )
 
 
 # Anthropic endpoint
@@ -156,71 +202,69 @@ async def anthropic_completions(request: Request):
         # Parse request body
         body = await request.json()
         
-        # Extract message
-        messages = body.get("messages", [])
-        if not messages:
-            raise HTTPException(status_code=400, detail="No messages provided")
+        # Extract prompt
+        prompt = body.get("prompt")
+        if not prompt:
+            raise HTTPException(status_code=400, detail="No prompt provided")
         
-        # Get the last user message
-        user_message = None
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                user_message = msg.get("content")
-                break
-        
-        if not user_message:
-            raise HTTPException(status_code=400, detail="No user message found")
-        
-        # Prepare request to Codegen SDK
-        codegen_request = {
-            "prompt": user_message,
-            "source": "anthropic_proxy",
-            "model": body.get("model", "claude-3-sonnet-20240229")
-        }
-        
-        # Send request to Codegen SDK
-        logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps(codegen_request)}")
-        
-        response = requests.post(CODEGEN_API_URL, json=codegen_request)
-        
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+        # Check if Codegen SDK Agent is initialized
+        if codegen_agent is None:
+            logger.error("Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN.")
             return JSONResponse(
-                status_code=response.status_code,
-                content={"error": f"Codegen SDK error: {response.text}"}
+                status_code=500,
+                content={"error": "Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN."}
             )
         
-        # Parse Codegen SDK response
-        codegen_response = response.json()
-        
-        # Extract the generated text from Codegen response
-        generated_text = codegen_response.get("response", "No response from Codegen SDK")
-        
-        # Format response in Anthropic format
-        anthropic_response = {
-            "id": f"msg_{int(time.time())}",
-            "type": "message",
-            "role": "assistant",
-            "content": [
-                {
-                    "type": "text",
-                    "text": generated_text
-                }
-            ],
-            "model": body.get("model", "claude-3-sonnet-20240229"),
-            "stop_reason": "end_turn",
-            "usage": {
-                "input_tokens": len(user_message.split()),
-                "output_tokens": len(generated_text.split())
-            }
-        }
-        
-        return anthropic_response
-        
+        try:
+            # Use Codegen SDK directly
+            logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps({'prompt': prompt, 'source': 'anthropic_proxy', 'model': body.get('model', 'claude-3-sonnet-20240229')})}")
+            
+            # Run the agent with the prompt
+            task = codegen_agent.run(prompt=prompt)
+            
+            # Wait for the task to complete (simple polling)
+            max_retries = 10
+            retry_count = 0
+            
+            while task.status != "completed" and retry_count < max_retries:
+                task.refresh()
+                retry_count += 1
+                await asyncio.sleep(1)  # Wait for 1 second before checking again
+            
+            if task.status != "completed":
+                logger.error(f"Codegen SDK task did not complete in time: {task.status}")
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": "Codegen SDK task did not complete in time"}
+                )
+            
+            # Format the response in Anthropic format
+            response_content = task.result if hasattr(task, 'result') else "No result available"
+            
+            return JSONResponse(content={
+                "id": f"ant-{uuid.uuid4()}",
+                "type": "completion",
+                "completion": response_content,
+                "model": body.get("model", "claude-3-sonnet-20240229"),
+                "stop_reason": "stop",
+                "stop": None,
+                "log_id": f"ant-log-{uuid.uuid4()}",
+                "exception": None
+            })
+            
+        except Exception as e:
+            logger.error(f"Anthropic completion error: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Error processing request: {str(e)}"}
+            )
+            
     except Exception as e:
         logger.error(f"Anthropic completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error processing request: {str(e)}"}
+        )
 
 
 # Google/Gemini endpoint
@@ -291,6 +335,103 @@ async def gemini_completions(request: Request):
     except Exception as e:
         logger.error(f"Gemini completion error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/gemini/generateContent")
+async def gemini_generate_content(request: Request):
+    """Google Gemini generateContent endpoint - routes to Codegen SDK."""
+    try:
+        # Parse request body
+        body = await request.json()
+        
+        # Extract content from request
+        contents = body.get("contents", [])
+        if not contents:
+            raise HTTPException(status_code=400, detail="No contents provided")
+        
+        # Extract text parts from the first content
+        parts = contents[0].get("parts", [])
+        if not parts:
+            raise HTTPException(status_code=400, detail="No parts found in content")
+        
+        # Combine all text parts into a single prompt
+        prompt = ""
+        for part in parts:
+            if part.get("text"):
+                prompt += part.get("text", "") + " "
+        
+        prompt = prompt.strip()
+        if not prompt:
+            raise HTTPException(status_code=400, detail="No text found in parts")
+        
+        # Check if Codegen SDK Agent is initialized
+        if codegen_agent is None:
+            logger.error("Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN.")
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN."}
+            )
+        
+        try:
+            # Use Codegen SDK directly
+            logger.info(f"Routing Google request to Codegen SDK: {json.dumps({'prompt': prompt, 'source': 'google_proxy', 'model': body.get('model', 'gemini-1.5-pro')})}")
+            
+            # Run the agent with the prompt
+            task = codegen_agent.run(prompt=prompt)
+            
+            # Wait for the task to complete (simple polling)
+            max_retries = 10
+            retry_count = 0
+            
+            while task.status != "completed" and retry_count < max_retries:
+                task.refresh()
+                retry_count += 1
+                await asyncio.sleep(1)  # Wait for 1 second before checking again
+            
+            if task.status != "completed":
+                logger.error(f"Codegen SDK task did not complete in time: {task.status}")
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": "Codegen SDK task did not complete in time"}
+                )
+            
+            # Format the response in Google/Gemini format
+            response_content = task.result if hasattr(task, 'result') else "No result available"
+            
+            return JSONResponse(content={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": response_content
+                                }
+                            ],
+                            "role": "model"
+                        },
+                        "finishReason": "STOP",
+                        "index": 0,
+                        "safetyRatings": []
+                    }
+                ],
+                "promptFeedback": {
+                    "safetyRatings": []
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Gemini completion error: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Error processing request: {str(e)}"}
+            )
+            
+    except Exception as e:
+        logger.error(f"Gemini completion error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error processing request: {str(e)}"}
+        )
 
 
 def extract_user_message(body):
@@ -676,6 +817,27 @@ def start_server(host="localhost", port=8887):
     )
 
 
-if __name__ == "__main__":
-    start_server()
+def main():
+    """Run the server."""
+    try:
+        # Log startup information
+        logger.info(f"Starting API Router System on {SERVER_HOST}:{SERVER_PORT}")
+        
+        # Log Codegen SDK status
+        if codegen_agent is not None:
+            logger.info(f"Using Codegen SDK with org_id: {CODEGEN_ORG_ID}")
+        else:
+            logger.warning("Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN.")
+            
+        # Log supported providers
+        logger.info("Supported providers: openai, anthropic, google")
+        
+        # Start the server
+        uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)
+    except Exception as e:
+        logger.error(f"Error starting server: {e}")
+        sys.exit(1)
 
+
+if __name__ == "__main__":
+    main()
