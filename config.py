@@ -3,11 +3,11 @@ Configuration settings for the unified API system.
 """
 
 import os
-from pydantic import BaseSettings, Field
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
 
-class Config(BaseSettings):
+class Config(BaseModel):
     """Configuration settings for the unified API system."""
     
     # Server settings
@@ -62,4 +62,9 @@ class Config(BaseSettings):
 
 # Create a global config instance
 config = Config.from_env()
+
+# For backward compatibility with existing code
+def get_config():
+    """Get the global configuration instance."""
+    return config
 

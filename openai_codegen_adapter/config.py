@@ -3,11 +3,11 @@ Configuration settings for the OpenAI Codegen Adapter.
 """
 
 import os
-from pydantic import BaseSettings, Field
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
 
-class Config(BaseSettings):
+class Config(BaseModel):
     """Configuration settings for the OpenAI Codegen Adapter."""
     
     # Server settings
