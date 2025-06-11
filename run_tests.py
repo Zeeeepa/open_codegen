@@ -1,77 +1,44 @@
 #!/usr/bin/env python3
 """
-Simple test runner for the unified API system
-Runs all 3 API tests: OpenAI, Anthropic, and Google
+Run all API tests in sequence
 """
 
+import os
 import subprocess
 import sys
 
-def run_test(test_file, test_name):
-    """Run a single test file"""
+def run_test(test_file):
+    """Run a single test file and return success status"""
     print(f"\n{'='*50}")
-    print(f"🚀 Running {test_name} Test")
-    print(f"{'='*50}")
+    print(f"Running {test_file}...")
+    print(f"{'='*50}\n")
     
-    try:
-        result = subprocess.run([sys.executable, test_file], 
-                              capture_output=True, text=True, timeout=120)
-        
-        print(result.stdout)
-        if result.stderr:
-            print(f"⚠️ Warnings: {result.stderr}")
-            
-        if result.returncode == 0:
-            print(f"✅ {test_name} Test PASSED")
-            return True
-        else:
-            print(f"❌ {test_name} Test FAILED (exit code: {result.returncode})")
-            return False
-            
-    except subprocess.TimeoutExpired:
-        print(f"⏰ {test_name} Test TIMED OUT")
-        return False
-    except Exception as e:
-        print(f"💥 {test_name} Test ERROR: {e}")
-        return False
+    result = subprocess.run([sys.executable, test_file], capture_output=False)
+    return result.returncode == 0
 
 def main():
-    """Run all API tests"""
-    print("🧪 Starting Unified API System Tests")
-    print("Testing all 3 providers: OpenAI, Anthropic, Google")
-    
+    """Run all tests"""
     tests = [
-        ("test_openai_api.py", "OpenAI"),
-        ("test_anthropic_api.py", "Anthropic"), 
-        ("test_google_api.py", "Google")
+        "test_openai_api.py",
+        "test_anthropic_api.py",
+        "test_google_api.py"
     ]
     
-    results = []
-    for test_file, test_name in tests:
-        success = run_test(test_file, test_name)
-        results.append((test_name, success))
+    success_count = 0
+    failure_count = 0
     
-    # Summary
+    for test in tests:
+        if run_test(test):
+            success_count += 1
+        else:
+            failure_count += 1
+    
     print(f"\n{'='*50}")
-    print("📊 TEST SUMMARY")
-    print(f"{'='*50}")
+    print(f"Test Results: {success_count} passed, {failure_count} failed")
+    print(f"{'='*50}\n")
     
-    passed = sum(1 for _, success in results if success)
-    total = len(results)
-    
-    for test_name, success in results:
-        status = "✅ PASSED" if success else "❌ FAILED"
-        print(f"{test_name:12} {status}")
-    
-    print(f"\nTotal: {passed}/{total} tests passed")
-    
-    if passed == total:
-        print("🎉 All tests passed! Unified API system is working correctly.")
-        return 0
-    else:
-        print("⚠️ Some tests failed. Check the output above for details.")
-        return 1
+    return 0 if failure_count == 0 else 1
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())
 
