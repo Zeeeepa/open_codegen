@@ -3,928 +3,738 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenAI Codegen Adapter - Control Panel</title>
+    <title>Unified API System</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #f7774a;
+            --tertiary-color: #4af777;
+            --background-color: #f5f7fa;
+            --card-background: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --warning-color: #FFC107;
+            --info-color: #2196F3;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
+        header {
+            background-color: var(--primary-color);
             color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 5px var(--shadow-color);
         }
 
-        .header h1 {
+        header h1 {
+            margin: 0;
             font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .header p {
-            font-size: 1.1rem;
+        header p {
+            margin: 10px 0 0;
+            font-size: 1.2rem;
             opacity: 0.9;
         }
 
-        .main-content {
+        .card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .endpoints {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            flex: 1;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
-        .control-panel {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
+        .endpoint {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .session-history {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
+        .endpoint:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px var(--shadow-color);
         }
 
-        .status-section {
-            text-align: center;
-            margin-bottom: 30px;
+        .endpoint h3 {
+            margin-top: 0;
+            color: var(--primary-color);
         }
 
-        .status-indicator {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            font-weight: bold;
+        .endpoint.openai {
+            border-top: 4px solid #10a37f;
+        }
+
+        .endpoint.anthropic {
+            border-top: 4px solid #b724d8;
+        }
+
+        .endpoint.google {
+            border-top: 4px solid #4285f4;
+        }
+
+        .endpoint-details {
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .endpoint-url {
+            background-color: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
             color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-        }
-
-        .status-on {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            animation: pulse-green 2s infinite;
-        }
-
-        .status-off {
-            background: linear-gradient(135deg, #f44336, #d32f2f);
-            animation: pulse-red 2s infinite;
-        }
-
-        @keyframes pulse-green {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-            50% { box-shadow: 0 0 0 20px rgba(76, 175, 80, 0); }
-        }
-
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-            50% { box-shadow: 0 0 0 20px rgba(244, 67, 54, 0); }
-        }
-
-        .status-text {
-            font-size: 1.5rem;
-            font-weight: bold;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
             margin-bottom: 10px;
         }
 
-        .toggle-button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 30px;
+        .btn:hover {
+            background-color: #3a5bd9;
+        }
+
+        .btn.openai {
+            background-color: #10a37f;
+        }
+
+        .btn.openai:hover {
+            background-color: #0d8c6d;
+        }
+
+        .btn.anthropic {
+            background-color: #b724d8;
+        }
+
+        .btn.anthropic:hover {
+            background-color: #9e1dba;
+        }
+
+        .btn.google {
+            background-color: #4285f4;
+        }
+
+        .btn.google:hover {
+            background-color: #3367d6;
+        }
+
+        .test-section {
+            margin-top: 30px;
+        }
+
+        .test-buttons {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .test-button {
+            padding: 12px 20px;
             font-size: 1.1rem;
-            border-radius: 25px;
+            border-radius: 6px;
+        }
+
+        .test-button.openai {
+            background-color: #10a37f;
+        }
+
+        .test-button.anthropic {
+            background-color: #b724d8;
+        }
+
+        .test-button.gemini {
+            background-color: #4285f4;
+        }
+
+        .response-area {
+            margin-top: 20px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 200px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+
+        .status.loading {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #1565c0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0;
+            border-top: 1px solid var(--border-color);
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 10px 20px;
             cursor: pointer;
+            border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            margin: 20px 0;
         }
 
-        .toggle-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        .tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
         }
 
-        .toggle-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .tab-content {
+            display: none;
         }
 
-        .info-grid {
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .token-counter {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .settings-icon {
+            cursor: pointer;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .settings-panel {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .settings-panel.visible {
+            display: block;
+        }
+
+        .health-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .health-indicator.healthy {
+            background-color: var(--success-color);
+        }
+
+        .health-indicator.unhealthy {
+            background-color: var(--error-color);
+        }
+
+        .metrics {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
 
-        .info-item {
-            background: rgba(102, 126, 234, 0.1);
+        .metric-card {
+            background-color: white;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             text-align: center;
         }
 
-        .info-label {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
+        .metric-value {
+            font-size: 1.8rem;
             font-weight: bold;
-            color: #333;
-        }
-
-        .message {
-            padding: 15px;
-            border-radius: 10px;
+            color: var(--primary-color);
             margin: 10px 0;
-            display: none;
         }
 
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            border-left: 4px solid #f44336;
-        }
-
-        .success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border-left: 4px solid #4caf50;
-        }
-
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .history-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .clear-history {
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
+        .metric-label {
             font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .clear-history:hover {
-            background: #ff5252;
-            transform: translateY(-1px);
-        }
-
-        .history-list {
-            flex: 1;
-            overflow-y: auto;
-            max-height: 500px;
-        }
-
-        .history-item {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
-            transition: all 0.3s ease;
-        }
-
-        .history-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .history-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .endpoint-badge {
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .endpoint-badge.anthropic {
-            background: #ff6b35;
-        }
-
-        .endpoint-badge.gemini {
-            background: #4285f4;
-        }
-
-        .endpoint-badge.openai {
-            background: #10a37f;
-        }
-
-        .timestamp {
             color: #666;
-            font-size: 0.8rem;
-        }
-
-        .request-prompt {
-            background: #e3f2fd;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            border-left: 3px solid #2196f3;
-        }
-
-        .response-content {
-            background: #f1f8e9;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            border-left: 3px solid #4caf50;
-            white-space: pre-wrap;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .response-content.error {
-            background: #ffebee;
-            border-left: 3px solid #f44336;
-        }
-
-        .no-history {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 40px 20px;
-        }
-
-        .test-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
-        }
-
-        .test-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
-        }
-
-        .url-config {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-
-        .url-config h4 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.1rem;
-        }
-
-        .url-inputs {
-            display: grid;
-            gap: 10px;
-        }
-
-        .url-input-group {
-            display: grid;
-            grid-template-columns: 120px 1fr 80px;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .url-input-group label {
-            font-weight: bold;
-            color: #555;
-        }
-
-        .url-input-group input {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-
-        .url-input-group button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.3s ease;
-        }
-
-        .url-input-group button:hover {
-            background: #5a6fd8;
-        }
-
-        .prompt-config {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #4CAF50;
-        }
-
-        .prompt-config h4 {
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 1.1rem;
-        }
-
-        .prompt-config textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            resize: vertical;
-            min-height: 60px;
-        }
-
-        .prompt-config textarea:focus {
-            outline: none;
-            border-color: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-        }
-
-        .test-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .test-button {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
-        .test-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .test-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .test-button.anthropic {
-            background: linear-gradient(135deg, #ff6b35, #ff5722);
-        }
-
-        .test-button.gemini {
-            background: linear-gradient(135deg, #4285f4, #1976d2);
-        }
-
-        .test-button.openai {
-            background: linear-gradient(135deg, #10a37f, #0d8f6b);
-        }
-
-        .stats-summary {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .stat-item {
-            background: rgba(102, 126, 234, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 5px;
         }
 
         @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .info-grid {
+            .endpoints {
                 grid-template-columns: 1fr;
             }
 
-            .stats-summary {
-                grid-template-columns: 1fr;
+            .test-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                margin-right: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🎛��� OpenAI Codegen Adapter</h1>
-            <p>Control Panel & Session Monitor</p>
+    <header>
+        <div class="container">
+            <h1>Unified API System</h1>
+            <p>A simple interface for OpenAI, Anthropic, and Google APIs</p>
         </div>
+    </header>
 
-        <div class="main-content">
-            <!-- Control Panel -->
-            <div class="control-panel">
-                <div class="status-section">
-                    <div id="statusIndicator" class="status-indicator status-off">
-                        OFF
-                    </div>
-                    <div id="statusText" class="status-text">Service Status: OFF</div>
-                    <button id="toggleButton" class="toggle-button">
-                        <span id="buttonText">Turn On</span>
-                    </button>
-                </div>
-
-                <div id="errorMessage" class="message error"></div>
-                <div id="successMessage" class="message success"></div>
-
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Last Updated</div>
-                        <div id="lastUpdated" class="info-value">Never</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Health Status</div>
-                        <div id="healthStatus" class="info-value">Unknown</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Uptime</div>
-                        <div id="uptime" class="info-value">0s</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Total Requests</div>
-                        <div id="totalRequests" class="info-value">0</div>
+    <div class="container">
+        <div class="card">
+            <h2>API Endpoints</h2>
+            <div class="endpoints">
+                <div class="endpoint openai">
+                    <h3>OpenAI API</h3>
+                    <div class="endpoint-details">
+                        <p>Standard OpenAI-compatible endpoint for chat completions</p>
+                        <div class="endpoint-url">POST /v1/chat/completions</div>
                     </div>
                 </div>
 
-                <!-- Test Section -->
-                <div class="test-section">
-                    <h3>🧪 Test API Endpoints</h3>
-                    
-                    <!-- URL Configuration -->
-                    <div class="url-config">
-                        <h4>📍 Service URLs</h4>
-                        <div class="url-inputs">
-                            <div class="url-input-group">
-                                <label for="openaiUrl">OpenAI API:</label>
-                                <input type="text" id="openaiUrl" value="http://localhost:8887/v1" placeholder="OpenAI base URL">
-                                <button onclick="saveUrl('openai')">Save</button>
-                            </div>
-                            <div class="url-input-group">
-                                <label for="anthropicUrl">Anthropic API:</label>
-                                <input type="text" id="anthropicUrl" value="http://localhost:8887" placeholder="Anthropic base URL">
-                                <button onclick="saveUrl('anthropic')">Save</button>
-                            </div>
-                            <div class="url-input-group">
-                                <label for="googleUrl">Google API:</label>
-                                <input type="text" id="googleUrl" value="http://localhost:8887" placeholder="Google base URL">
-                                <button onclick="saveUrl('google')">Save</button>
-                            </div>
-                        </div>
+                <div class="endpoint anthropic">
+                    <h3>Anthropic API</h3>
+                    <div class="endpoint-details">
+                        <p>Anthropic-compatible endpoint for Claude models</p>
+                        <div class="endpoint-url">POST /v1/anthropic/completions</div>
                     </div>
+                </div>
 
-                    <!-- Custom Prompt Input -->
-                    <div class="prompt-config">
-                        <h4>💬 Custom Prompt</h4>
-                        <textarea id="customPrompt" placeholder="Enter your custom prompt here (leave empty for default prompts)..." rows="3"></textarea>
-                    </div>
-
-                    <div class="test-buttons">
-                        <button id="test-google" class="btn">
-                            🔵 Test Google API
-                        </button>
-                        <button class="test-button gemini" onclick="testEndpoint('google')">
-                            🔵 Test Google Gemini
-                        </button>
-                        <button class="test-button anthropic" onclick="testEndpoint('anthropic')">
-                            🟠 Test Anthropic Claude
-                        </button>
-                        <button class="test-button openai" onclick="testEndpoint('openai')">
-                            🟢 Test OpenAI GPT
-                        </button>
+                <div class="endpoint google">
+                    <h3>Google API</h3>
+                    <div class="endpoint-details">
+                        <p>Google Gemini-compatible endpoint for content generation</p>
+                        <div class="endpoint-url">POST /v1/gemini/generateContent</div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Session History -->
-            <div class="session-history">
-                <div class="history-header">
-                    <div class="history-title">📊 Session History</div>
-                    <button class="clear-history" onclick="clearHistory()">Clear History</button>
+        <div class="card test-section">
+            <h2>Test API Endpoints</h2>
+            
+            <div class="tabs">
+                <div class="tab active" data-tab="simple-test">Simple Test</div>
+                <div class="tab" data-tab="custom-prompt">Custom Prompt</div>
+            </div>
+            
+            <div class="tab-content active" data-tab-content="simple-test">
+                <p>Click a button below to test each API endpoint with a simple message.</p>
+                
+                <div class="test-buttons">
+                    <button class="test-button openai" onclick="testEndpoint('openai')">
+                        🟢 Test OpenAI API
+                    </button>
+                    
+                    <button class="test-button anthropic" onclick="testEndpoint('anthropic')">
+                        🟣 Test Anthropic API
+                    </button>
+                    
+                    <button class="test-button gemini" onclick="testEndpoint('google')">
+                        🔵 Test Google API
+                    </button>
                 </div>
-
-                <!-- Stats Summary -->
-                <div class="stats-summary">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalCalls">0</div>
-                        <div class="stat-label">Total Calls</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="successRate">0%</div>
-                        <div class="stat-label">Success Rate</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="lastEndpoint">None</div>
-                        <div class="stat-label">Last Endpoint</div>
-                    </div>
+            </div>
+            
+            <div class="tab-content" data-tab-content="custom-prompt">
+                <div class="form-group">
+                    <label for="provider-select">Select Provider:</label>
+                    <select id="provider-select">
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="google">Google</option>
+                    </select>
                 </div>
                 
-                <div class="history-list" id="historyList">
-                    <div class="no-history">
-                        No API requests yet. Use the test buttons to get started!
+                <div class="form-group">
+                    <label for="model-select">Select Model:</label>
+                    <select id="model-select">
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prompt-input">Enter your prompt:</label>
+                    <textarea id="prompt-input" placeholder="Type your message here..."></textarea>
+                </div>
+                
+                <button id="send-custom-prompt" class="btn">Send Prompt</button>
+            </div>
+            
+            <div id="status" class="status" style="display: none;"></div>
+            
+            <div id="response-container" style="display: none;">
+                <h3>Response:</h3>
+                <div id="response-area" class="response-area"></div>
+                
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-label">Processing Time</div>
+                        <div id="processing-time" class="metric-value">0 ms</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-label">Provider</div>
+                        <div id="provider-used" class="metric-value">-</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-label">Model</div>
+                        <div id="model-used" class="metric-value">-</div>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Health Status</h2>
+            <div id="health-status">
+                <p><span id="health-indicator" class="health-indicator"></span> <span id="health-text">Checking...</span></p>
             </div>
         </div>
     </div>
 
+    <footer>
+        <div class="container">
+            <p>Unified API System &copy; 2024</p>
+        </div>
+    </footer>
+
     <script>
-        class CodegenController {
-            constructor() {
-                this.statusIndicator = document.getElementById('statusIndicator');
-                this.statusText = document.getElementById('statusText');
-                this.toggleButton = document.getElementById('toggleButton');
-                this.buttonText = document.getElementById('buttonText');
-                this.errorMessage = document.getElementById('errorMessage');
-                this.successMessage = document.getElementById('successMessage');
-                this.lastUpdated = document.getElementById('lastUpdated');
-                this.healthStatus = document.getElementById('healthStatus');
-                this.uptime = document.getElementById('uptime');
-                this.totalRequests = document.getElementById('totalRequests');
-                this.historyList = document.getElementById('historyList');
-                this.totalCalls = document.getElementById('totalCalls');
-                this.successRate = document.getElementById('successRate');
-                this.lastEndpoint = document.getElementById('lastEndpoint');
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 
-                this.isLoading = false;
-                this.currentStatus = 'off';
-                this.sessionHistory = JSON.parse(localStorage.getItem('codegenHistory') || '[]');
-                this.requestCount = 0;
+                // Add active class to clicked tab
+                tab.classList.add('active');
                 
-                this.init();
+                // Show corresponding content
+                const tabContent = document.querySelector(`.tab-content[data-tab-content="${tab.dataset.tab}"]`);
+                tabContent.classList.add('active');
+            });
+        });
+        
+        // Update model options based on selected provider
+        document.getElementById('provider-select').addEventListener('change', function() {
+            const provider = this.value;
+            const modelSelect = document.getElementById('model-select');
+            
+            // Clear existing options
+            modelSelect.innerHTML = '';
+            
+            // Add appropriate options based on provider
+            if (provider === 'openai') {
+                addOption(modelSelect, 'gpt-3.5-turbo', 'GPT-3.5 Turbo');
+                addOption(modelSelect, 'gpt-4', 'GPT-4');
+            } else if (provider === 'anthropic') {
+                addOption(modelSelect, 'claude-3-sonnet-20240229', 'Claude 3 Sonnet');
+                addOption(modelSelect, 'claude-3-opus-20240229', 'Claude 3 Opus');
+            } else if (provider === 'google') {
+                addOption(modelSelect, 'gemini-1.5-pro', 'Gemini 1.5 Pro');
+                addOption(modelSelect, 'gemini-1.5-flash', 'Gemini 1.5 Flash');
             }
-
-            async init() {
-                this.toggleButton.addEventListener('click', () => this.toggleService());
-                await this.updateStatus();
-                this.renderHistory();
-                this.updateStats();
-                
-                // Auto-refresh every 5 seconds
-                setInterval(() => this.updateStatus(), 5000);
-            }
-
-            async updateStatus() {
-                try {
-                    const response = await fetch('/api/status');
-                    const data = await response.json();
-                    this.updateUI(data);
-                } catch (error) {
-                    console.error('Failed to fetch status:', error);
-                    this.setOfflineStatus();
-                }
-            }
-
-            updateUI(data) {
-                this.currentStatus = data.status;
-                
-                // Update status indicator
-                this.statusIndicator.className = `status-indicator status-${data.status}`;
-                this.statusIndicator.textContent = data.status.toUpperCase();
-                
-                // Update status text
-                this.statusText.textContent = `Service Status: ${data.status.toUpperCase()}`;
-                
-                // Update toggle button
-                this.buttonText.textContent = data.status === 'on' ? 'Turn Off' : 'Turn On';
-                this.toggleButton.disabled = this.isLoading;
-                
-                // Update info
-                this.lastUpdated.textContent = new Date().toLocaleTimeString();
-                this.healthStatus.textContent = data.health?.status || 'Unknown';
-                this.uptime.textContent = data.uptime || '0s';
-                this.totalRequests.textContent = this.requestCount;
-            }
-
-            setOfflineStatus() {
-                this.statusIndicator.className = 'status-indicator status-off';
-                this.statusIndicator.textContent = 'OFF';
-                this.statusText.textContent = 'Service Status: OFFLINE';
-                this.healthStatus.textContent = 'Offline';
-            }
-
-            async toggleService() {
-                if (this.isLoading) return;
-                
-                this.isLoading = true;
-                this.toggleButton.disabled = true;
-                this.hideMessages();
-                
-                try {
-                    const response = await fetch('/api/toggle', { method: 'POST' });
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        this.showSuccess(data.message);
-                        this.updateUI(data);
-                    } else {
-                        this.showError(data.detail || 'Failed to toggle service');
-                    }
-                } catch (error) {
-                    this.showError('Network error: ' + error.message);
-                } finally {
-                    this.isLoading = false;
-                    this.toggleButton.disabled = false;
-                }
-            }
-
-            showError(message) {
-                this.errorMessage.textContent = message;
-                this.errorMessage.style.display = 'block';
-                setTimeout(() => this.hideMessages(), 5000);
-            }
-
-            showSuccess(message) {
-                this.successMessage.textContent = message;
-                this.successMessage.style.display = 'block';
-                setTimeout(() => this.hideMessages(), 3000);
-            }
-
-            hideMessages() {
-                this.errorMessage.style.display = 'none';
-                this.successMessage.style.display = 'none';
-            }
-
-            addToHistory(endpoint, prompt, response, success = true) {
-                const historyItem = {
-                    id: Date.now(),
-                    endpoint: endpoint,
-                    prompt: prompt,
-                    response: response,
-                    success: success,
-                    timestamp: new Date().toISOString()
-                };
-                
-                this.sessionHistory.unshift(historyItem);
-                
-                // Keep only last 50 items
-                if (this.sessionHistory.length > 50) {
-                    this.sessionHistory = this.sessionHistory.slice(0, 50);
-                }
-                
-                // Save to localStorage
-                localStorage.setItem('codegenHistory', JSON.stringify(this.sessionHistory));
-                
-                this.requestCount++;
-                this.renderHistory();
-                this.updateStats();
-            }
-
-            updateStats() {
-                const totalCalls = this.sessionHistory.length;
-                const successfulCalls = this.sessionHistory.filter(item => item.success).length;
-                const successRate = totalCalls > 0 ? Math.round((successfulCalls / totalCalls) * 100) : 0;
-                const lastEndpoint = this.sessionHistory.length > 0 ? this.sessionHistory[0].endpoint.toUpperCase() : 'None';
-
-                this.totalCalls.textContent = totalCalls;
-                this.successRate.textContent = `${successRate}%`;
-                this.lastEndpoint.textContent = lastEndpoint;
-            }
-
-            renderHistory() {
-                if (this.sessionHistory.length === 0) {
-                    this.historyList.innerHTML = '<div class="no-history">No API requests yet. Use the test buttons to get started!</div>';
-                    return;
-                }
-
-                this.historyList.innerHTML = this.sessionHistory.map(item => `
-                    <div class="history-item">
-                        <div class="history-meta">
-                            <span class="endpoint-badge ${item.endpoint}">${item.endpoint.toUpperCase()}</span>
-                            <span class="timestamp">${new Date(item.timestamp).toLocaleString()}</span>
-                        </div>
-                        <div class="request-prompt">
-                            <strong>Prompt:</strong> ${item.prompt}
-                        </div>
-                        <div class="response-content ${item.success ? '' : 'error'}">
-                            <strong>Response:</strong> ${item.response}
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            clearHistory() {
-                this.sessionHistory = [];
-                localStorage.removeItem('codegenHistory');
-                this.requestCount = 0;
-                this.renderHistory();
-                this.updateStats();
-                this.showSuccess('History cleared successfully!');
-            }
+        });
+        
+        function addOption(selectElement, value, text) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = text;
+            selectElement.appendChild(option);
         }
-
+        
+        // Custom prompt submission
+        document.getElementById('send-custom-prompt').addEventListener('click', function() {
+            const provider = document.getElementById('provider-select').value;
+            const model = document.getElementById('model-select').value;
+            const prompt = document.getElementById('prompt-input').value;
+            
+            if (!prompt.trim()) {
+                showStatus('Please enter a prompt', 'error');
+                return;
+            }
+            
+            testEndpoint(provider, model, prompt);
+        });
+        
         // Test endpoint function
-        async function testEndpoint(provider) {
-            // Get custom prompt if provided
-            const customPrompt = document.getElementById('customPrompt').value.trim();
+        async function testEndpoint(provider, model = null, customPrompt = null) {
+            // Show loading status
+            showStatus('<div class="spinner"></div> Sending request...', 'loading');
             
-            // Get saved URLs or use defaults
-            const savedUrls = {
-                openai: localStorage.getItem('openaiUrl') || 'http://localhost:8887/v1',
-                anthropic: localStorage.getItem('anthropicUrl') || 'http://localhost:8887',
-                google: localStorage.getItem('googleUrl') || 'http://localhost:8887'
-            };
-
-            // Map provider names for consistency
-            const providerMap = {
-                'google': 'google',
-                'gemini': 'google',
-                'anthropic': 'anthropic',
-                'openai': 'openai'
-            };
+            // Hide previous response
+            document.getElementById('response-container').style.display = 'none';
             
-            const actualProvider = providerMap[provider] || provider;
+            // Determine endpoint URL based on provider
+            let url;
+            let data;
             
-            // Disable the button during request
-            const button = document.querySelector(`.test-button.${provider}`);
-            const originalText = button.textContent;
-            button.disabled = true;
-            button.textContent = '⏳ Testing...';
-
-            try {
-                // Call the backend test endpoint with parameters
-                const testUrl = `/api/test/${actualProvider}`;
-                const payload = {
-                    base_url: savedUrls[actualProvider]
+            if (provider === 'openai') {
+                url = '/v1/chat/completions';
+                data = {
+                    model: model || 'gpt-3.5-turbo',
+                    messages: [
+                        { role: 'user', content: customPrompt || 'Hello! Please respond with a short greeting.' }
+                    ],
+                    max_tokens: 50
                 };
-                
-                // Add custom prompt if provided
-                if (customPrompt) {
-                    payload.prompt = customPrompt;
-                }
-
-                const response = await fetch(testUrl, {
+            } else if (provider === 'anthropic') {
+                url = '/v1/anthropic/completions';
+                data = {
+                    model: model || 'claude-3-sonnet-20240229',
+                    messages: [
+                        { role: 'user', content: customPrompt || 'Hello! Please respond with a short greeting.' }
+                    ],
+                    max_tokens: 50
+                };
+            } else if (provider === 'google') {
+                url = '/v1/gemini/generateContent';
+                data = {
+                    model: model || 'gemini-1.5-pro',
+                    contents: [
+                        { parts: [{ text: customPrompt || 'Hello! Please respond with a short greeting.' }] }
+                    ],
+                    generationConfig: {
+                        maxOutputTokens: 50
+                    }
+                };
+            } else {
+                showStatus('Invalid provider', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(data)
                 });
-
-                const data = await response.json();
                 
-                let responseText = '';
-                if (response.ok && data.success) {
-                    responseText = data.response || 'Test completed successfully';
-                    
-                    // Add to history
-                    controller.addToHistory(
-                        actualProvider.toUpperCase(), 
-                        data.prompt || customPrompt || 'Default test prompt', 
-                        responseText, 
-                        true
-                    );
-                    
-                    controller.showSuccess(`${actualProvider.toUpperCase()} test completed successfully!`);
-                } else {
-                    responseText = data.error || `Error ${response.status}: ${JSON.stringify(data)}`;
-                    
-                    // Add to history
-                    controller.addToHistory(
-                        actualProvider.toUpperCase(), 
-                        data.prompt || customPrompt || 'Default test prompt', 
-                        responseText, 
-                        false
-                    );
-                    
-                    controller.showError(`${actualProvider.toUpperCase()} test failed: ${response.status}`);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${JSON.stringify(result)}`);
                 }
-
+                
+                // Display the response
+                displayResponse(result, provider);
+                
+                // Show success status
+                showStatus('Request successful!', 'success');
             } catch (error) {
-                const errorMsg = `Request failed: ${error.message}`;
-                
-                // Add to history
-                controller.addToHistory(
-                    actualProvider.toUpperCase(), 
-                    customPrompt || 'Default test prompt', 
-                    errorMsg, 
-                    false
-                );
-                
-                controller.showError(`${actualProvider.toUpperCase()} test failed: ${error.message}`);
-            } finally {
-                // Re-enable the button
-                button.disabled = false;
-                button.textContent = originalText;
+                console.error('Error:', error);
+                showStatus(`Error: ${error.message}`, 'error');
             }
         }
-
-        function clearHistory() {
-            controller.clearHistory();
-        }
-
-        // URL Configuration
-        function saveUrl(provider) {
-            const url = document.getElementById(`${provider}Url`).value;
-            localStorage.setItem(`${provider}Url`, url);
-            // Show success message
-            const input = document.getElementById(`${provider}Url`);
-            const originalBorder = input.style.border;
-            input.style.border = '2px solid #4CAF50';
-            setTimeout(() => {
-                input.style.border = originalBorder;
-            }, 1000);
-        }
-
-        // Load saved URLs on page load
-        function loadSavedUrls() {
-            const providers = ['openai', 'anthropic', 'google'];
-            providers.forEach(provider => {
-                const savedUrl = localStorage.getItem(`${provider}Url`);
-                if (savedUrl) {
-                    const input = document.getElementById(`${provider}Url`);
-                    if (input) {
-                        input.value = savedUrl;
-                    }
-                }
-            });
-        }
-
-        // Initialize the controller
-        const controller = new CodegenController();
         
-        // Load saved URLs when page loads
-        document.addEventListener('DOMContentLoaded', loadSavedUrls);
+        // Display response function
+        function displayResponse(result, provider) {
+            const responseArea = document.getElementById('response-area');
+            const processingTime = document.getElementById('processing-time');
+            const providerUsed = document.getElementById('provider-used');
+            const modelUsed = document.getElementById('model-used');
+            
+            // Extract content based on provider format
+            let content = '';
+            let model = '';
+            
+            if (provider === 'openai') {
+                if (result.choices && result.choices.length > 0) {
+                    content = result.choices[0].message.content;
+                }
+                model = result.model || '-';
+            } else if (provider === 'anthropic') {
+                if (result.choices && result.choices.length > 0) {
+                    content = result.choices[0].message.content;
+                }
+                model = result.model || '-';
+            } else if (provider === 'google') {
+                if (result.candidates && result.candidates.length > 0 && 
+                    result.candidates[0].content && 
+                    result.candidates[0].content.parts && 
+                    result.candidates[0].content.parts.length > 0) {
+                    content = result.candidates[0].content.parts[0].text;
+                }
+                model = result.model || '-';
+            }
+            
+            // Display the content
+            responseArea.textContent = content || JSON.stringify(result, null, 2);
+            
+            // Update metrics
+            processingTime.textContent = result.processing_time ? 
+                `${(result.processing_time * 1000).toFixed(0)} ms` : '-';
+            providerUsed.textContent = provider.charAt(0).toUpperCase() + provider.slice(1);
+            modelUsed.textContent = model;
+            
+            // Show the response container
+            document.getElementById('response-container').style.display = 'block';
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            statusElement.innerHTML = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+        }
+        
+        // Check health status
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const result = await response.json();
+                
+                const indicator = document.getElementById('health-indicator');
+                const text = document.getElementById('health-text');
+                
+                if (result.status === 'ok') {
+                    indicator.className = 'health-indicator healthy';
+                    text.textContent = 'Server is healthy';
+                } else {
+                    indicator.className = 'health-indicator unhealthy';
+                    text.textContent = 'Server is unhealthy';
+                }
+            } catch (error) {
+                const indicator = document.getElementById('health-indicator');
+                const text = document.getElementById('health-text');
+                
+                indicator.className = 'health-indicator unhealthy';
+                text.textContent = 'Server is unreachable';
+            }
+        }
+        
+        // Check health on page load
+        window.addEventListener('load', checkHealth);
+        
+        // Periodically check health
+        setInterval(checkHealth, 30000);
     </script>
 </body>
 </html>
+

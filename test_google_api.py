@@ -1,46 +1,49 @@
-#!/usr/bin/env python3
 """
-Simple test for Google API endpoint
 Tests sending a message to Google API and receiving a response via user interface
 """
 
+import os
 import requests
 import json
-import time
 
-def test_google_api():
-    """Test Google API message sending and receiving"""
-    print("🧪 Testing Google API...")
-    
-    # Test data
-    url = "http://localhost:8887/v1/gemini/generateContent"
-    headers = {"Content-Type": "application/json"}
-    data = {
-        "contents": [{"parts": [{"text": "Hello! Please respond with just 'Hi from Google!'"}]}],
-        "generationConfig": {"maxOutputTokens": 50}
+# Define the API base URL (can be overridden with environment variable)
+API_BASE = os.getenv("API_BASE", "http://localhost:8887")
+url = f"{API_BASE}/v1/gemini/generateContent"
+
+# Define headers
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {os.getenv('GOOGLE_API_KEY', '')}"
+}
+
+# Define the data to send
+data = {
+    "model": "gemini-1.5-pro",
+    "messages": [{"role": "user", "content": "This is a test message."}],
+    "contents": [
+        {"parts": [{"text": "This is a test message."}]}
+    ],
+    "generationConfig": {
+        "maxOutputTokens": 5
     }
-    
-    try:
-        # Send request
-        print("📤 Sending message to Google API...")
-        response = requests.post(url, headers=headers, json=data, timeout=60)
-        
-        # Check response
-        if response.status_code == 200:
-            result = response.json()
-            content = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            print(f"✅ Google API Response: {content}")
-            print(f"📊 Tokens used: {result.get('usageMetadata', {})}")
-            return True
-        else:
-            print(f"❌ Google API Error: {response.status_code} - {response.text}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Google API Test Failed: {e}")
-        return False
+}
 
-if __name__ == "__main__":
-    success = test_google_api()
-    exit(0 if success else 1)
+print("🧪 Testing Google API...")
+print(f"📤 Sending message to {url}...")
+
+# Send the request
+try:
+    response = requests.post(url, headers=headers, json=data, timeout=30)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        print("✅ Google API Response:")
+        print(json.dumps(response.json(), indent=2))
+        exit(0)
+    else:
+        print(f"❌ Google API Error: {response.status_code} - {response.text}")
+        exit(1)
+except Exception as e:
+    print(f"❌ Google API Test Failed: {e}")
+    exit(1)
 

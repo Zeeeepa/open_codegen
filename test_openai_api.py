@@ -1,47 +1,46 @@
-#!/usr/bin/env python3
 """
-Simple test for OpenAI API endpoint
 Tests sending a message to OpenAI API and receiving a response via user interface
 """
 
+import os
 import requests
 import json
-import time
 
-def test_openai_api():
-    """Test OpenAI API message sending and receiving"""
-    print("🧪 Testing OpenAI API...")
-    
-    # Test data
-    url = "http://localhost:8887/v1/chat/completions"
-    headers = {"Content-Type": "application/json"}
-    data = {
-        "model": "gpt-4",
-        "messages": [{"role": "user", "content": "Hello! Please respond with just 'Hi from OpenAI!'"}],
-        "max_tokens": 50
-    }
-    
-    try:
-        # Send request
-        print("📤 Sending message to OpenAI API...")
-        response = requests.post(url, headers=headers, json=data, timeout=60)
-        
-        # Check response
-        if response.status_code == 200:
-            result = response.json()
-            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-            print(f"✅ OpenAI API Response: {content}")
-            print(f"📊 Tokens used: {result.get('usage', {})}")
-            return True
-        else:
-            print(f"❌ OpenAI API Error: {response.status_code} - {response.text}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ OpenAI API Test Failed: {e}")
-        return False
+# Define the API base URL (can be overridden with environment variable)
+API_BASE = os.getenv("API_BASE", "http://localhost:8887")
+url = f"{API_BASE}/v1/chat/completions"
 
-if __name__ == "__main__":
-    success = test_openai_api()
-    exit(0 if success else 1)
+# Define headers
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY', '')}"
+}
+
+# Define the data to send
+data = {
+    "model": "gpt-3.5-turbo",
+    "messages": [
+        {"role": "user", "content": "This is a test message."}
+    ],
+    "max_tokens": 5
+}
+
+print("🧪 Testing OpenAI API...")
+print(f"📤 Sending message to {url}...")
+
+# Send the request
+try:
+    response = requests.post(url, headers=headers, json=data, timeout=30)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        print("✅ OpenAI API Response:")
+        print(json.dumps(response.json(), indent=2))
+        exit(0)
+    else:
+        print(f"❌ OpenAI API Error: {response.status_code} - {response.text}")
+        exit(1)
+except Exception as e:
+    print(f"❌ OpenAI API Test Failed: {e}")
+    exit(1)
 
