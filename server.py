@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from codegen.agents.agent import Agent
 
 # Configure logging
 logging.basicConfig(
@@ -35,12 +36,16 @@ if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Environment variables
-CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "https://codegen-sh--rest-api.modal.run")
 CODEGEN_ORG_ID = os.environ.get("CODEGEN_ORG_ID", "")
 CODEGEN_TOKEN = os.environ.get("CODEGEN_TOKEN", "")
 SERVER_HOST = os.environ.get("SERVER_HOST", "localhost")
 SERVER_PORT = int(os.environ.get("SERVER_PORT", "8887"))
 
+# Initialize Codegen Agent
+agent = Agent(
+    org_id=CODEGEN_ORG_ID,
+    token=CODEGEN_TOKEN
+)
 
 # Health endpoint
 @app.get("/health")
@@ -50,7 +55,7 @@ async def health_check():
         "status": "healthy",
         "timestamp": time.time(),
         "providers": ["openai", "anthropic", "google"],
-        "routing_to": CODEGEN_API_URL
+        "routing_to": agent.api_url
     }
 
 
@@ -302,71 +307,35 @@ async def openai_chat_completions(request: Request):
         if not user_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Prepare request to Codegen SDK
-        codegen_request = {
-            "prompt": user_message,
-            "source": "openai_proxy",
-            "model": body.get("model", "gpt-3.5-turbo")
-        }
+        # Use the Codegen SDK to run the agent
+        logger.info(f"Routing OpenAI request to Codegen SDK: {user_message}")
         
-        # Send request to Codegen SDK
-        logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps(codegen_request)}")
-        
-        # Add authentication headers
-        headers = {
-            "Content-Type": "application/json",
-            "X-Codegen-Org-Id": CODEGEN_ORG_ID,
-            "X-Codegen-Token": CODEGEN_TOKEN
-        }
-        
-        # Try different endpoint paths
-        endpoints_to_try = [
-            "",  # Base URL
-            "/generate",
-            "/api/generate",
-            "/api/v1/generate",
-            "/v1/generate"
-        ]
-        
-        response = None
-        success = False
-        
-        for endpoint in endpoints_to_try:
-            try:
-                full_url = f"{CODEGEN_API_URL}{endpoint}"
-                logger.info(f"Trying endpoint: {full_url}")
-                response = requests.post(full_url, json=codegen_request, headers=headers, timeout=10)
-                
-                if response.status_code == 200:
-                    success = True
-                    logger.info(f"Successful response from endpoint: {full_url}")
-                    break
-                else:
-                    logger.warning(f"Failed response from endpoint {full_url}: {response.status_code} - {response.text}")
-            except Exception as e:
-                logger.warning(f"Error with endpoint {full_url}: {str(e)}")
-                continue
-        
-        if not success or not response:
-            logger.error("All endpoints failed")
-            return JSONResponse(
-                status_code=404,
-                content={"error": "Codegen SDK error: All endpoints failed"}
+        try:
+            # Run the agent with the prompt
+            task = agent.run(
+                prompt=user_message,
+                source="openai_proxy",
+                model=body.get("model", "gpt-3.5-turbo")
             )
+            
+            # Wait for the task to complete (with timeout)
+            start_time = time.time()
+            timeout = 30  # 30 seconds timeout
+            
+            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
+                time.sleep(1)
+                task.refresh()
+            
+            if task.status == "completed":
+                generated_text = task.result
+                logger.info(f"Codegen SDK task completed successfully")
+            else:
+                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
+                generated_text = f"Error: Task {task.status}. Please try again later."
         
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
-            return JSONResponse(
-                status_code=response.status_code,
-                content={"error": f"Codegen SDK error: {response.text}"}
-            )
-        
-        # Parse Codegen SDK response
-        codegen_response = response.json()
-        
-        # Extract the generated text from Codegen response
-        generated_text = codegen_response.get("response", "No response from Codegen SDK")
+        except Exception as e:
+            logger.error(f"Error running Codegen agent: {e}")
+            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
         
         # Format response in OpenAI format
         openai_response = {
@@ -421,71 +390,35 @@ async def anthropic_completions(request: Request):
         if not user_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Prepare request to Codegen SDK
-        codegen_request = {
-            "prompt": user_message,
-            "source": "anthropic_proxy",
-            "model": body.get("model", "claude-3-sonnet-20240229")
-        }
+        # Use the Codegen SDK to run the agent
+        logger.info(f"Routing Anthropic request to Codegen SDK: {user_message}")
         
-        # Send request to Codegen SDK
-        logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps(codegen_request)}")
-        
-        # Add authentication headers
-        headers = {
-            "Content-Type": "application/json",
-            "X-Codegen-Org-Id": CODEGEN_ORG_ID,
-            "X-Codegen-Token": CODEGEN_TOKEN
-        }
-        
-        # Try different endpoint paths
-        endpoints_to_try = [
-            "",  # Base URL
-            "/generate",
-            "/api/generate",
-            "/api/v1/generate",
-            "/v1/generate"
-        ]
-        
-        response = None
-        success = False
-        
-        for endpoint in endpoints_to_try:
-            try:
-                full_url = f"{CODEGEN_API_URL}{endpoint}"
-                logger.info(f"Trying endpoint: {full_url}")
-                response = requests.post(full_url, json=codegen_request, headers=headers, timeout=10)
-                
-                if response.status_code == 200:
-                    success = True
-                    logger.info(f"Successful response from endpoint: {full_url}")
-                    break
-                else:
-                    logger.warning(f"Failed response from endpoint {full_url}: {response.status_code} - {response.text}")
-            except Exception as e:
-                logger.warning(f"Error with endpoint {full_url}: {str(e)}")
-                continue
-        
-        if not success or not response:
-            logger.error("All endpoints failed")
-            return JSONResponse(
-                status_code=404,
-                content={"error": "Codegen SDK error: All endpoints failed"}
+        try:
+            # Run the agent with the prompt
+            task = agent.run(
+                prompt=user_message,
+                source="anthropic_proxy",
+                model=body.get("model", "claude-3-sonnet-20240229")
             )
+            
+            # Wait for the task to complete (with timeout)
+            start_time = time.time()
+            timeout = 30  # 30 seconds timeout
+            
+            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
+                time.sleep(1)
+                task.refresh()
+            
+            if task.status == "completed":
+                generated_text = task.result
+                logger.info(f"Codegen SDK task completed successfully")
+            else:
+                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
+                generated_text = f"Error: Task {task.status}. Please try again later."
         
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
-            return JSONResponse(
-                status_code=response.status_code,
-                content={"error": f"Codegen SDK error: {response.text}"}
-            )
-        
-        # Parse Codegen SDK response
-        codegen_response = response.json()
-        
-        # Extract the generated text from Codegen response
-        generated_text = codegen_response.get("response", "No response from Codegen SDK")
+        except Exception as e:
+            logger.error(f"Error running Codegen agent: {e}")
+            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
         
         # Format response in Anthropic format
         anthropic_response = {
@@ -527,71 +460,35 @@ async def gemini_completions(request: Request):
         if not user_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Prepare request to Codegen SDK
-        codegen_request = {
-            "prompt": user_message,
-            "source": "google_proxy",
-            "model": body.get("model", "gemini-1.5-pro")
-        }
+        # Use the Codegen SDK to run the agent
+        logger.info(f"Routing Google request to Codegen SDK: {user_message}")
         
-        # Send request to Codegen SDK
-        logger.info(f"Routing Google request to Codegen SDK: {json.dumps(codegen_request)}")
-        
-        # Add authentication headers
-        headers = {
-            "Content-Type": "application/json",
-            "X-Codegen-Org-Id": CODEGEN_ORG_ID,
-            "X-Codegen-Token": CODEGEN_TOKEN
-        }
-        
-        # Try different endpoint paths
-        endpoints_to_try = [
-            "",  # Base URL
-            "/generate",
-            "/api/generate",
-            "/api/v1/generate",
-            "/v1/generate"
-        ]
-        
-        response = None
-        success = False
-        
-        for endpoint in endpoints_to_try:
-            try:
-                full_url = f"{CODEGEN_API_URL}{endpoint}"
-                logger.info(f"Trying endpoint: {full_url}")
-                response = requests.post(full_url, json=codegen_request, headers=headers, timeout=10)
-                
-                if response.status_code == 200:
-                    success = True
-                    logger.info(f"Successful response from endpoint: {full_url}")
-                    break
-                else:
-                    logger.warning(f"Failed response from endpoint {full_url}: {response.status_code} - {response.text}")
-            except Exception as e:
-                logger.warning(f"Error with endpoint {full_url}: {str(e)}")
-                continue
-        
-        if not success or not response:
-            logger.error("All endpoints failed")
-            return JSONResponse(
-                status_code=404,
-                content={"error": "Codegen SDK error: All endpoints failed"}
+        try:
+            # Run the agent with the prompt
+            task = agent.run(
+                prompt=user_message,
+                source="google_proxy",
+                model=body.get("model", "gemini-1.5-pro")
             )
+            
+            # Wait for the task to complete (with timeout)
+            start_time = time.time()
+            timeout = 30  # 30 seconds timeout
+            
+            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
+                time.sleep(1)
+                task.refresh()
+            
+            if task.status == "completed":
+                generated_text = task.result
+                logger.info(f"Codegen SDK task completed successfully")
+            else:
+                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
+                generated_text = f"Error: Task {task.status}. Please try again later."
         
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
-            return JSONResponse(
-                status_code=response.status_code,
-                content={"error": f"Codegen SDK error: {response.text}"}
-            )
-        
-        # Parse Codegen SDK response
-        codegen_response = response.json()
-        
-        # Extract the generated text from Codegen response
-        generated_text = codegen_response.get("response", "No response from Codegen SDK")
+        except Exception as e:
+            logger.error(f"Error running Codegen agent: {e}")
+            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
         
         # Format response in Google/Gemini format
         gemini_response = {
@@ -658,7 +555,7 @@ def start_server(host="localhost", port=8887):
     """Start the FastAPI server."""
     import uvicorn
     logger.info(f"Starting API Router System on {host}:{port}")
-    logger.info(f"Routing requests to Codegen SDK at: {CODEGEN_API_URL}")
+    logger.info(f"Routing requests to Codegen SDK at: {agent.api_url}")
     logger.info(f"Supported providers: openai, anthropic, google")
     uvicorn.run(app, host=host, port=port)
 
