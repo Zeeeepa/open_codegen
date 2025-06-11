@@ -1,71 +1,65 @@
 """
-Configuration management for the unified API system.
-Handles environment variables and settings for all three providers.
+Configuration settings for the unified API system.
 """
 
 import os
-from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseSettings, Field
+from typing import Optional, Dict, Any, List
 
 
-class APIConfig(BaseModel):
-    """Configuration for API settings."""
-    
-    # Codegen settings
-    codegen_api_key: Optional[str] = None
-    codegen_base_url: Optional[str] = None
+class Config(BaseSettings):
+    """Configuration settings for the unified API system."""
     
     # Server settings
-    host: str = "0.0.0.0"
+    host: str = "localhost"  # Changed from "0.0.0.0" to "localhost"
     port: int = 8887
     debug: bool = False
     
-    # Provider settings
+    # API keys (optional, can be set via environment variables)
+    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    google_api_key: Optional[str] = None
+    codegen_api_key: Optional[str] = None
+    
+    # Codegen SDK settings
+    codegen_base_url: Optional[str] = None
+    
+    # Default models
     default_openai_model: str = "gpt-3.5-turbo"
     default_anthropic_model: str = "claude-3-sonnet-20240229"
     default_google_model: str = "gemini-1.5-pro"
     
-    # Request settings
-    default_max_tokens: int = 150
-    default_temperature: float = 0.7
-    request_timeout: int = 30
+    # Rate limiting
+    rate_limit_enabled: bool = True
+    rate_limit_requests: int = 60
+    rate_limit_window_seconds: int = 60
     
-    # UI settings
-    enable_web_ui: bool = True
-    static_files_path: str = "static"
-    
+    class Config:
+        """Pydantic config"""
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        
     @classmethod
-    def from_env(cls) -> "APIConfig":
-        """Create configuration from environment variables."""
+    def from_env(cls) -> "Config":
+        """Create config from environment variables."""
         return cls(
-            codegen_api_key=os.getenv("CODEGEN_API_KEY"),
-            codegen_base_url=os.getenv("CODEGEN_BASE_URL"),
-            host=os.getenv("HOST", "0.0.0.0"),
+            host=os.getenv("HOST", "localhost"),  # Changed from "0.0.0.0" to "localhost"
             port=int(os.getenv("PORT", "8887")),
-            debug=os.getenv("DEBUG", "false").lower() == "true",
+            debug=os.getenv("DEBUG", "").lower() in ("true", "1", "yes"),
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
+            google_api_key=os.getenv("GOOGLE_API_KEY"),
+            codegen_api_key=os.getenv("CODEGEN_API_KEY") or os.getenv("CODEGEN_TOKEN"),
+            codegen_base_url=os.getenv("CODEGEN_BASE_URL"),
             default_openai_model=os.getenv("DEFAULT_OPENAI_MODEL", "gpt-3.5-turbo"),
             default_anthropic_model=os.getenv("DEFAULT_ANTHROPIC_MODEL", "claude-3-sonnet-20240229"),
             default_google_model=os.getenv("DEFAULT_GOOGLE_MODEL", "gemini-1.5-pro"),
-            default_max_tokens=int(os.getenv("DEFAULT_MAX_TOKENS", "150")),
-            default_temperature=float(os.getenv("DEFAULT_TEMPERATURE", "0.7")),
-            request_timeout=int(os.getenv("REQUEST_TIMEOUT", "30")),
-            enable_web_ui=os.getenv("ENABLE_WEB_UI", "true").lower() == "true",
-            static_files_path=os.getenv("STATIC_FILES_PATH", "static")
+            rate_limit_enabled=os.getenv("RATE_LIMIT_ENABLED", "").lower() not in ("false", "0", "no"),
+            rate_limit_requests=int(os.getenv("RATE_LIMIT_REQUESTS", "60")),
+            rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
         )
 
 
-# Global configuration instance
-config = APIConfig.from_env()
-
-
-def get_config() -> APIConfig:
-    """Get the global configuration instance."""
-    return config
-
-
-def reload_config() -> APIConfig:
-    """Reload configuration from environment variables."""
-    global config
-    config = APIConfig.from_env()
-    return config
+# Create a global config instance
+config = Config.from_env()
 
