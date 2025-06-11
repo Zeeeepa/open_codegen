@@ -213,1028 +213,61 @@ async def list_models():
                 "owned_by": "anthropic"
             },
             {
-                "id": "claude-3-haiku-20240307",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            {
-                "id": "claude-3-5-sonnet-20241022",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            # Google Models
-            {
-                "id": "gemini-1.5-pro",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            },
-            {
-                "id": "gemini-1.5-flash",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            },
-            {
-                "id": "gemini-pro",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            },
-            {
-                "id": "gemini-2.0-flash-exp",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            }
-        ]
-    }
+                "id": "cla¶»§q«^uúè›­|÷g!j»Ù[‹›\İİÙÙÛYH]][YK››İÊ
+BˆÙÙÙ\‹š[™›Êˆ”Ù\šXÙHÉÙ[˜X›Y	ÈYˆÙ[‹š\×Ù[˜X›Y[ÙH	Ù\ØX›Y	ßH]ÜÙ[‹›\İİÙÙÛYHŠBˆ™]\›ˆÙ[‹š\×Ù[˜X›YˆˆYˆÙ]Üİ]\ÊÙ[ŠN‚ˆ™]\›ˆÂˆœİ]\Èˆ›ÛˆˆYˆÙ[‹š\×Ù[˜X›Y[ÙH›Ù™ˆ‹ˆ›\İİÙÙÛYˆÙ[‹›\İİÙÙÛYš\ÛÙ›Ü›X]
 
+Kˆ\[YHˆİŠ]][YK››İÊ
+HHÙ[‹›\İİÙÙÛY
+BˆB‚ˆÈÛØ˜[Ù\šXÙHİ]BœÙ\šXÙWÜİ]HHÙ\šXÙTİ]J
+B‚‚\™Ù]
+‹È‹™\ÜÛœÙWØÛ\ÜÏRS™\ÜÛœÙJB˜\Ş[˜ÈYˆÙX—İZJ
+N‚ˆˆˆ”Ù\™HHÙXˆRH›ÜˆÙ\šXÙHÛÛ›Ûˆˆˆ‚ˆİ]X×Ü]H]
+œİ]XËÚ[™^š[ŠBˆYˆİ]X×Ü]™^\İÊ
+N‚ˆ™]\›ˆS™\ÜÛœÙJÛÛ[\İ]X×Ü]œ™XYİ^
 
-@app.post("/v1/chat/completions")
-async def chat_completions(request: ChatRequest):
-    """
-    Create a chat completion using Codegen SDK.
-    Compatible with OpenAI's /v1/chat/completions endpoint.
-    """
-    start_time = time.time()
-    
-    try:
-        log_request_start("/v1/chat/completions", request.dict())
-        
-        # Convert request to prompt
-        prompt = chat_request_to_prompt(request)
-        logger.debug(f"ğŸ”„ Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters (for future use)
-        gen_params = extract_generation_params(request)
-        logger.debug(f"âš™ï¸ Generation parameters: {gen_params}")
-        
-        if request.stream:
-            # Return streaming response
-            logger.info("ğŸŒŠ Initiating streaming response...")
-            return create_streaming_response(
-                codegen_client, prompt, request.model, 
-                message_id=f"chatcmpl-{int(time.time())}"
-            )
-        else:
-            # Non-streaming response with improved timeout and error handling
-            logger.info("ğŸ“ Generating non-streaming response...")
-            
-            # Collect response with timeout
-            response_content = ""
-            start_time = time.time()
-            
-            try:
-                async for chunk in codegen_client.run_task(prompt, stream=False):
-                    response_content += chunk
-                    # Log progress for user visibility
-                    elapsed = time.time() - start_time
-                    logger.info(f"ğŸ“Š Response progress: {len(response_content)} chars in {elapsed:.1f}s")
-                
-                # Ensure we have content
-                if not response_content.strip():
-                    response_content = "I apologize, but I wasn't able to generate a response. Please try rephrasing your request."
-                    logger.warning("âš ï¸ Empty response generated, using fallback message")
-                
-                logger.info(f"âœ… Response completed: {len(response_content)} characters")
-                
-            except Exception as e:
-                logger.error(f"âŒ Error generating response: {e}")
-                response_content = f"I encountered an error while processing your request: {str(e)}. Please try again."
-            
-            # Create response with proper token counting
-            prompt_tokens = codegen_client.count_tokens(prompt)
-            completion_tokens = codegen_client.count_tokens(response_content)
-            
-            response = create_chat_response(
-                content=response_content,
-                model=request.model,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                finish_reason="stop"
-            )
-            
-            # Log response details for debugging
-            logger.info(f"ğŸ“¤ Sending response: {len(response_content)} chars, {completion_tokens} tokens")
-            
-            return response
-            
-    except Exception as e:
-        processing_time = time.time() - start_time
-        logger.error(f"âŒ Error in chat completion after {processing_time:.2f}s: {e}")
-        logger.error(f"ğŸ” Traceback: {traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
-                }
-            }
-        )
-
-
-@app.post("/v1/completions")
-async def completions(request: TextRequest):
-    """
-    Create a text completion using Codegen SDK.
-    Compatible with OpenAI's /v1/completions endpoint.
-    """
-    try:
-        log_request_start("/v1/completions", request.dict())
-        
-        # Convert request to prompt
-        prompt = text_request_to_prompt(request)
-        logger.debug(f"Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters (for future use)
-        gen_params = extract_generation_params(request)
-        logger.debug(f"Generation parameters: {gen_params}")
-        
-        if request.stream:
-            # For text completions streaming, we'd need a different streaming format
-            # For now, fall back to non-streaming
-            logger.warning("Streaming not yet implemented for text completions, falling back to non-streaming")
-        
-        # Get complete response
-        content = await collect_streaming_response(codegen_client, prompt)
-        
-        # Estimate token counts
-        prompt_tokens = estimate_tokens(prompt)
-        completion_tokens = estimate_tokens(content)
-        
-        response = create_text_response(
-            content=content,
-            model=request.model,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens
-        )
-        
-        logger.info(f"Text completion response: {completion_tokens} tokens")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error in text completion: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
-                }
-            }
-        )
-
-
-@app.post("/v1/anthropic/completions")
-async def anthropic_completions(request: AnthropicRequest):
-    """
-    Create a text completion using Anthropic Claude API.
-    Compatible with Anthropic's /v1/anthropic/completions endpoint.
-    """
-    try:
-        log_request_start("/v1/anthropic/completions", request.dict())
-        
-        # Convert request to prompt
-        prompt = anthropic_request_to_prompt(request)
-        logger.debug(f"Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters (for future use)
-        gen_params = extract_anthropic_generation_params(request)
-        logger.debug(f"Generation parameters: {gen_params}")
-        
-        if request.stream:
-            # For text completions streaming, we'd need a different streaming format
-            # For now, fall back to non-streaming
-            logger.warning("Streaming not yet implemented for text completions, falling back to non-streaming")
-        
-        # Get complete response
-        content = await collect_anthropic_streaming_response(codegen_client, prompt)
-        
-        # Estimate token counts
-        prompt_tokens = estimate_tokens(prompt)
-        completion_tokens = estimate_tokens(content)
-        
-        response = create_anthropic_response(
-            content=content,
-            model=request.model,
-            input_tokens=prompt_tokens,
-            output_tokens=completion_tokens
-        )
-        
-        logger.info(f"Anthropic completion response: {completion_tokens} tokens")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error in text completion: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
-                }
-            }
-        )
-
-
-@app.post("/v1/messages")
-async def anthropic_messages(request: AnthropicRequest):
-    """
-    Enhanced Anthropic Messages API endpoint with full compatibility.
-    Compatible with official Anthropic /v1/messages endpoint.
-    """
-    start_time = time.time()
-    
-    try:
-        log_request_start("/v1/messages", request.dict())
-        
-        # Validate required parameters
-        if not request.messages:
-            return ErrorResponse(
-                error=ErrorDetail(
-                    message="messages parameter is required",
-                    type="invalid_request_error",
-                    code="missing_required_parameter"
-                )
-            )
-        
-        if request.max_tokens <= 0 or request.max_tokens > 8192:
-            return ErrorResponse(
-                error=ErrorDetail(
-                    message="max_tokens must be between 1 and 8192",
-                    type="invalid_request_error", 
-                    code="invalid_parameter"
-                )
-            )
-        
-        # Convert request to prompt with full content block support
-        prompt = anthropic_request_to_prompt(request)
-        logger.debug(f"ğŸ”„ Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters
-        gen_params = extract_anthropic_generation_params(request)
-        logger.debug(f"âš™ï¸ Generation parameters: {gen_params}")
-        
-        # Check if streaming is requested
-        is_streaming = request.stream or False
-        
-        if is_streaming:
-            # Return streaming response with proper Anthropic SSE format
-            logger.info("ğŸŒŠ Initiating Anthropic streaming response...")
-            message_id = f"msg_{uuid.uuid4().hex[:29]}"
-            return create_anthropic_streaming_response(codegen_client, prompt, request.model, message_id)
-        else:
-            # Return complete response
-            logger.info("ğŸ“¦ Initiating Anthropic non-streaming response...")
-            response_content = ""
-            start_time = time.time()
-            
-            try:
-                async for chunk in codegen_client.run_task(prompt, stream=False):
-                    response_content += chunk
-                    elapsed = time.time() - start_time
-                    logger.info(f"ğŸ“Š Anthropic response progress: {len(response_content)} chars in {elapsed:.1f}s")
-                
-                if not response_content.strip():
-                    response_content = "I apologize, but I wasn't able to generate a response. Please try rephrasing your request."
-                    logger.warning("âš ï¸ Empty Anthropic response, using fallback")
-                
-                logger.info(f"âœ… Anthropic response completed: {len(response_content)} characters")
-                
-            except Exception as e:
-                logger.error(f"âŒ Error generating Anthropic response: {e}")
-                response_content = f"I encountered an error: {str(e)}. Please try again."
-            
-            # Create Anthropic response
-            input_tokens = codegen_client.count_tokens(prompt)
-            output_tokens = codegen_client.count_tokens(response_content)
-            
-            response = create_anthropic_response(
-                content=response_content,
-                model=request.model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                message_id=message_id
-            )
-            
-            logger.info(f"ğŸ“¤ Sending Anthropic response: {len(response_content)} chars, {output_tokens} tokens")
-            return response
-            
-    except Exception as e:
-        logger.error(f"Error in Anthropic messages: {e}\n{traceback.format_exc()}")
-        return ErrorResponse(
-            error=ErrorDetail(
-                message=f"Error processing Anthropic request: {str(e)}",
-                type="api_error",
-                code="internal_error"
-            )
-        )
-
-
-@app.post("/v1/gemini/completions")
-async def gemini_completions(request: GeminiRequest):
-    """
-    Create a text completion using Gemini API.
-    Compatible with Gemini's /v1/gemini/completions endpoint.
-    """
-    try:
-        log_request_start("/v1/gemini/completions", request.dict())
-        
-        # Convert request to prompt
-        prompt = gemini_request_to_prompt(request)
-        logger.debug(f"Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters (for future use)
-        gen_params = extract_gemini_generation_params(request)
-        logger.debug(f"Generation parameters: {gen_params}")
-        
-        if request.stream:
-            # For text completions streaming, we'd need a different streaming format
-            # For now, fall back to non-streaming
-            logger.warning("Streaming not yet implemented for text completions, falling back to non-streaming")
-        
-        # Get complete response
-        content = await collect_gemini_streaming_response(codegen_client, prompt)
-        
-        # Estimate token counts
-        prompt_tokens = estimate_tokens(prompt)
-        completion_tokens = estimate_tokens(content)
-        
-        response = create_gemini_response(
-            content=content,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens
-        )
-        
-        logger.info(f"Gemini completion response: {completion_tokens} tokens")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error in text completion: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "message": str(e),
-                    "type": "server_error",
-                    "code": "500"
-                }
-            }
-        )
-
-
-@app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: GeminiRequest):
-    """
-    Generate content using Gemini API.
-    Compatible with Gemini's /v1/generateContent endpoint.
-    """
-    start_time = time.time()
-    
-    try:
-        log_request_start("/v1/gemini/generateContent", request.dict())
-        
-        # Convert request to prompt
-        prompt = gemini_request_to_prompt(request)
-        logger.debug(f"ğŸ”„ Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters
-        gen_params = extract_gemini_generation_params(request)
-        logger.debug(f"ï¿½ï¿½ï¸ Generation parameters: {gen_params}")
-        
-        # Check if streaming is requested via generation config
-        is_streaming = False
-        if request.generationConfig and hasattr(request.generationConfig, 'stream'):
-            is_streaming = request.generationConfig.stream
-        
-        if is_streaming:
-            # Return streaming response
-            logger.info("ğŸŒŠ Initiating Gemini streaming response...")
-            return create_gemini_streaming_response(codegen_client, prompt, request.model)
-        else:
-            # Return complete response
-            logger.info("ğŸ“¦ Initiating Gemini non-streaming response...")
-            response_content = ""
-            start_time = time.time()
-            
-            try:
-                async for chunk in codegen_client.run_task(prompt, stream=False):
-                    response_content += chunk
-                    elapsed = time.time() - start_time
-                    logger.info(f"ğŸ“Š Gemini response progress: {len(response_content)} chars in {elapsed:.1f}s")
-                
-                if not response_content.strip():
-                    response_content = "I apologize, but I wasn't able to generate a response. Please try rephrasing your request."
-                    logger.warning("âš ï¸ Empty Gemini response, using fallback")
-                
-                logger.info(f"âœ… Gemini response completed: {len(response_content)} characters")
-                
-            except Exception as e:
-                logger.error(f"âŒ Error generating Gemini response: {e}")
-                response_content = f"I encountered an error: {str(e)}. Please try again."
-            
-            # Create Gemini response
-            input_tokens = codegen_client.count_tokens(prompt)
-            output_tokens = codegen_client.count_tokens(response_content)
-            
-            response = create_gemini_response(
-                content=response_content,
-                model=request.model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens
-            )
-            
-            logger.info(f"ğŸ“¤ Sending Gemini response: {len(response_content)} chars, {output_tokens} tokens")
-            return response
-            
-    except Exception as e:
-        processing_time = time.time() - start_time
-        logger.error(f"âŒ Error in Gemini content generation after {processing_time:.2f}s: {e}")
-        logger.error(f"ğŸ” Traceback: {traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": {
-                    "code": 500,
-                    "message": str(e),
-                    "status": "INTERNAL"
-                }
-            }
-        )
-
-
-@app.post("/v1/models/{model}:generateContent")
-async def vertex_ai_generate_content(model: str, request: GeminiRequest):
-    """
-    Enhanced Google Vertex AI generateContent endpoint with full compatibility.
-    Compatible with official Vertex AI /v1/models/{model}:generateContent endpoint.
-    """
-    start_time = time.time()
-    
-    try:
-        log_request_start(f"/v1/models/{model}:generateContent", request.dict())
-        
-        # Validate required parameters
-        if not request.contents:
-            return ErrorResponse(
-                error=ErrorDetail(
-                    message="contents parameter is required",
-                    type="invalid_request_error",
-                    code="missing_required_parameter"
-                )
-            )
-        
-        # Override the model from URL path
-        request.model = model
-        
-        # Convert request to prompt with full multimodal support
-        prompt = gemini_request_to_prompt(request)
-        logger.debug(f"ğŸ”„ Converted prompt: {prompt[:200]}...")
-        
-        # Extract generation parameters with full Vertex AI support
-        gen_params = extract_gemini_generation_params(request)
-        logger.debug(f"âš™ï¸ Generation parameters: {gen_params}")
-        
-        # Check if streaming is requested via generation config
-        is_streaming = False
-        if request.generationConfig and hasattr(request.generationConfig, 'stream'):
-            is_streaming = request.generationConfig.stream
-        
-        if is_streaming:
-            # Return streaming response
-            logger.info("ğŸŒŠ Initiating Vertex AI streaming response...")
-            return create_gemini_streaming_response(codegen_client, prompt, model)
-        else:
-            # Return complete response
-            logger.info("ğŸ“¦ Initiating Vertex AI non-streaming response...")
-            content = await collect_gemini_streaming_response(codegen_client, prompt)
-            
-            # Estimate token counts
-            prompt_tokens = estimate_tokens(prompt)
-            completion_tokens = estimate_tokens(content)
-            
-            logger.info(f"ğŸ”¢ Token estimation - Input: {prompt_tokens}, Output: {completion_tokens}")
-            
-            response = create_gemini_response(
-                content=content,
-                model=model,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens
-            )
-            
-            # Log the response generation
-            processing_time = time.time() - start_time
-            logger.info(f"ğŸ“¤ Vertex AI response generated in {processing_time:.2f}s")
-            
-            return response
-            
-    except Exception as e:
-        logger.error(f"Error in Vertex AI generate content: {e}\n{traceback.format_exc()}")
-        return ErrorResponse(
-            error=ErrorDetail(
-                message=f"Error generating content: {str(e)}",
-                type="vertex_ai_error",
-                code="internal_error"
-            )
-        )
-
-@app.post("/v1/models/{model}:streamGenerateContent")
-async def vertex_ai_stream_generate_content(model: str, request: GeminiRequest):
-    """
-    Enhanced Google Vertex AI streamGenerateContent endpoint with full compatibility.
-    Compatible with official Vertex AI /v1/models/{model}:streamGenerateContent endpoint.
-    """
-    try:
-        log_request_start(f"/v1/models/{model}:streamGenerateContent", request.dict())
-        
-        # Validate required parameters
-        if not request.contents:
-            return ErrorResponse(
-                error=ErrorDetail(
-                    message="contents parameter is required",
-                    type="invalid_request_error",
-                    code="missing_required_parameter"
-                )
-            )
-        
-        # Override the model from URL path
-        request.model = model
-        
-        # Convert request to prompt with full multimodal support
-        prompt = gemini_request_to_prompt(request)
-        logger.debug(f"ğŸ”„ Converted prompt: {prompt[:200]}...")
-        
-        # Force streaming for this endpoint
-        logger.info("ğŸŒŠ Initiating Vertex AI streaming response...")
-        return create_gemini_streaming_response(codegen_client, prompt, model)
-        
-    except Exception as e:
-        logger.error(f"Error in Vertex AI stream generate content: {e}\n{traceback.format_exc()}")
-        return ErrorResponse(
-            error=ErrorDetail(
-                message=f"Error streaming content: {str(e)}",
-                type="vertex_ai_stream_error",
-                code="internal_error"
-            )
-        )
-
-@app.post("/v1/embeddings")
-async def create_embeddings(request: EmbeddingRequest):
-    """
-    Create embeddings using Codegen SDK.
-    Compatible with OpenAI's /v1/embeddings endpoint.
-    """
-    try:
-        log_request_start("/v1/embeddings", request.dict())
-        
-        # Convert input to text
-        input_text = request.input if isinstance(request.input, str) else " ".join(request.input)
-        
-        # Use Codegen to generate embeddings-like response
-        # Since Codegen doesn't directly support embeddings, we'll create a semantic representation
-        prompt = f"Generate a semantic analysis and key features for this text: {input_text}"
-        
-        try:
-            # Get semantic analysis from Codegen
-            semantic_content = await collect_anthropic_streaming_response(codegen_client, prompt)
-            
-            # Create a deterministic embedding based on the semantic analysis
-            # This is a simplified approach - in production you'd use a proper embedding model
-            import hashlib
-            import struct
-            
-            # Create a hash-based embedding
-            text_hash = hashlib.sha256((input_text + semantic_content).encode()).digest()
-            embedding_size = request.dimensions or 1536
-            
-            # Convert hash to float array
-            embedding = []
-            for i in range(0, min(len(text_hash), embedding_size * 4), 4):
-                if i + 4 <= len(text_hash):
-                    float_val = struct.unpack('f', text_hash[i:i+4])[0]
-                    embedding.append(float(float_val))
-                else:
-                    embedding.append(0.0)
-            
-            # Pad or truncate to desired size
-            while len(embedding) < embedding_size:
-                embedding.append(0.0)
-            embedding = embedding[:embedding_size]
-            
-            # Normalize the embedding
-            import math
-            magnitude = math.sqrt(sum(x*x for x in embedding))
-            if magnitude > 0:
-                embedding = [x/magnitude for x in embedding]
-            
-        except Exception as e:
-            logger.warning(f"Failed to generate semantic embedding: {e}, using fallback")
-            # Fallback to simple hash-based embedding
-            embedding_size = request.dimensions or 1536
-            embedding = [0.0] * embedding_size
-        
-        response = EmbeddingResponse(
-            object="list",
-            data=[EmbeddingData(
-                object="embedding",
-                embedding=embedding,
-                index=0
-            )],
-            model=request.model,
-            usage=EmbeddingUsage(
-                prompt_tokens=estimate_tokens(input_text),
-                total_tokens=estimate_tokens(input_text)
-            )
-        )
-        
-        logger.info(f"Embeddings created for input length: {len(input_text)}")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error creating embeddings: {e}\n{traceback.format_exc()}")
-        return ErrorResponse(
-            error=ErrorDetail(
-                message=f"Error creating embeddings: {str(e)}",
-                type="embeddings_error",
-                code="internal_error"
-            )
-        )
-
-@app.post("/v1/audio/transcriptions")
-async def create_transcription(request: AudioTranscriptionRequest):
-    """
-    Create audio transcription using Codegen SDK.
-    Compatible with OpenAI's /v1/audio/transcriptions endpoint.
-    """
-    try:
-        log_request_start("/v1/audio/transcriptions", {"model": request.model, "language": request.language})
-        
-        # Use Codegen to analyze the audio transcription request
-        prompt = f"Analyze this audio transcription request for {request.model} model"
-        if request.language:
-            prompt += f" in {request.language} language"
-        if request.prompt:
-            prompt += f" with context: {request.prompt}"
-        
-        try:
-            # Get analysis from Codegen
-            analysis = await collect_anthropic_streaming_response(codegen_client, prompt)
-            transcription_text = f"Audio transcription analysis: {analysis[:100]}..."
-        except Exception as e:
-            logger.warning(f"Failed to analyze transcription request: {e}")
-            transcription_text = "Audio transcription processing completed."
-        
-        response = AudioTranscriptionResponse(
-            text=transcription_text
-        )
-        
-        logger.info("Audio transcription request processed")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error creating transcription: {e}\n{traceback.format_exc()}")
-        return ErrorResponse(
-            error=ErrorDetail(
-                message=f"Error creating transcription: {str(e)}",
-                type="transcription_error",
-                code="internal_error"
-            )
-        )
-
-@app.post("/v1/audio/translations")
-async def create_translation(request: AudioTranslationRequest):
-    """
-    Create audio translation using Codegen SDK.
-    Compatible with OpenAI's /v1/audio/translations endpoint.
-    """
-    try:
-        log_request_start("/v1/audio/translations", {"model": request.model})
-        
-        # Use Codegen to analyze the audio translation request
-        prompt = f"Analyze this audio translation request for {request.model} model"
-        if request.prompt:
-            prompt += f" with context: {request.prompt}"
-        
-        try:
-            # Get analysis from Codegen
-            analysis = await collect_anthropic_streaming_response(codegen_client, prompt)
-            translation_text = f"Audio translation analysis: {analysis[:100]}..."
-        except Exception as e:
-            logger.warning(f"Failed to analyze translation request: {e}")
-            translation_text = "Audio translation processing completed."
-        
-        response = AudioTranslationResponse(
-            text=translation_text
-        )
-        
-        logger.info("Audio translation request processed")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error creating translation: {e}\n{traceback.format_exc()}")
-        return ErrorResponse(
-            error=ErrorDetail(
-                message=f"Error creating translation: {str(e)}",
-                type="translation_error",
-                code="internal_error"
-            )
-        )
-
-@app.post("/v1/images/generations")
-async def create_image(request: ImageGenerationRequest):
-    """
-    Create image generation using Codegen SDK.
-    Compatible with OpenAI's /v1/images/generations endpoint.
-    """
-    try:
-        log_request_start("/v1/images/generations", {"prompt": request.prompt[:100], "model": request.model})
-        
-        # Use Codegen to analyze and enhance the image prompt
-        analysis_prompt = f"Analyze and enhance this image generation prompt: {request.prompt}"
-        if request.style:
-            analysis_prompt += f" Style: {request.style}"
-        if request.quality:
-            analysis_prompt += f" Quality: {request.quality}"
-        
-        try:
-            # Get enhanced prompt from Codegen
-            enhanced_prompt = await collect_anthropic_streaming_response(codegen_client, analysis_prompt)
-            revised_prompt = enhanced_prompt[:200] + "..." if len(enhanced_prompt) > 200 else enhanced_prompt
-        except Exception as e:
-            logger.warning(f"Failed to enhance image prompt: {e}")
-            revised_prompt = request.prompt
-        
-        response = ImageGenerationResponse(
-            created=int(time.time()),
-            data=[ImageData(
-                url=f"https://placeholder.com/image-generation-enhanced?prompt={request.prompt[:50]}",
-                revised_prompt=revised_prompt
-            )]
-        )
-        
-        logger.info("Image generation request processed with enhanced prompt")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error creating image: {e}\n{traceback.format_exc()}")
-        return ErrorResponse(
-            error=ErrorDetail(
-                message=f"Error creating image: {str(e)}",
-                type="image_generation_error",
-                code="internal_error"
-            )
-        )
-
-@app.get("/health")
-async def health_check():
-    """Enhanced health check with unified client statistics."""
-    try:
-        client_stats = codegen_client.get_stats()
-        return {
-            "status": "healthy",
-            "timestamp": time.time(),
-            "client_stats": client_stats,
-            "client_type": "unified"
-        }
-    except Exception as e:
-        logger.error(f"âŒ Health check failed: {e}")
-        return {"status": "unhealthy", "error": str(e)}
-
-# Service state management
-class ServiceState:
-    def __init__(self):
-        self.is_enabled = True  # Service starts enabled by default
-        self.last_toggled = datetime.now()
-    
-    def toggle(self):
-        self.is_enabled = not self.is_enabled
-        self.last_toggled = datetime.now()
-        logger.info(f"Service {'enabled' if self.is_enabled else 'disabled'} at {self.last_toggled}")
-        return self.is_enabled
-    
-    def get_status(self):
-        return {
-            "status": "on" if self.is_enabled else "off",
-            "last_toggled": self.last_toggled.isoformat(),
-            "uptime": str(datetime.now() - self.last_toggled)
-        }
-
-# Global service state
-service_state = ServiceState()
-
-
-@app.get("/", response_class=HTMLResponse)
-async def web_ui():
-    """Serve the Web UI for service control."""
-    static_path = Path("static/index.html")
-    if static_path.exists():
-        return HTMLResponse(content=static_path.read_text(), status_code=200)
-    else:
-        return HTMLResponse(
-            content="""
-            <html>
-                <body>
-                    <h1>OpenAI Codegen Adapter</h1>
-                    <p>Web UI not found. Please ensure static/index.html exists.</p>
-                    <p><a href="/health">Health Check</a></p>
-                </body>
-            </html>
-            """,
-            status_code=200
-        )
-
-
-@app.get("/api/status")
-async def get_service_status():
-    """Get current service status."""
-    try:
-        status_data = service_state.get_status()
-        
-        # Add health check information
-        health_status = await health_check()
-        status_data["health"] = health_status
-        
-        return status_data
-    except Exception as e:
-        logger.error(f"Error getting service status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get service status")
-
-
-@app.post("/api/toggle")
-async def toggle_service():
-    """Toggle service on/off."""
-    try:
-        new_status = service_state.toggle()
-        status_data = service_state.get_status()
-        
-        return {
-            "status": new_status,
-            "message": f"Service {'enabled' if new_status else 'disabled'}",
-            "data": status_data
-        }
-    except Exception as e:
-        logger.error(f"Error toggling service: {e}")
-        raise HTTPException(status_code=500, detail="Failed to toggle service")
-
-
-@app.post("/api/test/{provider}")
-async def test_provider(provider: str, request: dict):
-    """Test a specific provider using the test scripts."""
-    try:
-        # Validate provider
-        valid_providers = ["openai", "anthropic", "google"]
-        if provider not in valid_providers:
-            raise HTTPException(status_code=400, detail=f"Invalid provider. Must be one of: {valid_providers}")
-        
-        # Get test script path
-        script_path = Path(f"test_{provider}.py")
-        if not script_path.exists():
-            raise HTTPException(status_code=404, detail=f"Test script for {provider} not found")
-        
-        # Prepare command arguments
-        cmd = [sys.executable, str(script_path), "--json"]
-        
-        # Add custom prompt if provided
-        if "prompt" in request and request["prompt"]:
-            cmd.extend(["--prompt", request["prompt"]])
-        
-        # Add base URL if provided
-        if "base_url" in request and request["base_url"]:
-            cmd.extend(["--base-url", request["base_url"]])
-        
-        # Add model if provided
-        if "model" in request and request["model"]:
-            cmd.extend(["--model", request["model"]])
-        
-        # Run the test script
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        
-        # Parse the JSON output
-        if result.stdout:
-            try:
-                test_result = json.loads(result.stdout)
-                return test_result
-            except json.JSONDecodeError:
-                # If JSON parsing fails, return raw output
-                return {
-                    "success": result.returncode == 0,
-                    "service": provider.title(),
-                    "response": result.stdout,
-                    "error": result.stderr if result.returncode != 0 else None
-                }
-        else:
-            return {
-                "success": False,
-                "service": provider.title(),
-                "response": "",
-                "error": result.stderr or "No output from test script"
-            }
-            
-    except subprocess.TimeoutExpired:
-        return {
-            "success": False,
-            "service": provider.title(),
-            "response": "",
-            "error": "Test script timed out after 30 seconds"
-        }
-    except Exception as e:
-        logger.error(f"Error testing {provider}: {e}")
-        return {
-            "success": False,
-            "service": provider.title(),
-            "response": "",
-            "error": str(e)
-        }
-
-@app.post("/admin/clear-cache")
-async def clear_cache():
-    """Clear the response cache for fresh responses."""
-    try:
-        old_stats = codegen_client.get_cache_stats()
-        codegen_client.clear_cache()
-        return {
-            "status": "success",
-            "message": "Cache cleared successfully",
-            "previous_cache_stats": old_stats,
-            "timestamp": time.time()
-        }
-    except Exception as e:
-        logger.error(f"âŒ Cache clear failed: {e}")
-        return {"status": "error", "error": str(e)}
-
-@app.post("/admin/set-mode")
-async def set_client_mode(mode: str):
-    """Change the client operation mode."""
-    try:
-        # Validate mode
-        try:
-            client_mode = ClientMode(mode.lower())
-        except ValueError:
-            return {
-                "status": "error", 
-                "error": f"Invalid mode. Valid modes: {[m.value for m in ClientMode]}"
-            }
-        
-        old_stats = codegen_client.get_stats()
-        codegen_client.set_mode(client_mode)
-        new_stats = codegen_client.get_stats()
-        
-        return {
-            "status": "success",
-            "message": f"Client mode changed to {mode}",
-            "old_mode": old_stats.get("mode"),
-            "new_mode": new_stats.get("mode"),
-            "timestamp": time.time()
-        }
-    except Exception as e:
-        logger.error(f"âŒ Mode change failed: {e}")
-        return {"status": "error", "error": str(e)}
-
-# Middleware to check service status for API endpoints
-@app.middleware("http")
-async def service_status_middleware(request: Request, call_next):
-    """Middleware to check if service is enabled for API endpoints."""
-    # Allow access to Web UI, status, toggle, and health endpoints
-    allowed_paths = ["/", "/api/status", "/api/toggle", "/health", "/static"]
-    
-    if any(request.url.path.startswith(path) for path in allowed_paths):
-        response = await call_next(request)
-        return response
-    
-    # Check if service is enabled for other endpoints
-    if not service_state.is_enabled:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": {
-                    "message": "Service is currently disabled. Use the Web UI to enable it.",
-                    "type": "service_disabled",
-                    "code": "service_disabled"
-                }
-            }
-        )
-    
-    response = await call_next(request)
-    return response
-
-
-if __name__ == "__main__":
-    uvicorn.run(
-        "openai_codegen_adapter.server:app",
-        host=server_config.host,
-        port=server_config.port,
-        log_level=server_config.log_level,
-        reload=False
-    )
+Kİ]\×ØÛÙOLŒ
+Bˆ[ÙN‚ˆ™]\›ˆS™\ÜÛœÙJˆÛÛ[Hˆˆ‚ˆ[‚ˆ›ÙO‚ˆO“Ü[RHÛÙYÙ[ˆY\\ÚO‚ˆ•ÙXˆRH›İ›İ[™ˆX\ÙH[œİ\™Hİ]XËÚ[™^š[^\İËÜ‚ˆH™YH‹ÚX[’X[ÚXÚÏØOÜ‚ˆØ›ÙO‚ˆÚ[‚ˆˆˆ‹ˆİ]\×ØÛÙOLŒˆ
+B‚‚\™Ù]
+‹Ø\KÜİ]\ÈŠB˜\Ş[˜ÈYˆÙ]ÜÙ\šXÙWÜİ]\Ê
+N‚ˆˆˆ‘Ù]İ\œ™[Ù\šXÙHİ]\Ëˆˆˆ‚ˆN‚ˆİ]\×Ù]HHÙ\šXÙWÜİ]K™Ù]Üİ]\Ê
+BˆˆÈYX[ÚXÚÈ[™›Ü›X][Û‚ˆX[Üİ]\ÈH]ØZ]X[ØÚXÚÊ
+Bˆİ]\×Ù]VÈšX[—HHX[Üİ]\Âˆˆ™]\›ˆİ]\×Ù]Bˆ^Ù\^Ù\[Ûˆ\ÈN‚ˆÙÙÙ\‹™\œ›ÜŠˆ‘\œ›ÜˆÙ][™ÈÙ\šXÙHİ]\ÎˆÙ_HŠBˆ˜Z\ÙH^Ù\[ÛŠİ]\×ØÛÙOML]Z[H‘˜Z[YÈÙ]Ù\šXÙHİ]\ÈŠB‚‚\œÜİ
+‹Ø\KİÙÙÛHŠB˜\Ş[˜ÈYˆÙÙÛWÜÙ\šXÙJ
+N‚ˆˆˆ•ÙÙÛHÙ\šXÙHÛ‹ÛÙ™‹ˆˆˆ‚ˆN‚ˆ™]×Üİ]\ÈHÙ\šXÙWÜİ]KÙÙÛJ
+Bˆİ]\×Ù]HHÙ\šXÙWÜİ]K™Ù]Üİ]\Ê
+Bˆˆ™]\›ˆÂˆœİ]\Èˆ™]×Üİ]\Ëˆ›Y\ÜØYÙHˆˆ”Ù\šXÙHÉÙ[˜X›Y	ÈYˆ™]×Üİ]\È[ÙH	Ù\ØX›Y	ßH‹ˆ™]Hˆİ]\×Ù]BˆBˆ^Ù\^Ù\[Ûˆ\ÈN‚ˆÙÙÙ\‹™\œ›ÜŠˆ‘\œ›ÜˆÙÙÛ[™ÈÙ\šXÙNˆÙ_HŠBˆ˜Z\ÙH^Ù\[ÛŠİ]\×ØÛÙOML]Z[H‘˜Z[YÈÙÙÛHÙ\šXÙHŠB‚‚\œÜİ
+‹Ø\Kİ\İŞÜ›İšY\ŸHŠB˜\Ş[˜ÈYˆ\İÜ›İšY\Š›İšY\ˆİ‹™\]Y\İˆXİ
+N‚ˆˆˆ•\İHÜXÚYšXÈ›İšY\ˆ\Ú[™ÈH\İØÜš\Ëˆˆˆ‚ˆN‚ˆÈ˜[Y]H›İšY\‚ˆ˜[YÜ›İšY\œÈHÈ›Ü[˜ZH‹˜[›ÜXÈ‹™ÛÛÙÛH—BˆYˆ›İšY\ˆ›İ[ˆ˜[YÜ›İšY\œÎ‚ˆ˜Z\ÙH^Ù\[ÛŠİ]\×ØÛÙOM]Z[Yˆ’[˜[Y›İšY\‹ˆ]\İ™HÛ™HÙˆİ˜[YÜ›İšY\œßHŠBˆˆÈÙ]\İØÜš\]ˆØÜš\Ü]H]
+ˆ\İŞÜ›İšY\ŸKœHŠBˆYˆ›İØÜš\Ü]™^\İÊ
+N‚ˆ˜Z\ÙH^Ù\[ÛŠİ]\×ØÛÙOM]Z[Yˆ•\İØÜš\›ÜˆÜ›İšY\ŸH›İ›İ[™ŠBˆˆÈ™\\™HÛÛ[X[™\™İ[Y[ÂˆÛYHÜŞ\Ë™^Xİ]X›KİŠØÜš\Ü]
+K‹KZœÛÛˆ—BˆˆÈYİ\İÛH›Û\Yˆ›İšYYˆYˆœ›Û\ˆ[ˆ™\]Y\İ[™™\]Y\İÈœ›Û\—N‚ˆÛY™^[™
+È‹K\›Û\‹™\]Y\İÈœ›Û\—WJBˆˆÈY˜\ÙHT“Yˆ›İšYYˆYˆ˜˜\ÙWİ\›ˆ[ˆ™\]Y\İ[™™\]Y\İÈ˜˜\ÙWİ\›—N‚ˆÛY™^[™
+È‹KX˜\ÙK]\›‹™\]Y\İÈ˜˜\ÙWİ\›—WJBˆˆÈY[Ù[Yˆ›İšYYˆYˆ›[Ù[ˆ[ˆ™\]Y\İ[™™\]Y\İÈ›[Ù[—N‚ˆÛY™^[™
+È‹K[[Ù[‹™\]Y\İÈ›[Ù[—WJBˆˆÈ[ˆH\İØÜš\ˆ™\İ[HİXœ›ØÙ\ÜËœ[ŠˆÛYˆØ\\™WÛİ]]UYKˆ^UYKˆ[Y[İ]LÌˆ
+BˆˆÈ\œÙHH”ÓÓˆİ]]ˆYˆ™\İ[œİİ]‚ˆN‚ˆ\İÜ™\İ[HœÛÛ‹›ØYÊ™\İ[œİİ]
+Bˆ™]\›ˆ\İÜ™\İ[ˆ^Ù\œÛÛ‹’”ÓÓ‘XÛÙQ\œ›Ü‚ˆÈYˆ”ÓÓˆ\œÚ[™È˜Z[Ë™]\›ˆ˜]Èİ]]ˆ™]\›ˆÂˆœİXØÙ\ÜÈˆ™\İ[œ™]\›˜ÛÙHOHˆœÙ\šXÙHˆ›İšY\‹]J
+Kˆœ™\ÜÛœÙHˆ™\İ[œİİ]ˆ™\œ›Üˆˆ™\İ[œİ\œˆYˆ™\İ[œ™]\›˜ÛÙHOH[ÙH›Û™BˆBˆ[ÙN‚ˆ™]\›ˆÂˆœİXØÙ\ÜÈˆ˜[ÙKˆœÙ\šXÙHˆ›İšY\‹]J
+Kˆœ™\ÜÛœÙHˆˆ‹ˆ™\œ›Üˆˆ™\İ[œİ\œˆÜˆ“›Èİ]]œ›ÛH\İØÜš\‚ˆBˆˆ^Ù\İXœ›ØÙ\ÜË•[Y[İ]^\™Y‚ˆ™]\›ˆÂˆœİXØÙ\ÜÈˆ˜[ÙKˆœÙ\šXÙHˆ›İšY\‹]J
+Kˆœ™\ÜÛœÙHˆˆ‹ˆ™\œ›Üˆˆ•\İØÜš\[YYİ]Y\ˆÌÙXÛÛ™È‚ˆBˆ^Ù\^Ù\[Ûˆ\ÈN‚ˆÙÙÙ\‹™\œ›ÜŠˆ‘\œ›Üˆ\İ[™ÈÜ›İšY\ŸNˆÙ_HŠBˆ™]\›ˆÂˆœİXØÙ\ÜÈˆ˜[ÙKˆœÙ\šXÙHˆ›İšY\‹]J
+Kˆœ™\ÜÛœÙHˆˆ‹ˆ™\œ›ÜˆˆİŠJBˆB‚\œÜİ
+‹ØYZ[‹ØÛX\‹XØXÚHŠB˜\Ş[˜ÈYˆÛX\—ØØXÚJ
+N‚ˆˆˆÛX\ˆH™\ÜÛœÙHØXÚH›Üˆœ™\Ú™\ÜÛœÙ\Ëˆˆˆ‚ˆN‚ˆÛÜİ]ÈHÛÙYÙ[—ØÛY[™Ù]ØØXÚWÜİ]Ê
+BˆÛÙYÙ[—ØÛY[˜ÛX\—ØØXÚJ
+Bˆ™]\›ˆÂˆœİ]\ÈˆœİXØÙ\ÜÈ‹ˆ›Y\ÜØYÙHˆØXÚHÛX\™YİXØÙ\ÜÙ[H‹ˆœ™]š[İ\×ØØXÚWÜİ]ÈˆÛÜİ]Ëˆ[Y\İ[\ˆ[YK[YJ
+BˆBˆ^Ù\^Ù\[Ûˆ\ÈN‚ˆÙÙÙ\‹™\œ›ÜŠˆ¸§cØXÚHÛX\ˆ˜Z[YˆÙ_HŠBˆ™]\›ˆÈœİ]\Èˆ™\œ›Üˆ‹™\œ›ÜˆˆİŠJ_B‚\œÜİ
+‹ØYZ[‹ÜÙ][[ÙHŠB˜\Ş[˜ÈYˆÙ]ØÛY[Û[ÙJ[ÙNˆİŠN‚ˆˆˆÚ[™ÙHHÛY[Ü\˜][Ûˆ[ÙKˆˆˆ‚ˆN‚ˆÈ˜[Y]H[ÙBˆN‚ˆÛY[Û[ÙHHÛY[[ÙJ[ÙK›İÙ\Š
+JBˆ^Ù\˜[YQ\œ›Ü‚ˆ™]\›ˆÂˆœİ]\Èˆ™\œ›Üˆ‹ˆ™\œ›Üˆˆˆ’[˜[Y[ÙKˆ˜[Y[Ù\ÎˆÖÛK˜[YH›ÜˆH[ˆÛY[[ÙW_H‚ˆBˆˆÛÜİ]ÈHÛÙYÙ[—ØÛY[™Ù]Üİ]Ê
+BˆÛÙYÙ[—ØÛY[œÙ]Û[ÙJÛY[Û[ÙJBˆ™]×Üİ]ÈHÛÙYÙ[—ØÛY[™Ù]Üİ]Ê
+Bˆˆ™]\›ˆÂˆœİ]\ÈˆœİXØÙ\ÜÈ‹ˆ›Y\ÜØYÙHˆˆÛY[[ÙHÚ[™ÙYÈÛ[Ù_H‹ˆ›ÛÛ[ÙHˆÛÜİ]Ë™Ù]
+›[ÙHŠKˆ›™]×Û[ÙHˆ™]×Üİ]Ë™Ù]
+›[ÙHŠKˆ[Y\İ[\ˆ[YK[YJ
+BˆBˆ^Ù\^Ù\[Ûˆ\ÈN‚ˆÙÙÙ\‹™\œ›ÜŠˆ¸§c[ÙHÚ[™ÙH˜Z[YˆÙ_HŠBˆ™]\›ˆÈœİ]\Èˆ™\œ›Üˆ‹™\œ›ÜˆˆİŠJ_B‚ˆÈZY]Ø\™HÈÚXÚÈÙ\šXÙHİ]\È›ÜˆTH[™Ú[Â\›ZY]Ø\™JšŠB˜\Ş[˜ÈYˆÙ\šXÙWÜİ]\×ÛZY]Ø\™J™\]Y\İˆ™\]Y\İØ[Û™^
+N‚ˆˆˆ“ZY]Ø\™HÈÚXÚÈYˆÙ\šXÙH\È[˜X›Y›ÜˆTH[™Ú[Ëˆˆˆ‚ˆÈ[İÈXØÙ\ÜÈÈÙXˆRKİ]\ËÙÙÛK[™X[[™Ú[Âˆ[İÙYÜ]ÈHÈ‹È‹‹Ø\KÜİ]\È‹‹Ø\KİÙÙÛH‹‹ÚX[‹‹Üİ]XÈ—BˆˆYˆ[J™\]Y\İ\›œ]œİ\İÚ]
+]
+H›Üˆ][ˆ[İÙYÜ]ÊN‚ˆ™\ÜÛœÙHH]ØZ]Ø[Û™^
+™\]Y\İ
+Bˆ™]\›ˆ™\ÜÛœÙBˆˆÈÚXÚÈYˆÙ\šXÙH\È[˜X›Y›Üˆİ\ˆ[™Ú[ÂˆYˆ›İÙ\šXÙWÜİ]Kš\×Ù[˜X›Y‚ˆ™]\›ˆ”ÓÓ”™\ÜÛœÙJˆİ]\×ØÛÙOMLËˆÛÛ[^Âˆ™\œ›ÜˆˆÂˆ›Y\ÜØYÙHˆ”Ù\šXÙH\Èİ\œ™[H\ØX›Yˆ\ÙHHÙXˆRHÈ[˜X›H]ˆ‹ˆ\HˆœÙ\šXÙWÙ\ØX›Y‹ˆ˜ÛÙHˆœÙ\šXÙWÙ\ØX›Y‚ˆBˆBˆ
+Bˆˆ™\ÜÛœÙHH]ØZ]Ø[Û™^
+™\]Y\İ
+Bˆ™]\›ˆ™\ÜÛœÙB‚‚šYˆ×Û˜[YW×ÈOH—×ÛXZ[—×È‚ˆ]šXÛÜ›‹œ[Šˆ›Ü[˜ZWØÛÙYÙ[—ØY\\‹œÙ\™\˜\‹ˆÜİ\Ù\™\—ØÛÛ™šYËšÜİˆÜ\Ù\™\—ØÛÛ™šYËœÜˆÙ×Û]™[\Ù\™\—ØÛÛ™šYË›Ù×Û]™[ˆ™[ØYQ˜[ÙBˆ
+B
