@@ -319,7 +319,40 @@ async def openai_chat_completions(request: Request):
             "X-Codegen-Token": CODEGEN_TOKEN
         }
         
-        response = requests.post(CODEGEN_API_URL, json=codegen_request, headers=headers)
+        # Try different endpoint paths
+        endpoints_to_try = [
+            "",  # Base URL
+            "/generate",
+            "/api/generate",
+            "/api/v1/generate",
+            "/v1/generate"
+        ]
+        
+        response = None
+        success = False
+        
+        for endpoint in endpoints_to_try:
+            try:
+                full_url = f"{CODEGEN_API_URL}{endpoint}"
+                logger.info(f"Trying endpoint: {full_url}")
+                response = requests.post(full_url, json=codegen_request, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    success = True
+                    logger.info(f"Successful response from endpoint: {full_url}")
+                    break
+                else:
+                    logger.warning(f"Failed response from endpoint {full_url}: {response.status_code} - {response.text}")
+            except Exception as e:
+                logger.warning(f"Error with endpoint {full_url}: {str(e)}")
+                continue
+        
+        if not success or not response:
+            logger.error("All endpoints failed")
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Codegen SDK error: All endpoints failed"}
+            )
         
         # Check response status
         if response.status_code != 200:
@@ -405,7 +438,40 @@ async def anthropic_completions(request: Request):
             "X-Codegen-Token": CODEGEN_TOKEN
         }
         
-        response = requests.post(CODEGEN_API_URL, json=codegen_request, headers=headers)
+        # Try different endpoint paths
+        endpoints_to_try = [
+            "",  # Base URL
+            "/generate",
+            "/api/generate",
+            "/api/v1/generate",
+            "/v1/generate"
+        ]
+        
+        response = None
+        success = False
+        
+        for endpoint in endpoints_to_try:
+            try:
+                full_url = f"{CODEGEN_API_URL}{endpoint}"
+                logger.info(f"Trying endpoint: {full_url}")
+                response = requests.post(full_url, json=codegen_request, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    success = True
+                    logger.info(f"Successful response from endpoint: {full_url}")
+                    break
+                else:
+                    logger.warning(f"Failed response from endpoint {full_url}: {response.status_code} - {response.text}")
+            except Exception as e:
+                logger.warning(f"Error with endpoint {full_url}: {str(e)}")
+                continue
+        
+        if not success or not response:
+            logger.error("All endpoints failed")
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Codegen SDK error: All endpoints failed"}
+            )
         
         # Check response status
         if response.status_code != 200:
@@ -478,7 +544,40 @@ async def gemini_completions(request: Request):
             "X-Codegen-Token": CODEGEN_TOKEN
         }
         
-        response = requests.post(CODEGEN_API_URL, json=codegen_request, headers=headers)
+        # Try different endpoint paths
+        endpoints_to_try = [
+            "",  # Base URL
+            "/generate",
+            "/api/generate",
+            "/api/v1/generate",
+            "/v1/generate"
+        ]
+        
+        response = None
+        success = False
+        
+        for endpoint in endpoints_to_try:
+            try:
+                full_url = f"{CODEGEN_API_URL}{endpoint}"
+                logger.info(f"Trying endpoint: {full_url}")
+                response = requests.post(full_url, json=codegen_request, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    success = True
+                    logger.info(f"Successful response from endpoint: {full_url}")
+                    break
+                else:
+                    logger.warning(f"Failed response from endpoint {full_url}: {response.status_code} - {response.text}")
+            except Exception as e:
+                logger.warning(f"Error with endpoint {full_url}: {str(e)}")
+                continue
+        
+        if not success or not response:
+            logger.error("All endpoints failed")
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Codegen SDK error: All endpoints failed"}
+            )
         
         # Check response status
         if response.status_code != 200:
