@@ -1,6 +1,6 @@
 """
-Simple FastAPI server for unified API system.
-Provides endpoints for OpenAI, Anthropic, and Google APIs with web UI.
+Unified API System for OpenAI, Anthropic, and Google APIs.
+This module provides a consolidated interface for all three APIs.
 """
 
 import logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Unified API Server",
+    title="Unified API System",
     description="Simple server for OpenAI, Anthropic, and Google APIs",
     version="1.0.0"
 )
@@ -252,55 +252,6 @@ async def anthropic_messages(request: Request):
     return await anthropic_completions(request)
 
 
-# Test endpoint
-@app.post("/api/test/{provider}")
-async def test_provider(provider: str, request: Request):
-    """Test endpoint for each provider."""
-    try:
-        # Parse request body
-        body = await request.json()
-        
-        # Get message and model
-        message = body.get("message", "Hello! Please respond with a short greeting.")
-        model = body.get("model")
-        
-        # Validate provider
-        if provider.lower() not in ["openai", "anthropic", "google"]:
-            raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
-        
-        # Create response based on provider
-        if provider.lower() == "openai":
-            response_content = f"OpenAI test response to: {message}"
-            model = model or "gpt-3.5-turbo"
-        elif provider.lower() == "anthropic":
-            response_content = f"Anthropic test response to: {message}"
-            model = model or "claude-3-sonnet-20240229"
-        else:  # google
-            response_content = f"Google test response to: {message}"
-            model = model or "gemini-1.5-pro"
-        
-        # Return response
-        return {
-            "provider": provider,
-            "model": model,
-            "success": True,
-            "response": {
-                "content": response_content
-            },
-            "processing_time": 0.1,
-            "timestamp": time.time()
-        }
-        
-    except Exception as e:
-        logger.error(f"Test provider error: {e}")
-        return {
-            "provider": provider,
-            "success": False,
-            "error": str(e),
-            "timestamp": time.time()
-        }
-
-
 # Web UI endpoint
 @app.get("/", response_class=HTMLResponse)
 async def web_ui():
@@ -314,7 +265,7 @@ async def web_ui():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Unified API Server</title>
+        <title>Unified API System</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 40px; }
             .container { max-width: 800px; margin: 0 auto; }
@@ -358,7 +309,7 @@ async def web_ui():
     </head>
     <body>
         <div class="container">
-            <h1>Unified API Server</h1>
+            <h1>Unified API System</h1>
             
             <div id="status-container">
                 <h2>Health Status</h2>
@@ -492,11 +443,9 @@ async def web_ui():
     """, status_code=200)
 
 
-if __name__ == "__main__":
-    host = "localhost"
-    port = 8887
-    
-    logger.info(f"Starting Unified API Server on {host}:{port}")
+def start_server(host="localhost", port=8887):
+    """Start the server."""
+    logger.info(f"Starting Unified API System on {host}:{port}")
     logger.info(f"Supported providers: openai, anthropic, google")
     
     uvicorn.run(
@@ -505,4 +454,8 @@ if __name__ == "__main__":
         port=port,
         log_level="info"
     )
+
+
+if __name__ == "__main__":
+    start_server()
 
