@@ -57,7 +57,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"error": f"Internal server error: {str(exc)}"}
+        content={"detail": f"Internal server error: {str(exc)}"}
     )
 
 
@@ -97,25 +97,8 @@ async def openai_chat_completions(request: ChatRequest):
         )
         
         if result["success"]:
-            return {
-                "id": f"chatcmpl-{int(time.time())}",
-                "object": "chat.completion",
-                "created": int(start_time),
-                "model": request.model,
-                "choices": [{
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": str(result.get("response", "Response received"))
-                    },
-                    "finish_reason": "stop"
-                }],
-                "usage": {
-                    "prompt_tokens": len(request.messages[-1].content.split()),
-                    "completion_tokens": 10,  # Estimated
-                    "total_tokens": len(request.messages[-1].content.split()) + 10
-                }
-            }
+            # Return the actual response content directly
+            return result["response"]
         else:
             raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
             
@@ -136,18 +119,8 @@ async def anthropic_completions(request: ChatRequest):
         )
         
         if result["success"]:
-            return {
-                "id": f"msg_{int(time.time())}",
-                "type": "message",
-                "role": "assistant",
-                "content": [{"type": "text", "text": str(result.get("response", "Response received"))}],
-                "model": request.model,
-                "stop_reason": "end_turn",
-                "usage": {
-                    "input_tokens": len(request.messages[-1].content.split()),
-                    "output_tokens": 10
-                }
-            }
+            # Return the actual response content directly
+            return result["response"]
         else:
             raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
             
@@ -174,21 +147,8 @@ async def gemini_completions(request: ChatRequest):
         )
         
         if result["success"]:
-            return {
-                "candidates": [{
-                    "content": {
-                        "parts": [{"text": str(result.get("response", "Response received"))}],
-                        "role": "model"
-                    },
-                    "finishReason": "STOP",
-                    "index": 0
-                }],
-                "usageMetadata": {
-                    "promptTokenCount": len(request.messages[-1].content.split()),
-                    "candidatesTokenCount": 10,
-                    "totalTokenCount": len(request.messages[-1].content.split()) + 10
-                }
-            }
+            # Return the actual response content directly
+            return result["response"]
         else:
             raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
             
