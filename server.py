@@ -1,114 +1,325 @@
-#!/usr/bin/env python3
 """
-OpenAI Codegen Adapter Server
-============================
-
-A unified server that provides OpenAI-compatible API endpoints for the Codegen service.
-Supports OpenAI, Anthropic, and Google API formats with a built-in web UI.
-
-Features:
-- OpenAI-compatible chat completions API
-- Anthropic Claude API compatibility  
-- Google Gemini API compatibility
-- Web UI for testing and configuration
-- Real-time service status control
-- Comprehensive API testing tools
-
-Usage:
-    python server.py
-
-The server will start on http://localhost:8887 with all features enabled.
+Consolidated FastAPI server for unified API system.
+Provides essential endpoints for OpenAI, Anthropic, and Google APIs with web UI.
 """
 
-import os
-import uvicorn
-import sys
+import asyncio
+import logging
+import time
+import json
 from pathlib import Path
+from typing import Dict, Any, Optional
 
-# Load environment variables from .env file if it exists
-def load_env_file():
-    """Load environment variables from .env file"""
-    env_file = Path('.env')
-    if env_file.exists():
-        print("📄 Loading environment variables from .env file")
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    os.environ[key.strip()] = value.strip()
-    else:
-        print("⚠️ No .env file found, using system environment variables")
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import uvicorn
 
-def setup_environment():
-    """Setup environment variables with defaults"""
-    load_env_file()
-    
-    # Set default values if not provided
-    defaults = {
-        'CODEGEN_ORG_ID': '323',
-        'CODEGEN_TOKEN': 'your-token-here',
-        'HOST': '127.0.0.1',
-        'PORT': '8887'
+from client import UnifiedClient, ProviderType
+from models import ChatRequest, ChatResponse, HealthResponse, ErrorResponse, TestResult
+from config import get_config
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Get configuration
+config = get_config()
+
+# Create FastAPI app
+app = FastAPI(
+    title="Unified API Server",
+    description="Consolidated server for OpenAI, Anthropic, and Google APIs",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files for Web UI
+if config.enable_web_ui and Path(config.static_files_path).exists():
+    app.mount("/static", StaticFiles(directory=config.static_files_path), name="static")
+
+# Global client instance
+unified_client = UnifiedClient()
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler."""
+    logger.error(f"Global exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": f"Internal server error: {str(exc)}"}
+    )
+
+
+# Health and status endpoints
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Health check endpoint."""
+    health = unified_client.health_check()
+    return HealthResponse(
+        status=health["status"],
+        timestamp=health["timestamp"],
+        providers=health["supported_providers"]
+    )
+
+
+@app.get("/api/status")
+async def api_status():
+    """API status endpoint for web UI."""
+    health = unified_client.health_check()
+    return {
+        "status": "online",
+        "providers": health["supported_providers"],
+        "timestamp": health["timestamp"]
     }
-    
-    for key, default_value in defaults.items():
-        if key not in os.environ:
-            os.environ[key] = default_value
-            print(f"🔧 Using default {key}: {default_value}")
+
+
+# OpenAI-compatible endpoints
+@app.post("/v1/chat/completions")
+async def openai_chat_completions(request: ChatRequest):
+    """OpenAI-compatible chat completions endpoint."""
+    try:
+        start_time = time.time()
+        result = await unified_client.send_message(
+            message=request.messages[-1].content,  # Get last user message
+            provider=ProviderType.OPENAI,
+            model=request.model
+        )
+        
+        if result["success"]:
+            return {
+                "id": f"chatcmpl-{int(time.time())}",
+                "object": "chat.completion",
+                "created": int(start_time),
+                "model": request.model,
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": str(result.get("response", "Response received"))
+                    },
+                    "finish_reason": "stop"
+                }],
+                "usage": {
+                    "prompt_tokens": len(request.messages[-1].content.split()),
+                    "completion_tokens": 10,  # Estimated
+                    "total_tokens": len(request.messages[-1].content.split()) + 10
+                }
+            }
         else:
-            # Don't print the actual token for security
-            if 'TOKEN' in key:
-                print(f"✅ {key}: [CONFIGURED]")
-            else:
-                print(f"✅ {key}: {os.environ[key]}")
+            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
+            
+    except Exception as e:
+        logger.error(f"OpenAI chat completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Anthropic endpoints
+@app.post("/v1/anthropic/completions")
+async def anthropic_completions(request: ChatRequest):
+    """Anthropic completions endpoint."""
+    try:
+        result = await unified_client.send_message(
+            message=request.messages[-1].content,
+            provider=ProviderType.ANTHROPIC,
+            model=request.model
+        )
+        
+        if result["success"]:
+            return {
+                "id": f"msg_{int(time.time())}",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": str(result.get("response", "Response received"))}],
+                "model": request.model,
+                "stop_reason": "end_turn",
+                "usage": {
+                    "input_tokens": len(request.messages[-1].content.split()),
+                    "output_tokens": 10
+                }
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
+            
+    except Exception as e:
+        logger.error(f"Anthropic completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/messages")
+async def anthropic_messages(request: ChatRequest):
+    """Anthropic messages endpoint (alternative format)."""
+    return await anthropic_completions(request)
+
+
+# Google/Gemini endpoints
+@app.post("/v1/gemini/completions")
+async def gemini_completions(request: ChatRequest):
+    """Google Gemini completions endpoint."""
+    try:
+        result = await unified_client.send_message(
+            message=request.messages[-1].content,
+            provider=ProviderType.GOOGLE,
+            model=request.model
+        )
+        
+        if result["success"]:
+            return {
+                "candidates": [{
+                    "content": {
+                        "parts": [{"text": str(result.get("response", "Response received"))}],
+                        "role": "model"
+                    },
+                    "finishReason": "STOP",
+                    "index": 0
+                }],
+                "usageMetadata": {
+                    "promptTokenCount": len(request.messages[-1].content.split()),
+                    "candidatesTokenCount": 10,
+                    "totalTokenCount": len(request.messages[-1].content.split()) + 10
+                }
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
+            
+    except Exception as e:
+        logger.error(f"Gemini completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/gemini/generateContent")
+async def gemini_generate_content(request: ChatRequest):
+    """Google Gemini generateContent endpoint (alternative format)."""
+    return await gemini_completions(request)
+
+
+# Test endpoints for each provider
+@app.post("/api/test/{provider}")
+async def test_provider(provider: str, request: Dict[str, Any]):
+    """Test endpoint for each provider."""
+    try:
+        provider_type = ProviderType(provider.lower())
+        message = request.get("message", "Hello! Please respond with just 'Hi there!'")
+        model = request.get("model")
+        
+        result = await unified_client.send_message(message, provider_type, model)
+        
+        return TestResult(
+            provider=provider,
+            model=model or f"default-{provider}-model",
+            success=result["success"],
+            response=result.get("response") if result["success"] else None,
+            error=result.get("error") if not result["success"] else None,
+            processing_time=result["processing_time"],
+            timestamp=time.time()
+        )
+        
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+    except Exception as e:
+        logger.error(f"Test provider error: {e}")
+        return TestResult(
+            provider=provider,
+            model=model or f"default-{provider}-model",
+            success=False,
+            error=str(e),
+            processing_time=0.0,
+            timestamp=time.time()
+        )
+
+
+# Web UI endpoint
+@app.get("/", response_class=HTMLResponse)
+async def web_ui():
+    """Serve the web UI."""
+    if config.enable_web_ui:
+        static_path = Path(config.static_files_path) / "index.html"
+        if static_path.exists():
+            return HTMLResponse(content=static_path.read_text(), status_code=200)
+    
+    # Fallback HTML if no static UI found
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Unified API Server</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+            .method { color: #007acc; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Unified API Server</h1>
+            <p>Server is running! Available endpoints:</p>
+            
+            <div class="endpoint">
+                <span class="method">GET</span> /health - Health check
+            </div>
+            <div class="endpoint">
+                <span class="method">POST</span> /v1/chat/completions - OpenAI chat completions
+            </div>
+            <div class="endpoint">
+                <span class="method">POST</span> /v1/anthropic/completions - Anthropic completions
+            </div>
+            <div class="endpoint">
+                <span class="method">POST</span> /v1/gemini/completions - Google Gemini completions
+            </div>
+            <div class="endpoint">
+                <span class="method">POST</span> /api/test/{provider} - Test provider (openai, anthropic, google)
+            </div>
+            
+            <h2>Quick Test</h2>
+            <p>Test the APIs using curl:</p>
+            <pre>
+# Test OpenAI
+curl -X POST http://localhost:8887/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"Hello!"}]}'
+
+# Test Anthropic  
+curl -X POST http://localhost:8887/v1/anthropic/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"claude-3-sonnet-20240229","messages":[{"role":"user","content":"Hello!"}]}'
+
+# Test Google
+curl -X POST http://localhost:8887/v1/gemini/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"gemini-1.5-pro","messages":[{"role":"user","content":"Hello!"}]}'
+            </pre>
+        </div>
+    </body>
+    </html>
+    """, status_code=200)
+
 
 def main():
-    """Start the OpenAI Codegen Adapter server with all features."""
-    print("🚀 OpenAI Codegen Adapter Server")
-    print("=" * 50)
+    """Main function to run the server."""
+    logger.info(f"Starting Unified API Server on {config.host}:{config.port}")
+    logger.info(f"Web UI enabled: {config.enable_web_ui}")
+    logger.info(f"Supported providers: {unified_client.get_supported_providers()}")
     
-    # Setup environment
-    setup_environment()
-    
-    # Display startup information
-    print("📍 Server will be available at: http://localhost:8887")
-    print("🌐 Web UI: http://localhost:8887")
-    print("🔗 OpenAI API: http://localhost:8887/v1")
-    print("🔗 Anthropic API: http://localhost:8887/v1/messages")
-    print("🔗 Google API: http://localhost:8887/v1/gemini")
-    print()
-    print("✨ Features:")
-    print("   • OpenAI-compatible API endpoints")
-    print("   • Anthropic Claude API compatibility")
-    print("   • Google Gemini API compatibility")
-    print("   • Web UI for testing and configuration")
-    print("   • Real-time service status control")
-    print("   • Comprehensive API testing tools")
-    print()
-    print("🧪 Test endpoints:")
-    print("   • POST /api/test/openai")
-    print("   • POST /api/test/anthropic")
-    print("   • POST /api/test/google")
-    print()
-    print("Press Ctrl+C to stop the server")
-    print("=" * 50)
-    
-    try:
-        # Start the FastAPI server
-        uvicorn.run(
-            "openai_codegen_adapter.server:app",
-            host="127.0.0.1",
-            port=8887,
-            log_level="info",
-            reload=False,
-            access_log=True
-        )
-    except KeyboardInterrupt:
-        print("\n👋 Server stopped by user")
-    except Exception as e:
-        print(f"❌ Error starting server: {e}")
-        sys.exit(1)
+    uvicorn.run(
+        "server:app",
+        host=config.host,
+        port=config.port,
+        reload=config.debug,
+        log_level="info" if not config.debug else "debug"
+    )
+
 
 if __name__ == "__main__":
     main()
+
