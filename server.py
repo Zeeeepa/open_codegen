@@ -55,7 +55,7 @@ async def health_check():
         "status": "healthy",
         "timestamp": time.time(),
         "providers": ["openai", "anthropic", "google"],
-        "routing_to": agent.api_url
+        "routing_to": "Codegen SDK"
     }
 
 
@@ -555,7 +555,7 @@ def start_server(host="localhost", port=8887):
     """Start the FastAPI server."""
     import uvicorn
     logger.info(f"Starting API Router System on {host}:{port}")
-    logger.info(f"Routing requests to Codegen SDK at: {agent.api_url}")
+    logger.info(f"Routing requests to Codegen SDK")
     logger.info(f"Supported providers: openai, anthropic, google")
     uvicorn.run(app, host=host, port=port)
 
