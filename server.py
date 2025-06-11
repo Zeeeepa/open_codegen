@@ -35,7 +35,7 @@ if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Environment variables
-CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "https://api.codegen.com/v1/generate")
+CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "https://api.codegen.com/api/v1/generate")
 CODEGEN_ORG_ID = os.environ.get("CODEGEN_ORG_ID", "")
 CODEGEN_TOKEN = os.environ.get("CODEGEN_TOKEN", "")
 SERVER_HOST = os.environ.get("SERVER_HOST", "localhost")
