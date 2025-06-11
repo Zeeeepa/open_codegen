@@ -61,6 +61,11 @@ if ps -p $SERVER_PID > /dev/null; then
     echo "Google:    Set GEMINI_API_URL=http://localhost:8887/v1"
     
     echo ""
+    echo -e "\033[1;32m🧪 Run Tests:\033[0m"
+    echo "------------------------"
+    echo "./test_router.py"
+    
+    echo ""
     echo -e "\033[1;33m⚠️  NOTE: The server runs in the background. To stop it:\033[0m"
     echo "pkill -f 'python api_system.py'"
 else
