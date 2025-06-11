@@ -3,11 +3,11 @@ Configuration settings for the unified API system.
 """
 
 import os
-from pydantic import BaseSettings, Field
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
 
-class Config(BaseSettings):
+class Config(BaseModel):
     """Configuration settings for the unified API system."""
     
     # Server settings
@@ -34,6 +34,15 @@ class Config(BaseSettings):
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60
     
+    # UI settings
+    enable_web_ui: bool = True
+    static_files_path: str = "static"
+    
+    # Request settings
+    default_max_tokens: int = 150
+    default_temperature: float = 0.7
+    request_timeout: int = 30
+    
     class Config:
         """Pydantic config"""
         env_file = ".env"
@@ -57,9 +66,19 @@ class Config(BaseSettings):
             rate_limit_enabled=os.getenv("RATE_LIMIT_ENABLED", "").lower() not in ("false", "0", "no"),
             rate_limit_requests=int(os.getenv("RATE_LIMIT_REQUESTS", "60")),
             rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
+            enable_web_ui=os.getenv("ENABLE_WEB_UI", "true").lower() in ("true", "1", "yes"),
+            static_files_path=os.getenv("STATIC_FILES_PATH", "static"),
+            default_max_tokens=int(os.getenv("DEFAULT_MAX_TOKENS", "150")),
+            default_temperature=float(os.getenv("DEFAULT_TEMPERATURE", "0.7")),
+            request_timeout=int(os.getenv("REQUEST_TIMEOUT", "30")),
         )
 
 
 # Create a global config instance
 config = Config.from_env()
+
+# For backward compatibility with existing code
+def get_config():
+    """Get the global configuration instance."""
+    return config
 
