@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Kill any existing server
-pkill -f 'python api_system.py' 2>/dev/null
+pkill -f 'python server.py' 2>/dev/null
 
 # Check for Codegen SDK URL
 if [ -z "$CODEGEN_API_URL" ]; then
@@ -13,7 +13,7 @@ fi
 echo -e "\033[1;34m🚀 Starting API Router System on port 8887...\033[0m"
 
 # Start the server in the background and redirect output to a log file
-nohup python api_system.py > server.log 2>&1 &
+nohup python server.py > server.log 2>&1 &
 
 # Get the PID of the server
 SERVER_PID=$!
@@ -63,11 +63,13 @@ if ps -p $SERVER_PID > /dev/null; then
     echo ""
     echo -e "\033[1;32m🧪 Run Tests:\033[0m"
     echo "------------------------"
-    echo "./test_router.py"
+    echo "./test_openai.py    # Test OpenAI API"
+    echo "./test_anthropic.py # Test Anthropic API"
+    echo "./test_google.py    # Test Google API"
     
     echo ""
     echo -e "\033[1;33m⚠️  NOTE: The server runs in the background. To stop it:\033[0m"
-    echo "pkill -f 'python api_system.py'"
+    echo "pkill -f 'python server.py'"
 else
     echo -e "\033[1;31m❌ Failed to start server!\033[0m"
     echo "Check server.log for details."
