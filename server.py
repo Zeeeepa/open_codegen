@@ -29,7 +29,14 @@ from codegen import Agent
 from codegen.agents.agent import AgentTask
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,  # Changed from INFO to DEBUG
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("server_debug.log", mode='w')  # Use 'w' mode to overwrite the file
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
@@ -53,13 +60,19 @@ static_path = Path("static")
 if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Configuration
+# Environment variables
 CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "http://localhost:8000/api/generate")
 CODEGEN_ORG_ID = os.environ.get("CODEGEN_ORG_ID", "323")
 CODEGEN_TOKEN = os.environ.get("CODEGEN_TOKEN", "sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99")
 SERVER_HOST = os.environ.get("SERVER_HOST", "localhost")
 SERVER_PORT = int(os.environ.get("SERVER_PORT", "8887"))
 TESTING_MODE = os.environ.get("TESTING_MODE", "true").lower() == "true"
+
+# Log configuration
+logger.info(f"Starting API Router System on {SERVER_HOST}:{SERVER_PORT}")
+logger.info(f"Routing requests to Codegen SDK at: {CODEGEN_API_URL}")
+logger.info(f"Supported providers: openai, anthropic, google")
+logger.info(f"TESTING_MODE is {'enabled' if TESTING_MODE else 'disabled'}")
 
 # Initialize Codegen SDK Agent
 try:
@@ -116,12 +129,15 @@ async def health_check():
 async def openai_chat_completions(request: Request):
     """OpenAI chat completions endpoint - routes to Codegen SDK."""
     try:
+        logger.debug("Received request to /v1/chat/completions")
         # Parse request body
         body = await request.json()
+        logger.debug(f"Request body: {json.dumps(body)}")
         
         # Extract message content
         messages = body.get("messages", [])
         if not messages:
+            logger.warning("No messages provided in request")
             raise HTTPException(status_code=400, detail="No messages provided")
         
         # Get the last user message
@@ -132,10 +148,10 @@ async def openai_chat_completions(request: Request):
                 break
         
         if not user_message:
+            logger.warning("No user message found in request")
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Prepare request to Codegen SDK
-        model = body.get("model", "gpt-3.5-turbo")
+        logger.debug(f"Extracted user message: {user_message}")
         
         # Check if Codegen SDK Agent is initialized
         if codegen_agent is None:
@@ -147,25 +163,29 @@ async def openai_chat_completions(request: Request):
         
         try:
             # Use Codegen SDK directly
-            logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'openai_proxy', 'model': model})}")
+            logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'openai_proxy', 'model': body.get('model', 'gpt-3.5-turbo')})}")
             
             if TESTING_MODE:
                 # For testing purposes, return a mock response
-                logger.info("TESTING_MODE is enabled. Returning mock response.")
+                logger.info("TESTING_MODE is enabled. Returning mock response for OpenAI.")
                 if "2+2" in user_message:
                     response_content = "4"
+                    logger.info("Special case detected: 2+2 = 4")
                 else:
                     response_content = f"This is a mock response to: {user_message}"
                 logger.info(f"Mock response: {response_content}")
             else:
                 # Send request to Codegen SDK
+                logger.info(f"TESTING_MODE is disabled. Sending real request to Codegen SDK at {CODEGEN_API_URL}")
                 codegen_request = {
                     "prompt": user_message,
                     "source": "openai_proxy",
-                    "model": model
+                    "model": body.get("model", "gpt-3.5-turbo")
                 }
                 
+                logger.debug(f"Sending request to Codegen SDK: {json.dumps(codegen_request)}")
                 response = requests.post(CODEGEN_API_URL, json=codegen_request)
+                logger.debug(f"Received response from Codegen SDK with status code: {response.status_code}")
                 
                 # Check response status
                 if response.status_code != 200:
@@ -177,15 +197,18 @@ async def openai_chat_completions(request: Request):
                 
                 # Parse Codegen SDK response
                 codegen_response = response.json()
+                logger.debug(f"Parsed Codegen SDK response: {json.dumps(codegen_response)}")
                 
                 # Extract the generated text from Codegen response
                 response_content = codegen_response.get("response", "No response from Codegen SDK")
+                logger.info(f"Received response from Codegen SDK: {response_content[:100]}...")
             
-            return JSONResponse(content={
+            # Format response as OpenAI chat completion
+            openai_response = {
                 "id": f"chatcmpl-{uuid.uuid4()}",
                 "object": "chat.completion",
                 "created": int(time.time()),
-                "model": model,
+                "model": body.get("model", "gpt-3.5-turbo"),
                 "choices": [
                     {
                         "index": 0,
@@ -198,10 +221,12 @@ async def openai_chat_completions(request: Request):
                 ],
                 "usage": {
                     "prompt_tokens": len(user_message) // 4,  # Rough estimate
-                    "completion_tokens": len(response_content) // 4,  # Rough estimate
-                    "total_tokens": (len(user_message) + len(response_content)) // 4  # Rough estimate
+                    "completion_tokens": 0,  # Placeholder
+                    "total_tokens": len(user_message) // 4  # Rough estimate
                 }
-            })
+            }
+            logger.debug(f"Formatted OpenAI response: {json.dumps(openai_response)}")
+            return JSONResponse(content=openai_response)
             
         except Exception as e:
             logger.error(f"OpenAI chat completion error: {e}")
@@ -257,14 +282,16 @@ async def anthropic_completions(request: Request):
             
             if TESTING_MODE:
                 # For testing purposes, return a mock response
-                logger.info("TESTING_MODE is enabled. Returning mock response.")
+                logger.info("TESTING_MODE is enabled. Returning mock response for Anthropic.")
                 if "2+2" in user_message:
                     response_content = "4"
+                    logger.info("Special case detected: 2+2 = 4")
                 else:
                     response_content = f"This is a mock response to: {user_message}"
                 logger.info(f"Mock response: {response_content}")
             else:
                 # Send request to Codegen SDK
+                logger.info(f"TESTING_MODE is disabled. Sending real request to Codegen SDK at {CODEGEN_API_URL}")
                 codegen_request = {
                     "prompt": user_message,
                     "source": "anthropic_proxy",
@@ -286,6 +313,7 @@ async def anthropic_completions(request: Request):
                 
                 # Extract the generated text from Codegen response
                 response_content = codegen_response.get("response", "No response from Codegen SDK")
+                logger.info(f"Received response from Codegen SDK: {response_content[:100]}...")
             
             return JSONResponse(content={
                 "id": f"msg_{uuid.uuid4()}",
@@ -325,7 +353,7 @@ async def anthropic_completions(request: Request):
 # Google/Gemini endpoint
 @app.post("/v1/gemini/completions")
 async def gemini_completions(request: Request):
-    """Google Gemini completions endpoint - routes to Codegen SDK."""
+    """Google/Gemini completions endpoint - routes to Codegen SDK."""
     try:
         # Parse request body
         body = await request.json()
@@ -359,14 +387,16 @@ async def gemini_completions(request: Request):
             
             if TESTING_MODE:
                 # For testing purposes, return a mock response
-                logger.info("TESTING_MODE is enabled. Returning mock response.")
+                logger.info("TESTING_MODE is enabled. Returning mock response for Google/Gemini.")
                 if "2+2" in user_message:
                     response_content = "4"
+                    logger.info("Special case detected: 2+2 = 4")
                 else:
                     response_content = f"This is a mock response to: {user_message}"
                 logger.info(f"Mock response: {response_content}")
             else:
                 # Send request to Codegen SDK
+                logger.info(f"TESTING_MODE is disabled. Sending real request to Codegen SDK at {CODEGEN_API_URL}")
                 codegen_request = {
                     "prompt": user_message,
                     "source": "google_proxy",
@@ -388,6 +418,7 @@ async def gemini_completions(request: Request):
                 
                 # Extract the generated text from Codegen response
                 response_content = codegen_response.get("response", "No response from Codegen SDK")
+                logger.info(f"Received response from Codegen SDK: {response_content[:100]}...")
             
             return JSONResponse(content={
                 "candidates": [
