@@ -204,10 +204,20 @@ async def anthropic_completions(request: Request):
         # Parse request body
         body = await request.json()
         
-        # Extract prompt
-        prompt = body.get("prompt")
-        if not prompt:
-            raise HTTPException(status_code=400, detail="No prompt provided")
+        # Extract message content
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
         
         # Check if Codegen SDK Agent is initialized
         if codegen_agent is None:
@@ -219,10 +229,10 @@ async def anthropic_completions(request: Request):
         
         try:
             # Use Codegen SDK directly
-            logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps({'prompt': prompt, 'source': 'anthropic_proxy', 'model': body.get('model', 'claude-3-sonnet-20240229')})}")
+            logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'anthropic_proxy', 'model': body.get('model', 'claude-3-sonnet-20240229')})}")
             
-            # Run the agent with the prompt
-            task = codegen_agent.run(prompt=prompt)
+            # Run the agent with the user message
+            task = codegen_agent.run(prompt=user_message)
             
             # Wait for the task to complete (simple polling)
             max_retries = 10
@@ -244,14 +254,21 @@ async def anthropic_completions(request: Request):
             response_content = task.result if hasattr(task, 'result') else "No result available"
             
             return JSONResponse(content={
-                "id": f"ant-{uuid.uuid4()}",
-                "type": "completion",
-                "completion": response_content,
+                "id": f"msg_{uuid.uuid4()}",
+                "type": "message",
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": response_content
+                    }
+                ],
                 "model": body.get("model", "claude-3-sonnet-20240229"),
-                "stop_reason": "stop",
-                "stop": None,
-                "log_id": f"ant-log-{uuid.uuid4()}",
-                "exception": None
+                "stop_reason": "end_turn",
+                "usage": {
+                    "input_tokens": len(user_message) // 4,  # Rough estimate
+                    "output_tokens": len(response_content) // 4  # Rough estimate
+                }
             })
             
         except Exception as e:
@@ -277,66 +294,89 @@ async def gemini_completions(request: Request):
         # Parse request body
         body = await request.json()
         
-        # Extract message from different possible formats
-        user_message = extract_user_message(body)
+        # Extract message content
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
         
         if not user_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Prepare request to Codegen SDK
-        codegen_request = {
-            "prompt": user_message,
-            "source": "google_proxy",
-            "model": body.get("model", "gemini-1.5-pro")
-        }
-        
-        # Send request to Codegen SDK
-        logger.info(f"Routing Google request to Codegen SDK: {json.dumps(codegen_request)}")
-        
-        response = requests.post(CODEGEN_API_URL, json=codegen_request)
-        
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+        # Check if Codegen SDK Agent is initialized
+        if codegen_agent is None:
+            logger.error("Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN.")
             return JSONResponse(
-                status_code=response.status_code,
-                content={"error": f"Codegen SDK error: {response.text}"}
+                status_code=500,
+                content={"error": "Codegen SDK Agent is not initialized. Check your CODEGEN_ORG_ID and CODEGEN_TOKEN."}
             )
         
-        # Parse Codegen SDK response
-        codegen_response = response.json()
-        
-        # Extract the generated text from Codegen response
-        generated_text = codegen_response.get("response", "No response from Codegen SDK")
-        
-        # Format response in Google/Gemini format
-        gemini_response = {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {
-                                "text": generated_text
-                            }
-                        ],
-                        "role": "model"
-                    },
-                    "finishReason": "STOP",
-                    "index": 0
+        try:
+            # Use Codegen SDK directly
+            logger.info(f"Routing Google request to Codegen SDK: {json.dumps({'prompt': user_message, 'source': 'google_proxy', 'model': body.get('model', 'gemini-1.5-pro')})}")
+            
+            # Run the agent with the user message
+            task = codegen_agent.run(prompt=user_message)
+            
+            # Wait for the task to complete (simple polling)
+            max_retries = 10
+            retry_count = 0
+            
+            while task.status != "completed" and retry_count < max_retries:
+                task.refresh()
+                retry_count += 1
+                await asyncio.sleep(1)  # Wait for 1 second before checking again
+            
+            if task.status != "completed":
+                logger.error(f"Codegen SDK task did not complete in time: {task.status}")
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": "Codegen SDK task did not complete in time"}
+                )
+            
+            # Format the response in Google/Gemini format
+            response_content = task.result if hasattr(task, 'result') else "No result available"
+            
+            return JSONResponse(content={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": response_content
+                                }
+                            ],
+                            "role": "model"
+                        },
+                        "finishReason": "STOP",
+                        "index": 0,
+                        "safetyRatings": []
+                    }
+                ],
+                "promptFeedback": {
+                    "safetyRatings": []
                 }
-            ],
-            "usageMetadata": {
-                "promptTokenCount": len(user_message.split()),
-                "candidatesTokenCount": len(generated_text.split()),
-                "totalTokenCount": len(user_message.split()) + len(generated_text.split())
-            }
-        }
-        
-        return gemini_response
-        
+            })
+            
+        except Exception as e:
+            logger.error(f"Gemini completion error: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Error processing request: {str(e)}"}
+            )
+            
     except Exception as e:
         logger.error(f"Gemini completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error processing request: {str(e)}"}
+        )
 
 
 @app.post("/v1/gemini/generateContent")
@@ -480,16 +520,13 @@ async def anthropic_messages(request: Request):
 # Web UI endpoint
 @app.get("/", response_class=HTMLResponse)
 async def web_ui():
-    """Serve the web UI."""
-    static_index = Path("static/index.html")
-    if static_index.exists():
-        return HTMLResponse(content=static_index.read_text(), status_code=200)
-    
-    # Fallback HTML
+    """Web UI for testing the API router."""
     return HTMLResponse(content="""
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>API Router System</title>
         <style>
             body { 
@@ -636,8 +673,8 @@ async def web_ui():
                 </div>
                 
                 <div class="config-info">
-                    <p><strong>Routing to:</strong> <span id="routing-to">Checking...</span></p>
-                    <p>To change the Codegen SDK endpoint, set the <code>CODEGEN_API_URL</code> environment variable.</p>
+                    <p><strong>Codegen SDK Status:</strong> <span id="sdk-status">Checking...</span></p>
+                    <p>To configure the Codegen SDK, set the <code>CODEGEN_ORG_ID</code> and <code>CODEGEN_TOKEN</code> environment variables.</p>
                 </div>
             </div>
             
@@ -717,14 +754,22 @@ async def web_ui():
                     .then(response => response.json())
                     .then(data => {
                         const statusElement = document.getElementById('health-status');
-                        const routingElement = document.getElementById('routing-to');
+                        const sdkStatusElement = document.getElementById('sdk-status');
                         
                         if (data.status === 'healthy') {
                             statusElement.className = 'status healthy';
                             statusElement.innerHTML = '✅ Server is healthy';
                             
-                            if (data.routing_to) {
-                                routingElement.textContent = data.routing_to;
+                            if (data.codegen_sdk && data.codegen_sdk.status) {
+                                const sdkStatus = data.codegen_sdk.status;
+                                if (sdkStatus === 'initialized') {
+                                    sdkStatusElement.innerHTML = '✅ Codegen SDK is initialized';
+                                    if (data.codegen_sdk.org_id) {
+                                        sdkStatusElement.innerHTML += ` (Org ID: ${data.codegen_sdk.org_id})`;
+                                    }
+                                } else {
+                                    sdkStatusElement.innerHTML = '❌ Codegen SDK is not initialized';
+                                }
                             }
                         } else {
                             statusElement.className = 'status unhealthy';
@@ -803,20 +848,6 @@ async def web_ui():
     </body>
     </html>
     """, status_code=200)
-
-
-def start_server(host="localhost", port=8887):
-    """Start the server."""
-    logger.info(f"Starting API Router System on {host}:{port}")
-    logger.info(f"Routing requests to Codegen SDK at: {CODEGEN_API_URL}")
-    logger.info(f"Supported providers: openai, anthropic, google")
-    
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        log_level="info"
-    )
 
 
 def main():
