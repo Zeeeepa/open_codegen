@@ -27,6 +27,22 @@ def test_anthropic_api():
     """Send a message to the Anthropic API and receive a response."""
     print(f"{YELLOW}🧪 Testing Anthropic API...{RESET}")
     
+    # Check if server is running
+    try:
+        health_url = BASE_URL.rsplit("/", 1)[0] + "/health"
+        health_response = requests.get(health_url)
+        if health_response.status_code == 200:
+            health_data = health_response.json()
+            print(f"{GREEN}✅ Server is healthy{RESET}")
+            if "routing_to" in health_data:
+                print(f"{YELLOW}ℹ️ Routing to: {health_data['routing_to']}{RESET}")
+            if "codegen_available" in health_data and not health_data["codegen_available"]:
+                print(f"{YELLOW}⚠️ Warning: Codegen SDK is not available. Mock responses are {'enabled' if health_data.get('mock_responses_enabled', False) else 'disabled'}.{RESET}")
+        else:
+            print(f"{RED}❌ Server health check failed: {health_response.status_code}{RESET}")
+    except requests.RequestException as e:
+        print(f"{RED}❌ Server health check failed: {e}{RESET}")
+    
     # Prepare request payload
     payload = {
         "model": "claude-3-sonnet-20240229",
@@ -38,8 +54,13 @@ def test_anthropic_api():
     # Send request
     print(f"{YELLOW}📤 Sending message to {API_URL}...{RESET}")
     try:
-        response = requests.post(API_URL, json=payload)
-        response.raise_for_status()  # Raise exception for 4XX/5XX responses
+        response = requests.post(API_URL, json=payload, timeout=10)
+        
+        # Check response status
+        if response.status_code != 200:
+            print(f"{RED}❌ Request failed with status code {response.status_code}{RESET}")
+            print(f"{RED}Error: {response.text}{RESET}")
+            return False
         
         # Parse response
         data = response.json()

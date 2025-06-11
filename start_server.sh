@@ -9,6 +9,12 @@ if [ -z "$CODEGEN_API_URL" ]; then
     echo -e "\033[1;33m⚠️  Set CODEGEN_API_URL environment variable to change this.\033[0m"
 fi
 
+# Check for mock responses setting
+if [ -z "$ENABLE_MOCK_RESPONSES" ]; then
+    echo -e "\033[1;33m⚠️  Mock responses are enabled by default when Codegen SDK is unavailable.\033[0m"
+    echo -e "\033[1;33m⚠️  Set ENABLE_MOCK_RESPONSES=false to disable mock responses.\033[0m"
+fi
+
 # Start the server in the background
 echo -e "\033[1;34m🚀 Starting API Router System on port 8887...\033[0m"
 
@@ -32,6 +38,18 @@ if ps -p $SERVER_PID > /dev/null; then
         ROUTING_TO=$(echo $HEALTH_CHECK | grep -o '"routing_to":"[^"]*"' | cut -d'"' -f4)
         if [ ! -z "$ROUTING_TO" ]; then
             echo -e "\033[1;32m🔄 Routing requests to: $ROUTING_TO\033[0m"
+        fi
+        
+        # Check if Codegen SDK is available
+        if [[ $HEALTH_CHECK == *"\"codegen_available\":false"* ]]; then
+            echo -e "\033[1;33m⚠️  Codegen SDK is not available!\033[0m"
+            
+            # Check if mock responses are enabled
+            if [[ $HEALTH_CHECK == *"\"mock_responses_enabled\":true"* ]]; then
+                echo -e "\033[1;33m⚠️  Mock responses are enabled. Set ENABLE_MOCK_RESPONSES=false to disable.\033[0m"
+            else
+                echo -e "\033[1;31m❌ Mock responses are disabled. Requests will fail!\033[0m"
+            fi
         fi
     else
         echo -e "\033[1;31m❌ Server health check failed!\033[0m"
