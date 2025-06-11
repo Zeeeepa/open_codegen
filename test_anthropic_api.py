@@ -5,7 +5,6 @@ Test the Anthropic API endpoint.
 
 import sys
 import json
-import time
 import requests
 
 # Define colors for terminal output
@@ -16,7 +15,7 @@ RESET = "\033[0m"
 
 # Define the API endpoint
 API_URL = "http://localhost:8887/v1/anthropic/completions"
-TEST_MESSAGE = "Hello, this is a test message. Please respond with a short greeting."
+TEST_MESSAGE = "Hello, this is a test message."
 
 
 def main():
@@ -47,6 +46,8 @@ def main():
         # Check if the request was successful
         if response.status_code == 200:
             data = response.json()
+            print(f"{YELLOW}📥 Received response:{RESET}")
+            print(json.dumps(data, indent=2))
             
             # Validate the response format
             if (
@@ -56,11 +57,10 @@ def main():
             ):
                 content = data["content"][0]["text"]
                 print(f"{GREEN}✅ Anthropic API test passed!{RESET}")
-                print(f"{YELLOW}Response:{RESET} {content}")
+                print(f"{YELLOW}Response content:{RESET} {content}")
                 return 0
             else:
-                print(f"{RED}❌ Anthropic API returned invalid response format:{RESET}")
-                print(json.dumps(data, indent=2))
+                print(f"{RED}❌ Anthropic API returned invalid response format{RESET}")
                 return 1
         else:
             print(f"{RED}❌ Anthropic API Error: {response.status_code} - {response.text}{RESET}")

@@ -7,6 +7,7 @@ import os
 import sys
 import subprocess
 import time
+import requests
 
 # Define colors for terminal output
 GREEN = "\033[92m"
@@ -20,6 +21,16 @@ TEST_FILES = [
     "test_anthropic_api.py",
     "test_google_api.py"
 ]
+
+def check_server():
+    """Check if the server is running and healthy."""
+    try:
+        response = requests.get("http://localhost:8887/health", timeout=5)
+        if response.status_code == 200 and response.json().get("status") == "healthy":
+            return True
+        return False
+    except Exception:
+        return False
 
 def run_test(test_file):
     """Run a single test file and return success status."""
@@ -56,15 +67,8 @@ def main():
     print(f"{YELLOW}🧪 Running all API tests...{RESET}")
     
     # Check if server is running
-    try:
-        import requests
-        response = requests.get("http://localhost:8887/health", timeout=5)
-        if response.status_code != 200 or response.json().get("status") != "healthy":
-            print(f"{RED}❌ Server is not healthy. Please start the server first.{RESET}")
-            print(f"{YELLOW}Run ./start_server.sh to start the server.{RESET}")
-            return 1
-    except Exception as e:
-        print(f"{RED}❌ Server is not running or not accessible: {e}{RESET}")
+    if not check_server():
+        print(f"{RED}❌ Server is not running or not healthy.{RESET}")
         print(f"{YELLOW}Run ./start_server.sh to start the server.{RESET}")
         return 1
     
