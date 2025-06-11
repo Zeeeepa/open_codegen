@@ -8,16 +8,15 @@ import logging
 import time
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from client import UnifiedClient, ProviderType
-from models import ChatRequest, ChatResponse, HealthResponse, ErrorResponse, TestResult
 from config import get_config
 
 # Configure logging
@@ -62,15 +61,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Health and status endpoints
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health")
 async def health_check():
     """Health check endpoint."""
     health = unified_client.health_check()
-    return HealthResponse(
-        status=health["status"],
-        timestamp=health["timestamp"],
-        providers=health["supported_providers"]
-    )
+    return {
+        "status": health["status"],
+        "timestamp": health["timestamp"],
+        "providers": health["supported_providers"]
+    }
 
 
 @app.get("/api/status")
@@ -86,14 +85,30 @@ async def api_status():
 
 # OpenAI-compatible endpoints
 @app.post("/v1/chat/completions")
-async def openai_chat_completions(request: ChatRequest):
+async def openai_chat_completions(request: Dict[str, Any] = Body(...)):
     """OpenAI-compatible chat completions endpoint."""
     try:
-        start_time = time.time()
+        # Extract the last user message
+        messages = request.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        last_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                last_message = msg.get("content")
+                break
+        
+        if not last_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        model = request.get("model", "gpt-3.5-turbo")
+        
+        # Send the message to the client
         result = await unified_client.send_message(
-            message=request.messages[-1].content,  # Get last user message
+            message=last_message,
             provider=ProviderType.OPENAI,
-            model=request.model
+            model=model
         )
         
         if result["success"]:
@@ -129,13 +144,30 @@ async def openai_chat_completions(request: ChatRequest):
 
 # Anthropic endpoints
 @app.post("/v1/anthropic/completions")
-async def anthropic_completions(request: ChatRequest):
+async def anthropic_completions(request: Dict[str, Any] = Body(...)):
     """Anthropic completions endpoint."""
     try:
+        # Extract the last user message
+        messages = request.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        last_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                last_message = msg.get("content")
+                break
+        
+        if not last_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        model = request.get("model", "claude-3-sonnet-20240229")
+        
+        # Send the message to the client
         result = await unified_client.send_message(
-            message=request.messages[-1].content,
+            message=last_message,
             provider=ProviderType.ANTHROPIC,
-            model=request.model
+            model=model
         )
         
         if result["success"]:
@@ -166,20 +198,50 @@ async def anthropic_completions(request: ChatRequest):
 
 
 @app.post("/v1/messages")
-async def anthropic_messages(request: ChatRequest):
+async def anthropic_messages(request: Dict[str, Any] = Body(...)):
     """Anthropic messages endpoint (alternative format)."""
     return await anthropic_completions(request)
 
 
 # Google/Gemini endpoints
 @app.post("/v1/gemini/completions")
-async def gemini_completions(request: ChatRequest):
+async def gemini_completions(request: Dict[str, Any] = Body(...)):
     """Google Gemini completions endpoint."""
     try:
+        # Extract the message from the request
+        messages = request.get("messages", [])
+        contents = request.get("contents", [])
+        
+        last_message = None
+        
+        # Try to get message from messages array first
+        if messages:
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    last_message = msg.get("content")
+                    break
+        
+        # If not found, try to get from contents array
+        if not last_message and contents:
+            for content in contents:
+                parts = content.get("parts", [])
+                for part in parts:
+                    if "text" in part:
+                        last_message = part["text"]
+                        break
+                if last_message:
+                    break
+        
+        if not last_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        model = request.get("model", "gemini-1.5-pro")
+        
+        # Send the message to the client
         result = await unified_client.send_message(
-            message=request.messages[-1].content,
+            message=last_message,
             provider=ProviderType.GOOGLE,
-            model=request.model
+            model=model
         )
         
         if result["success"]:
@@ -214,14 +276,14 @@ async def gemini_completions(request: ChatRequest):
 
 
 @app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: ChatRequest):
+async def gemini_generate_content(request: Dict[str, Any] = Body(...)):
     """Google Gemini generateContent endpoint (alternative format)."""
     return await gemini_completions(request)
 
 
 # Test endpoints for each provider
 @app.post("/api/test/{provider}")
-async def test_provider(provider: str, request: Dict[str, Any]):
+async def test_provider(provider: str, request: Dict[str, Any] = Body(...)):
     """Test endpoint for each provider."""
     try:
         provider_type = ProviderType(provider.lower())
