@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Unified test module for API endpoints.
+Unified test module for API Router System.
+Tests routing requests from OpenAI, Anthropic, and Google APIs to Codegen SDK.
 """
 
 import json
@@ -38,7 +39,7 @@ def check_server_health():
 
 def test_openai_api():
     """Test the OpenAI API endpoint."""
-    print(f"{YELLOW}🧪 Testing OpenAI API...{RESET}")
+    print(f"{YELLOW}🧪 Testing OpenAI API routing...{RESET}")
     
     # Prepare request payload
     payload = {
@@ -66,18 +67,19 @@ def test_openai_api():
             print(f"{RED}❌ Invalid response format: not a dictionary{RESET}")
             return False
         
-        # Check if this is a simulated response
+        # Check required fields for OpenAI format
+        required_fields = ["choices"]
+        for field in required_fields:
+            if field not in data:
+                print(f"{RED}❌ Missing required field: {field}{RESET}")
+                return False
+        
+        # Extract content if available
         content = ""
         if "choices" in data and len(data["choices"]) > 0:
-            # OpenAI format
             choice = data["choices"][0]
             if "message" in choice and "content" in choice["message"]:
                 content = choice["message"]["content"]
-                
-                # Check if this is a simulated response
-                if content.startswith("This is a simulated response"):
-                    print(f"{YELLOW}⚠️ Warning: Received simulated response. API key may not be set.{RESET}")
-                    print(f"{YELLOW}⚠️ Set OPENAI_API_KEY environment variable for real API responses.{RESET}")
         
         print(f"{GREEN}✅ OpenAI API test passed!{RESET}")
         print(f"{YELLOW}Response content:{RESET} {content}")
@@ -96,7 +98,7 @@ def test_openai_api():
 
 def test_anthropic_api():
     """Test the Anthropic API endpoint."""
-    print(f"{YELLOW}🧪 Testing Anthropic API...{RESET}")
+    print(f"{YELLOW}🧪 Testing Anthropic API routing...{RESET}")
     
     # Prepare request payload
     payload = {
@@ -124,18 +126,19 @@ def test_anthropic_api():
             print(f"{RED}❌ Invalid response format: not a dictionary{RESET}")
             return False
         
-        # Check if this is a simulated response
+        # Check required fields for Anthropic format
+        required_fields = ["content"]
+        for field in required_fields:
+            if field not in data:
+                print(f"{RED}❌ Missing required field: {field}{RESET}")
+                return False
+        
+        # Extract content if available
         content = ""
         if "content" in data and isinstance(data["content"], list) and len(data["content"]) > 0:
-            # Anthropic format
             content_item = data["content"][0]
             if "text" in content_item:
                 content = content_item["text"]
-                
-                # Check if this is a simulated response
-                if content.startswith("This is a simulated Anthropic response"):
-                    print(f"{YELLOW}⚠️ Warning: Received simulated response. API key may not be set.{RESET}")
-                    print(f"{YELLOW}⚠️ Set ANTHROPIC_API_KEY environment variable for real API responses.{RESET}")
         
         print(f"{GREEN}✅ Anthropic API test passed!{RESET}")
         print(f"{YELLOW}Response content:{RESET} {content}")
@@ -154,7 +157,7 @@ def test_anthropic_api():
 
 def test_google_api():
     """Test the Google/Gemini API endpoint."""
-    print(f"{YELLOW}🧪 Testing Google/Gemini API...{RESET}")
+    print(f"{YELLOW}🧪 Testing Google/Gemini API routing...{RESET}")
     
     # Prepare request payload
     payload = {
@@ -182,20 +185,21 @@ def test_google_api():
             print(f"{RED}❌ Invalid response format: not a dictionary{RESET}")
             return False
         
-        # Check if this is a simulated response
+        # Check required fields for Google format
+        required_fields = ["candidates"]
+        for field in required_fields:
+            if field not in data:
+                print(f"{RED}❌ Missing required field: {field}{RESET}")
+                return False
+        
+        # Extract content if available
         content = ""
         if "candidates" in data and len(data["candidates"]) > 0:
-            # Google format
             candidate = data["candidates"][0]
             if "content" in candidate and "parts" in candidate["content"] and len(candidate["content"]["parts"]) > 0:
                 part = candidate["content"]["parts"][0]
                 if "text" in part:
                     content = part["text"]
-                    
-                    # Check if this is a simulated response
-                    if content.startswith("This is a simulated Gemini response"):
-                        print(f"{YELLOW}⚠️ Warning: Received simulated response. API key may not be set.{RESET}")
-                        print(f"{YELLOW}⚠️ Set GOOGLE_API_KEY environment variable for real API responses.{RESET}")
         
         print(f"{GREEN}✅ Google/Gemini API test passed!{RESET}")
         print(f"{YELLOW}Response content:{RESET} {content}")
@@ -214,7 +218,7 @@ def test_google_api():
 
 def run_tests():
     """Run all API tests and report results."""
-    print(f"{YELLOW}🧪 Running all API tests...{RESET}")
+    print(f"{YELLOW}🧪 Running all API routing tests...{RESET}")
     
     # Check if server is running
     if not check_server_health():
@@ -266,10 +270,10 @@ def run_tests():
 
 def main():
     """Main function."""
-    parser = argparse.ArgumentParser(description="Test API endpoints")
-    parser.add_argument("--openai", action="store_true", help="Test only OpenAI API")
-    parser.add_argument("--anthropic", action="store_true", help="Test only Anthropic API")
-    parser.add_argument("--google", action="store_true", help="Test only Google/Gemini API")
+    parser = argparse.ArgumentParser(description="Test API routing endpoints")
+    parser.add_argument("--openai", action="store_true", help="Test only OpenAI API routing")
+    parser.add_argument("--anthropic", action="store_true", help="Test only Anthropic API routing")
+    parser.add_argument("--google", action="store_true", help="Test only Google/Gemini API routing")
     parser.add_argument("--all", action="store_true", help="Test all APIs (default)")
     
     args = parser.parse_args()
