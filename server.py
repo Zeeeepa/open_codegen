@@ -1,33 +1,24 @@
 #!/usr/bin/env python3
-"""
-API Router System for OpenAI, Anthropic, and Google APIs.
-Routes requests from these APIs to the Codegen SDK.
-"""
-
-import logging
-import time
-import json
 import os
+import json
+import time
+import logging
 import requests
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:%(name)s:%(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
-app = FastAPI(
-    title="API Router System",
-    description="Routes requests from OpenAI, Anthropic, and Google APIs to Codegen SDK",
-    version="1.0.0"
-)
+app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
@@ -38,7 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files for Web UI if available
+# Serve static files if they exist
 static_path = Path("static")
 if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -49,7 +40,7 @@ CODEGEN_ORG_ID = os.environ.get("CODEGEN_ORG_ID", "")
 CODEGEN_TOKEN = os.environ.get("CODEGEN_TOKEN", "")
 SERVER_HOST = os.environ.get("SERVER_HOST", "localhost")
 SERVER_PORT = int(os.environ.get("SERVER_PORT", "8887"))
-TESTING_MODE = os.environ.get("TESTING_MODE", "true").lower() == "true"
+
 
 # Health endpoint
 @app.get("/health")
@@ -61,6 +52,231 @@ async def health_check():
         "providers": ["openai", "anthropic", "google"],
         "routing_to": CODEGEN_API_URL
     }
+
+
+# Root endpoint - HTML UI
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Root endpoint - returns HTML UI."""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>API Router System</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                line-height: 1.6;
+            }
+            .card {
+                background: #f9f9f9;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .status {
+                padding: 8px 12px;
+                border-radius: 4px;
+                display: inline-block;
+                margin-top: 10px;
+            }
+            .healthy {
+                background: #d4edda;
+                color: #155724;
+            }
+            .unhealthy { 
+                background: #f8d7da; 
+                color: #721c24; 
+            }
+            .test-button { 
+                padding: 10px 15px; 
+                margin: 5px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .test-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            .openai { 
+                background: #10a37f; 
+                color: white;
+            }
+            .anthropic {
+                background: #b44ac0;
+                color: white;
+            }
+            .google {
+                background: #4285f4;
+                color: white;
+            }
+            .hidden {
+                display: none;
+            }
+            pre {
+                background: #f1f1f1;
+                padding: 10px;
+                border-radius: 5px;
+                overflow-x: auto;
+            }
+            textarea {
+                width: 100%;
+                padding: 8px;
+                border-radius: 5px;
+                border: 1px solid #ddd;
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>API Router System</h1>
+        
+        <div class="card">
+            <h2>Status</h2>
+            <p>Routing requests to Codegen SDK at: <code id="api-url"></code></p>
+            <p>Server status: <span id="server-status" class="status">Checking...</span></p>
+        </div>
+        
+        <div class="card">
+            <h2>Test API Endpoints</h2>
+            <div>
+                <h3>Simple Test</h3>
+                <div>
+                    <button class="test-button openai" onclick="testAPI('openai')">🟢 Test OpenAI API</button>
+                    <button class="test-button anthropic" onclick="testAPI('anthropic')">🟣 Test Anthropic API</button>
+                    <button class="test-button google" onclick="testAPI('google')">🔵 Test Google API</button>
+                </div>
+            </div>
+            
+            <div>
+                <h3>Custom Prompt</h3>
+                <textarea id="custom-prompt" rows="3" placeholder="Enter your custom prompt here...">Hello! Please respond with a short greeting.</textarea>
+                <div>
+                    <button class="test-button openai" onclick="testAPIWithCustomPrompt('openai')">🟢 Test OpenAI API</button>
+                    <button class="test-button anthropic" onclick="testAPIWithCustomPrompt('anthropic')">🟣 Test Anthropic API</button>
+                    <button class="test-button google" onclick="testAPIWithCustomPrompt('google')">🔵 Test Google API</button>
+                </div>
+            </div>
+            
+            <div id="response-container" class="hidden">
+                <h3>Response:</h3>
+                <pre id="response-content"></pre>
+            </div>
+        </div>
+        
+        <script>
+            document.getElementById('api-url').textContent = window.location.origin;
+            
+            // Check server health on page load
+            window.onload = function() {
+                checkHealth();
+            };
+            
+            function checkHealth() {
+                const statusElement = document.getElementById('server-status');
+                
+                fetch('/health')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'healthy') {
+                            statusElement.className = 'status healthy';
+                            statusElement.innerHTML = '✅ Server is healthy';
+                        } else {
+                            statusElement.className = 'status unhealthy';
+                            statusElement.innerHTML = '❌ Server is unhealthy';
+                        }
+                    })
+                    .catch(error => {
+                        statusElement.className = 'status unhealthy';
+                        statusElement.innerHTML = '❌ Server is unhealthy';
+                        console.error('Error checking health:', error);
+                    });
+            }
+            
+            function testAPI(provider) {
+                const defaultPrompt = "Hello! Please respond with a short greeting.";
+                sendRequest(provider, defaultPrompt);
+            }
+            
+            function testAPIWithCustomPrompt(provider) {
+                const prompt = document.getElementById('custom-prompt').value.trim();
+                if (!prompt) {
+                    alert('Please enter a prompt');
+                    return;
+                }
+                sendRequest(provider, prompt);
+            }
+            
+            function sendRequest(provider, prompt) {
+                const responseContainer = document.getElementById('response-container');
+                const responseContent = document.getElementById('response-content');
+                
+                responseContainer.className = 'hidden';
+                responseContent.textContent = 'Loading...';
+                
+                let endpoint = '';
+                let payload = {};
+                
+                if (provider === 'openai') {
+                    endpoint = '/v1/chat/completions';
+                    payload = {
+                        model: 'gpt-3.5-turbo',
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ]
+                    };
+                } else if (provider === 'anthropic') {
+                    endpoint = '/v1/anthropic/completions';
+                    payload = {
+                        model: 'claude-3-sonnet-20240229',
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ]
+                    };
+                } else if (provider === 'google') {
+                    endpoint = '/v1/gemini/completions';
+                    payload = {
+                        model: 'gemini-1.5-pro',
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ]
+                    };
+                }
+                
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    responseContainer.className = '';
+                    responseContent.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    responseContainer.className = '';
+                    responseContent.textContent = `Error: ${error.message}`;
+                    console.error('API request error:', error);
+                });
+            }
+        </script>
+    </body>
+    </html>
+    """
 
 
 # OpenAI endpoint
@@ -311,364 +527,22 @@ def extract_user_message(body):
             if user_message:
                 break
     
+    # If still not found, try prompt field (fallback)
+    if not user_message:
+        user_message = body.get("prompt", "")
+    
     return user_message
 
 
-# Alternative Gemini endpoint
-@app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: Request):
-    """Alternative Gemini endpoint."""
-    return await gemini_completions(request)
-
-
-# Alternative Anthropic endpoint
-@app.post("/v1/messages")
-async def anthropic_messages(request: Request):
-    """Alternative Anthropic endpoint."""
-    return await anthropic_completions(request)
-
-
-# Web UI endpoint
-@app.get("/", response_class=HTMLResponse)
-async def web_ui():
-    """Serve the web UI."""
-    static_index = Path("static/index.html")
-    if static_index.exists():
-        return HTMLResponse(content=static_index.read_text(), status_code=200)
-    
-    # Fallback HTML
-    return HTMLResponse(content="""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>API Router System</title>
-        <style>
-            body { 
-                font-family: Arial, sans-serif; 
-                margin: 0;
-                padding: 0;
-                background-color: #f5f7fa;
-            }
-            .container { 
-                max-width: 800px; 
-                margin: 0 auto;
-                padding: 20px;
-            }
-            header {
-                background-color: #4a6cf7;
-                color: white;
-                padding: 20px 0;
-                text-align: center;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            }
-            header h1 {
-                margin: 0;
-                font-size: 2.5rem;
-            }
-            header p {
-                margin: 10px 0 0;
-                font-size: 1.2rem;
-                opacity: 0.9;
-            }
-            .card {
-                background-color: white;
-                border-radius: 8px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                padding: 20px;
-                margin-bottom: 20px;
-            }
-            .endpoint { 
-                background: #f5f5f5; 
-                padding: 10px; 
-                margin: 10px 0; 
-                border-radius: 5px; 
-            }
-            .method { 
-                color: #007acc; 
-                font-weight: bold; 
-            }
-            .status { 
-                padding: 10px; 
-                margin: 10px 0; 
-                border-radius: 5px; 
-            }
-            .healthy { 
-                background: #d4edda; 
-                color: #155724; 
-            }
-            .unhealthy { 
-                background: #f8d7da; 
-                color: #721c24; 
-            }
-            .test-button { 
-                padding: 10px 15px; 
-                margin: 5px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                font-weight: bold;
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
-            }
-            .test-button:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            .openai { 
-                background: #10a37f; 
-                color: white; 
-            }
-            .anthropic { 
-                background: #7b2cbf; 
-                color: white; 
-            }
-            .google { 
-                background: #4285f4; 
-                color: white; 
-            }
-            #response-container {
-                background: #f8f9fa;
-                padding: 15px;
-                border-radius: 5px;
-                margin-top: 20px;
-                white-space: pre-wrap;
-                max-height: 300px;
-                overflow-y: auto;
-                border: 1px solid #e0e0e0;
-            }
-            .hidden { 
-                display: none; 
-            }
-            #status-container {
-                margin-bottom: 20px;
-            }
-            #custom-prompt {
-                width: 100%;
-                padding: 10px;
-                margin: 10px 0;
-                border-radius: 5px;
-                border: 1px solid #ddd;
-                font-family: inherit;
-                resize: vertical;
-            }
-            h2 {
-                color: #4a6cf7;
-                border-bottom: 1px solid #e0e0e0;
-                padding-bottom: 10px;
-            }
-            footer {
-                text-align: center;
-                margin-top: 40px;
-                padding: 20px 0;
-                border-top: 1px solid #e0e0e0;
-                color: #666;
-            }
-            .config-info {
-                background-color: #fff8e1;
-                border-left: 4px solid #ffc107;
-                padding: 10px 15px;
-                margin: 15px 0;
-                border-radius: 0 5px 5px 0;
-            }
-        </style>
-    </head>
-    <body>
-        <header>
-            <div class="container">
-                <h1>API Router System</h1>
-                <p>Routes requests from OpenAI, Anthropic, and Google APIs to Codegen SDK</p>
-            </div>
-        </header>
-
-        <div class="container">
-            <div class="card">
-                <div id="status-container">
-                    <h2>Health Status</h2>
-                    <div id="health-status" class="status">Checking...</div>
-                </div>
-                
-                <div class="config-info">
-                    <p><strong>Routing to:</strong> <span id="routing-to">Checking...</span></p>
-                    <p>To change the Codegen SDK endpoint, set the <code>CODEGEN_API_URL</code> environment variable.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>Test API Endpoints</h2>
-                <div>
-                    <h3>Simple Test</h3>
-                    <button class="test-button openai" onclick="testAPI('openai')">🟢 Test OpenAI API</button>
-                    <button class="test-button anthropic" onclick="testAPI('anthropic')">🟣 Test Anthropic API</button>
-                    <button class="test-button google" onclick="testAPI('google')">🔵 Test Google API</button>
-                </div>
-                
-                <div>
-                    <h3>Custom Prompt</h3>
-                    <textarea id="custom-prompt" rows="3" placeholder="Enter your custom prompt here...">Hello! Please respond with a short greeting.</textarea>
-                    <button class="test-button openai" onclick="testAPIWithCustomPrompt('openai')">🟢 Test OpenAI API</button>
-                    <button class="test-button anthropic" onclick="testAPIWithCustomPrompt('anthropic')">🟣 Test Anthropic API</button>
-                    <button class="test-button google" onclick="testAPIWithCustomPrompt('google')">🔵 Test Google API</button>
-                </div>
-                
-                <div id="response-container" class="hidden">
-                    <h3>Response:</h3>
-                    <pre id="response-content"></pre>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>Available Endpoints</h2>
-                <div class="endpoint">
-                    <span class="method">GET</span> /health - Health check
-                </div>
-                <div class="endpoint">
-                    <span class="method">POST</span> /v1/chat/completions - OpenAI chat completions
-                </div>
-                <div class="endpoint">
-                    <span class="method">POST</span> /v1/anthropic/completions - Anthropic completions
-                </div>
-                <div class="endpoint">
-                    <span class="method">POST</span> /v1/gemini/completions - Google Gemini completions
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>How to Use</h2>
-                <p>To use this API router with your existing applications:</p>
-                <ol>
-                    <li>Start this server on your desired host and port</li>
-                    <li>In your application that uses OpenAI, Anthropic, or Google APIs, change the API base URL to point to this server</li>
-                    <li>No API keys or other configuration needed - all requests will be routed to the Codegen SDK</li>
-                </ol>
-                
-                <h3>Example Configuration</h3>
-                <div class="endpoint">
-                    <strong>OpenAI:</strong> <code>OPENAI_API_BASE=http://localhost:8887/v1</code>
-                </div>
-                <div class="endpoint">
-                    <strong>Anthropic:</strong> <code>ANTHROPIC_API_URL=http://localhost:8887/v1</code>
-                </div>
-                <div class="endpoint">
-                    <strong>Google/Gemini:</strong> <code>GEMINI_API_URL=http://localhost:8887/v1</code>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <div class="container">
-                <p>API Router System &copy; 2024</p>
-            </div>
-        </footer>
-        
-        <script>
-            // Check server health on page load
-            document.addEventListener('DOMContentLoaded', checkHealth);
-            
-            function checkHealth() {
-                fetch('/health')
-                    .then(response => response.json())
-                    .then(data => {
-                        const statusElement = document.getElementById('health-status');
-                        const routingElement = document.getElementById('routing-to');
-                        
-                        if (data.status === 'healthy') {
-                            statusElement.className = 'status healthy';
-                            statusElement.innerHTML = '✅ Server is healthy';
-                            
-                            if (data.routing_to) {
-                                routingElement.textContent = data.routing_to;
-                            }
-                        } else {
-                            statusElement.className = 'status unhealthy';
-                            statusElement.innerHTML = '❌ Server is unhealthy';
-                        }
-                    })
-                    .catch(error => {
-                        const statusElement = document.getElementById('health-status');
-                        statusElement.className = 'status unhealthy';
-                        statusElement.innerHTML = '❌ Server is unhealthy';
-                        console.error('Error checking health:', error);
-                    });
-            }
-            
-            function testAPI(provider) {
-                const defaultPrompt = "Hello! Please respond with a short greeting.";
-                sendRequest(provider, defaultPrompt);
-            }
-            
-            function testAPIWithCustomPrompt(provider) {
-                const prompt = document.getElementById('custom-prompt').value.trim();
-                if (!prompt) {
-                    alert('Please enter a prompt');
-                    return;
-                }
-                sendRequest(provider, prompt);
-            }
-            
-            function sendRequest(provider, message) {
-                const responseContainer = document.getElementById('response-container');
-                const responseContent = document.getElementById('response-content');
-                
-                responseContainer.className = ''; // Show container
-                responseContent.textContent = 'Sending request...';
-                
-                let endpoint = '';
-                let payload = {};
-                
-                if (provider === 'openai') {
-                    endpoint = '/v1/chat/completions';
-                    payload = {
-                        model: 'gpt-3.5-turbo',
-                        messages: [{ role: 'user', content: message }]
-                    };
-                } else if (provider === 'anthropic') {
-                    endpoint = '/v1/anthropic/completions';
-                    payload = {
-                        model: 'claude-3-sonnet-20240229',
-                        messages: [{ role: 'user', content: message }]
-                    };
-                } else if (provider === 'google') {
-                    endpoint = '/v1/gemini/completions';
-                    payload = {
-                        model: 'gemini-1.5-pro',
-                        messages: [{ role: 'user', content: message }]
-                    };
-                }
-                
-                fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    responseContent.textContent = 'Request successful!\nResponse:\n' + JSON.stringify(data, null, 2);
-                })
-                .catch(error => {
-                    responseContent.textContent = 'Error: ' + error.message;
-                    console.error('Error:', error);
-                });
-            }
-        </script>
-    </body>
-    </html>
-    """, status_code=200)
-
-
 def start_server(host="localhost", port=8887):
-    """Start the server."""
+    """Start the FastAPI server."""
+    import uvicorn
     logger.info(f"Starting API Router System on {host}:{port}")
     logger.info(f"Routing requests to Codegen SDK at: {CODEGEN_API_URL}")
     logger.info(f"Supported providers: openai, anthropic, google")
-    
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        log_level="info"
-    )
+    uvicorn.run(app, host=host, port=port)
 
 
 if __name__ == "__main__":
-    start_server()
+    start_server(SERVER_HOST, SERVER_PORT)
+
