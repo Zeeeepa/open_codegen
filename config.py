@@ -34,6 +34,15 @@ class Config(BaseModel):
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60
     
+    # UI settings
+    enable_web_ui: bool = True
+    static_files_path: str = "static"
+    
+    # Request settings
+    default_max_tokens: int = 150
+    default_temperature: float = 0.7
+    request_timeout: int = 30
+    
     class Config:
         """Pydantic config"""
         env_file = ".env"
@@ -57,6 +66,11 @@ class Config(BaseModel):
             rate_limit_enabled=os.getenv("RATE_LIMIT_ENABLED", "").lower() not in ("false", "0", "no"),
             rate_limit_requests=int(os.getenv("RATE_LIMIT_REQUESTS", "60")),
             rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
+            enable_web_ui=os.getenv("ENABLE_WEB_UI", "true").lower() in ("true", "1", "yes"),
+            static_files_path=os.getenv("STATIC_FILES_PATH", "static"),
+            default_max_tokens=int(os.getenv("DEFAULT_MAX_TOKENS", "150")),
+            default_temperature=float(os.getenv("DEFAULT_TEMPERATURE", "0.7")),
+            request_timeout=int(os.getenv("REQUEST_TIMEOUT", "30")),
         )
 
 
