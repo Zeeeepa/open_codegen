@@ -97,8 +97,28 @@ async def openai_chat_completions(request: ChatRequest):
         )
         
         if result["success"]:
-            # Return the actual response content directly
-            return result["response"]
+            # Return a manually constructed response to avoid recursion issues
+            return {
+                "id": result["response"]["id"],
+                "object": result["response"]["object"],
+                "created": result["response"]["created"],
+                "model": result["response"]["model"],
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": result["response"]["choices"][0]["message"]["content"]
+                        },
+                        "finish_reason": "stop"
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                }
+            }
         else:
             raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
             
@@ -119,8 +139,24 @@ async def anthropic_completions(request: ChatRequest):
         )
         
         if result["success"]:
-            # Return the actual response content directly
-            return result["response"]
+            # Return a manually constructed response to avoid recursion issues
+            return {
+                "id": result["response"]["id"],
+                "type": "message",
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": result["response"]["content"][0]["text"]
+                    }
+                ],
+                "model": result["response"]["model"],
+                "stop_reason": "end_turn",
+                "usage": {
+                    "input_tokens": result["response"]["usage"]["input_tokens"],
+                    "output_tokens": result["response"]["usage"]["output_tokens"]
+                }
+            }
         else:
             raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
             
@@ -147,8 +183,28 @@ async def gemini_completions(request: ChatRequest):
         )
         
         if result["success"]:
-            # Return the actual response content directly
-            return result["response"]
+            # Return a manually constructed response to avoid recursion issues
+            return {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": result["response"]["candidates"][0]["content"]["parts"][0]["text"]
+                                }
+                            ],
+                            "role": "model"
+                        },
+                        "finishReason": "STOP",
+                        "index": 0
+                    }
+                ],
+                "usageMetadata": {
+                    "promptTokenCount": result["response"]["usageMetadata"]["promptTokenCount"],
+                    "candidatesTokenCount": result["response"]["usageMetadata"]["candidatesTokenCount"],
+                    "totalTokenCount": result["response"]["usageMetadata"]["totalTokenCount"]
+                }
+            }
         else:
             raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
             
@@ -174,28 +230,45 @@ async def test_provider(provider: str, request: Dict[str, Any]):
         
         result = await unified_client.send_message(message, provider_type, model)
         
-        return TestResult(
-            provider=provider,
-            model=model or f"default-{provider}-model",
-            success=result["success"],
-            response=result.get("response") if result["success"] else None,
-            error=result.get("error") if not result["success"] else None,
-            processing_time=result["processing_time"],
-            timestamp=time.time()
-        )
+        # Manually construct the response to avoid recursion issues
+        response_data = {
+            "provider": provider,
+            "model": model or f"default-{provider}-model",
+            "success": result["success"],
+            "processing_time": result["processing_time"],
+            "timestamp": time.time()
+        }
+        
+        if result["success"]:
+            if provider_type == ProviderType.OPENAI:
+                response_data["response"] = {
+                    "content": result["response"]["choices"][0]["message"]["content"]
+                }
+            elif provider_type == ProviderType.ANTHROPIC:
+                response_data["response"] = {
+                    "content": result["response"]["content"][0]["text"]
+                }
+            elif provider_type == ProviderType.GOOGLE:
+                response_data["response"] = {
+                    "content": result["response"]["candidates"][0]["content"]["parts"][0]["text"]
+                }
+        else:
+            response_data["error"] = result.get("error", "Unknown error")
+        
+        return response_data
         
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
     except Exception as e:
         logger.error(f"Test provider error: {e}")
-        return TestResult(
-            provider=provider,
-            model=model or f"default-{provider}-model",
-            success=False,
-            error=str(e),
-            processing_time=0.0,
-            timestamp=time.time()
-        )
+        return {
+            "provider": provider,
+            "model": model or f"default-{provider}-model",
+            "success": False,
+            "error": str(e),
+            "processing_time": 0.0,
+            "timestamp": time.time()
+        }
 
 
 # Web UI endpoint
