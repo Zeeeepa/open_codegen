@@ -123,12 +123,10 @@ class UnifiedClient:
         
         start_time = time.time()
         try:
-            # Use the correct method: agent.run() instead of chat_completions_create
-            task = self.agent.run(prompt)
-            # Wait for response (simplified)
-            await asyncio.sleep(1)  # In real implementation, you'd wait for task completion
+            # Use the agent.run() method to get the actual response
+            response_text = await self.agent.run(prompt)
             
-            # Create a response in OpenAI format
+            # Create a response in OpenAI format with the actual response text
             processing_time = time.time() - start_time
             response = {
                 "id": str(uuid.uuid4()),
@@ -137,7 +135,7 @@ class UnifiedClient:
                 "model": model,
                 "choices": [{
                     "index": 0,
-                    "message": {"role": "assistant", "content": f"Response from {model} via Codegen SDK"},
+                    "message": {"role": "assistant", "content": response_text},
                     "finish_reason": "stop"
                 }],
                 "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
@@ -192,12 +190,10 @@ class UnifiedClient:
         
         start_time = time.time()
         try:
-            # Use the correct method: agent.run() instead of chat_completions_create
-            task = self.agent.run(prompt)
-            # Wait for response (simplified)
-            await asyncio.sleep(1)  # In real implementation, you'd wait for task completion
+            # Use the agent.run() method to get the actual response
+            response_text = await self.agent.run(prompt)
             
-            # Create a response in Anthropic format
+            # Create a response in Anthropic format with the actual response text
             processing_time = time.time() - start_time
             response = {
                 "id": str(uuid.uuid4()),
@@ -206,7 +202,7 @@ class UnifiedClient:
                 "model": model,
                 "choices": [{
                     "index": 0,
-                    "message": {"role": "assistant", "content": f"Response from {model} via Codegen SDK"},
+                    "message": {"role": "assistant", "content": response_text},
                     "finish_reason": "stop"
                 }]
             }
@@ -247,18 +243,16 @@ class UnifiedClient:
         
         start_time = time.time()
         try:
-            # Use the correct method: agent.run() instead of chat_completions_create
-            task = self.agent.run(prompt)
-            # Wait for response (simplified)
-            await asyncio.sleep(1)  # In real implementation, you'd wait for task completion
+            # Use the agent.run() method to get the actual response
+            response_text = await self.agent.run(prompt)
             
-            # Create a response in Google/Gemini format
+            # Create a response in Google/Gemini format with the actual response text
             processing_time = time.time() - start_time
             response = {
                 "candidates": [{
                     "content": {
                         "parts": [{
-                            "text": f"Response from {model} via Codegen SDK"
+                            "text": response_text
                         }]
                     }
                 }]
