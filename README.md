@@ -1,73 +1,85 @@
-# Open Codegen - Unified API System
+# Unified API System
 
-A simple, unified system for accessing OpenAI, Anthropic, and Google APIs through a single interface.
+A consolidated API system that provides a unified interface for OpenAI, Anthropic, and Google APIs with a simple web UI.
 
 ## Features
 
-- **Unified Interface**: Single server handling all three major AI providers
-- **Simple Names**: Clean, straightforward file structure
-- **Web UI Access**: All APIs accessible via HTTP endpoints
-- **Comprehensive Testing**: 3 focused tests covering all providers
+- **Unified API Interface**: Single, consistent interface for all three providers
+- **Web UI**: Simple control panel for testing and monitoring
+- **Test Suite**: Three focused tests for each provider
+- **Simplified Codebase**: Clean, consolidated structure with minimal dependencies
 
-## Quick Start
+## Getting Started
 
-1. **Start the server:**
+### Prerequisites
+
+- Python 3.8+
+- Required packages: `fastapi`, `uvicorn`, `codegen`, `codegen-api-client`
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
    ```bash
-   python server.py
+   pip install -r requirements.txt
    ```
 
-2. **Run all tests:**
-   ```bash
-   python run_tests.py
-   ```
+### Running the Server
 
-## API Endpoints
+Use the provided start script:
 
-### OpenAI API
-- **Endpoint**: `POST /v1/chat/completions`
-- **Format**: Standard OpenAI chat completions format
+```bash
+./start_server.sh
+```
 
-### Anthropic API  
-- **Endpoint**: `POST /v1/anthropic/completions`
-- **Format**: Anthropic messages format
+This will:
+- Start the server on port 8887
+- Provide access information for the Web UI and API endpoints
+- Run the server in the background
 
-### Google API
-- **Endpoint**: `POST /v1/gemini/generateContent`
-- **Format**: Google Gemini format
+### Accessing the Web UI
 
-## Testing
+Open your browser and navigate to:
+```
+http://localhost:8887/
+```
 
-The system includes 3 simple tests:
+### API Endpoints
 
-1. **`test_openai_api.py`** - Tests OpenAI message sending/receiving
-2. **`test_anthropic_api.py`** - Tests Anthropic message sending/receiving  
-3. **`test_google_api.py`** - Tests Google message sending/receiving
+- **OpenAI**: `POST http://localhost:8887/v1/chat/completions`
+- **Anthropic**: `POST http://localhost:8887/v1/anthropic/completions`
+- **Google**: `POST http://localhost:8887/v1/gemini/generateContent`
 
-Run individual tests:
+### Running Tests
+
+To run all tests:
+```bash
+python run_tests.py
+```
+
+To run individual tests:
 ```bash
 python test_openai_api.py
 python test_anthropic_api.py
 python test_google_api.py
 ```
 
-Or run all tests at once:
+## Project Structure
+
+- `server.py` - FastAPI server with all endpoints
+- `client.py` - Unified client for all providers
+- `config.py` - Configuration management
+- `models.py` - Data models
+- `run_tests.py` - Test runner
+- `test_openai_api.py` - OpenAI API test
+- `test_anthropic_api.py` - Anthropic API test
+- `test_google_api.py` - Google API test
+- `static/` - Web UI files
+
+## Stopping the Server
+
+To stop the server:
 ```bash
-python run_tests.py
+pkill -f 'python server.py'
 ```
-
-## Architecture
-
-- **`server.py`** - Main server entry point
-- **`openai_codegen_adapter/`** - Core adapter implementation
-- **Unified routing** through Codegen SDK
-- **Simple, clean codebase** with minimal complexity
-
-## Health Check
-
-Check if the server is running:
-```bash
-curl http://localhost:8887/health
-```
-
-All endpoints are accessible via the web interface and return proper JSON responses with token usage statistics.
 
