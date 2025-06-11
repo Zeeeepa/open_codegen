@@ -312,7 +312,14 @@ async def openai_chat_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        # Add authentication headers
+        headers = {
+            "Content-Type": "application/json",
+            "X-Codegen-Org-Id": CODEGEN_ORG_ID,
+            "X-Codegen-Token": CODEGEN_TOKEN
+        }
+        
+        response = requests.post(CODEGEN_API_URL, json=codegen_request, headers=headers)
         
         # Check response status
         if response.status_code != 200:
@@ -391,7 +398,14 @@ async def anthropic_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        # Add authentication headers
+        headers = {
+            "Content-Type": "application/json",
+            "X-Codegen-Org-Id": CODEGEN_ORG_ID,
+            "X-Codegen-Token": CODEGEN_TOKEN
+        }
+        
+        response = requests.post(CODEGEN_API_URL, json=codegen_request, headers=headers)
         
         # Check response status
         if response.status_code != 200:
@@ -457,7 +471,14 @@ async def gemini_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing Google request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        # Add authentication headers
+        headers = {
+            "Content-Type": "application/json",
+            "X-Codegen-Org-Id": CODEGEN_ORG_ID,
+            "X-Codegen-Token": CODEGEN_TOKEN
+        }
+        
+        response = requests.post(CODEGEN_API_URL, json=codegen_request, headers=headers)
         
         # Check response status
         if response.status_code != 200:
@@ -545,4 +566,3 @@ def start_server(host="localhost", port=8887):
 
 if __name__ == "__main__":
     start_server(SERVER_HOST, SERVER_PORT)
-
