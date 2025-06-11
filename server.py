@@ -43,19 +43,13 @@ static_path = Path("static")
 if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Codegen SDK API endpoint (default to localhost, can be overridden with env var)
-CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "http://localhost:8000/api/generate")
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Global exception handler."""
-    logger.error(f"Global exception: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"}
-    )
-
+# Environment variables
+CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "https://codegen.sh/api/generate")
+CODEGEN_ORG_ID = os.environ.get("CODEGEN_ORG_ID", "")
+CODEGEN_TOKEN = os.environ.get("CODEGEN_TOKEN", "")
+SERVER_HOST = os.environ.get("SERVER_HOST", "localhost")
+SERVER_PORT = int(os.environ.get("SERVER_PORT", "8887"))
+TESTING_MODE = os.environ.get("TESTING_MODE", "true").lower() == "true"
 
 # Health endpoint
 @app.get("/health")
@@ -678,4 +672,3 @@ def start_server(host="localhost", port=8887):
 
 if __name__ == "__main__":
     start_server()
-
