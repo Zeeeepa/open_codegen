@@ -27,7 +27,7 @@ class ProviderType(Enum):
 class MockAgent:
     """Mock agent for testing when Codegen SDK is not available."""
     
-    async def run(self, prompt: str) -> str:
+    def run(self, prompt: str):
         """Simulate running a prompt through an LLM."""
         # Extract the message from the prompt
         message = prompt.split("Respond to this message: ")[-1]
@@ -57,25 +57,29 @@ class UnifiedClient:
         """Initialize the Codegen agent."""
         try:
             # Import here to avoid dependency issues if not available
-            from codegen import Agent
-            
-            kwargs = {}
-            if self.api_key:
-                kwargs['token'] = self.api_key
-            if self.base_url:
-                kwargs['base_url'] = self.base_url
-            
-            # If no token provided, try to get from environment or use a default
-            if 'token' not in kwargs:
-                token = os.getenv('CODEGEN_API_KEY') or os.getenv('CODEGEN_TOKEN')
-                if token:
-                    kwargs['token'] = token
-                else:
-                    # For testing purposes, use a placeholder token
-                    kwargs['token'] = 'test-token'
-            
-            self.agent = Agent(**kwargs)
-            logger.info("Codegen agent initialized successfully")
+            try:
+                from codegen import Agent
+                
+                kwargs = {}
+                if self.api_key:
+                    kwargs['token'] = self.api_key
+                if self.base_url:
+                    kwargs['base_url'] = self.base_url
+                
+                # If no token provided, try to get from environment or use a default
+                if 'token' not in kwargs:
+                    token = os.getenv('CODEGEN_API_KEY') or os.getenv('CODEGEN_TOKEN')
+                    if token:
+                        kwargs['token'] = token
+                    else:
+                        # For testing purposes, use a placeholder token
+                        kwargs['token'] = 'test-token'
+                
+                self.agent = Agent(**kwargs)
+                logger.info("Codegen agent initialized successfully")
+            except ImportError:
+                # If codegen module is not available, use mock agent
+                raise Exception("Codegen module not available")
         except Exception as e:
             logger.error(f"Failed to initialize Codegen agent: {e}")
             # For testing, create a mock agent
@@ -132,8 +136,14 @@ class UnifiedClient:
         
         start_time = time.time()
         try:
-            # Get response from agent
-            response_text = await self.agent.run(prompt)
+            # Get response from agent - handle both async and sync implementations
+            if hasattr(self.agent, 'run') and callable(self.agent.run):
+                if asyncio.iscoroutinefunction(self.agent.run):
+                    response_text = await self.agent.run(prompt)
+                else:
+                    response_text = self.agent.run(prompt)
+            else:
+                response_text = f"Mock response to: {message}"
             
             # Create a response in OpenAI format
             processing_time = time.time() - start_time
@@ -176,8 +186,14 @@ class UnifiedClient:
         
         start_time = time.time()
         try:
-            # Get response from agent
-            response_text = await self.agent.run(prompt)
+            # Get response from agent - handle both async and sync implementations
+            if hasattr(self.agent, 'run') and callable(self.agent.run):
+                if asyncio.iscoroutinefunction(self.agent.run):
+                    response_text = await self.agent.run(prompt)
+                else:
+                    response_text = self.agent.run(prompt)
+            else:
+                response_text = f"Mock response to: {message}"
             
             # Create a response in Anthropic format
             processing_time = time.time() - start_time
@@ -219,8 +235,14 @@ class UnifiedClient:
         
         start_time = time.time()
         try:
-            # Get response from agent
-            response_text = await self.agent.run(prompt)
+            # Get response from agent - handle both async and sync implementations
+            if hasattr(self.agent, 'run') and callable(self.agent.run):
+                if asyncio.iscoroutinefunction(self.agent.run):
+                    response_text = await self.agent.run(prompt)
+                else:
+                    response_text = self.agent.run(prompt)
+            else:
+                response_text = f"Mock response to: {message}"
             
             # Create a response in Google/Gemini format
             processing_time = time.time() - start_time
