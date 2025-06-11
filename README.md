@@ -1,92 +1,108 @@
-# API Router System
+# OpenAI Codegen Adapter
 
-A unified API router that allows you to use the Codegen SDK with applications designed for OpenAI, Anthropic, and Google APIs.
+A unified API server that routes OpenAI, Anthropic, and Google API requests to the Codegen SDK.
 
-## What This Does
+## Features
 
-This system acts as a proxy/router that:
+- OpenAI-compatible API endpoints
+- Anthropic Claude API compatibility
+- Google Gemini API compatibility
+- Web UI for testing and configuration
+- Direct integration with Codegen SDK
 
-1. Accepts requests in the format of OpenAI, Anthropic, or Google APIs
-2. Routes these requests to the Codegen SDK
-3. Transforms the Codegen SDK responses back into the format expected by the original API client
+## Setup
 
-## Key Features
+1. Clone this repository
+2. Create a `.env` file with your Codegen credentials:
 
-- **Zero Configuration**: No API keys required
-- **Drop-in Replacement**: Works with existing applications by just changing the API URL
-- **Multiple API Formats**: Supports OpenAI, Anthropic, and Google/Gemini API formats
-- **Web UI**: Includes a simple web interface for testing
+```
+CODEGEN_ORG_ID=your_org_id_here
+CODEGEN_TOKEN=sk-your-codegen-token-here
+```
 
-## How to Use
+3. Install dependencies:
 
-### 1. Start the Server
+```bash
+pip install -r requirements.txt
+```
+
+4. Start the server:
+
+```bash
+python server.py
+```
+
+Or use the provided script:
 
 ```bash
 ./start_server.sh
 ```
 
-The server will start on port 8887 by default.
+## Environment Variables
 
-### 2. Configure Your Applications
+| Variable | Description | Default |
+|----------|-------------|---------|
+| CODEGEN_ORG_ID | Your Codegen organization ID | (required) |
+| CODEGEN_TOKEN | Your Codegen API token | (required) |
+| SERVER_HOST | Host to bind the server to | localhost |
+| SERVER_PORT | Port to run the server on | 8887 |
+| LOG_LEVEL | Logging level | info |
 
-In your applications that use OpenAI, Anthropic, or Google APIs, simply change the API base URL to point to this server:
+## API Endpoints
 
-#### OpenAI
+### OpenAI
+
+- **POST** `/v1/chat/completions` - OpenAI chat completions API
+
+### Anthropic
+
+- **POST** `/v1/anthropic/completions` - Anthropic completions API
+
+### Google
+
+- **POST** `/v1/gemini/completions` - Google Gemini completions API
+- **POST** `/v1/gemini/generateContent` - Google Gemini generateContent API
+
+## Using with Existing Applications
+
+### OpenAI
 
 ```
 OPENAI_API_BASE=http://localhost:8887/v1
 ```
 
-#### Anthropic
+### Anthropic
 
 ```
 ANTHROPIC_API_URL=http://localhost:8887/v1
 ```
 
-#### Google/Gemini
+### Google
 
 ```
 GEMINI_API_URL=http://localhost:8887/v1
 ```
 
-### 3. That's It!
+## Testing
 
-Your applications will now send requests to this router, which will forward them to the Codegen SDK and return responses in the expected format.
-
-## Supported Endpoints
-
-- **OpenAI**: `/v1/chat/completions`
-- **Anthropic**: `/v1/anthropic/completions` and `/v1/messages`
-- **Google/Gemini**: `/v1/gemini/completions` and `/v1/gemini/generateContent`
-
-## Configuration
-
-By default, the router will send requests to the Codegen SDK at `http://localhost:8000/api/generate`. You can change this by setting the `CODEGEN_API_URL` environment variable:
+Run the included test scripts:
 
 ```bash
-export CODEGEN_API_URL=http://your-codegen-sdk-url/api/generate
-./start_server.sh
+./test_openai.py
+./test_anthropic.py
+./test_google.py
 ```
-
-## Web UI
-
-The system includes a web UI for testing, which you can access at:
-
-```
-http://localhost:8887/
-```
-
-This UI allows you to:
-- Check the server health
-- Test requests to all three API formats
-- View the responses in real-time
 
 ## How It Works
 
-1. When a request comes in to one of the API endpoints, the router extracts the prompt/message
-2. The router sends this prompt to the Codegen SDK
-3. When the Codegen SDK responds, the router formats the response to match what the original API client expects
-4. The formatted response is returned to the client
+This server acts as a proxy that:
 
-This allows applications designed to work with OpenAI, Anthropic, or Google APIs to seamlessly use the Codegen SDK instead, with no code changes required beyond changing the API URL.
+1. Receives API requests in OpenAI, Anthropic, or Google format
+2. Extracts the prompt/message content
+3. Uses the Codegen SDK to process the request
+4. Formats the response back into the appropriate API format
+
+## License
+
+MIT
 
