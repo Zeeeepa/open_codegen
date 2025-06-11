@@ -71,6 +71,19 @@ class UnifiedClient:
             self.agent = None
             logger.warning("Using mock agent for testing")
     
+    def get_supported_providers(self) -> List[str]:
+        """Get list of supported providers."""
+        return [provider.value for provider in ProviderType]
+    
+    def health_check(self) -> Dict[str, Any]:
+        """Check if the client is healthy and ready to use."""
+        return {
+            "status": "healthy" if self.agent else "unhealthy",
+            "agent_initialized": self.agent is not None,
+            "supported_providers": self.get_supported_providers(),
+            "timestamp": time.time()
+        }
+    
     async def send_message(self, message: str, provider: ProviderType, model: Optional[str] = None) -> Dict[str, Any]:
         """
         Send a message to the specified provider and get a response.

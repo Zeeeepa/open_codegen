@@ -19,6 +19,7 @@ headers = {
 # Define the data to send
 data = {
     "model": "gemini-1.5-pro",
+    "messages": [{"role": "user", "content": "This is a test message."}],
     "contents": [
         {"parts": [{"text": "This is a test message."}]}
     ],
