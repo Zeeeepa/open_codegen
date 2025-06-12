@@ -126,6 +126,15 @@ class CodegenClient:
                                 # Log available attributes for debugging
                                 available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
                                 logger.warning(f"Task {task.id} completed but no content found. Available attributes: {available_attrs}")
+                                
+                                # DEBUG: Log actual values of key attributes
+                                debug_info = {}
+                                for attr in ['result', 'output', 'response', 'content', 'message', 'text']:
+                                    if hasattr(task, attr):
+                                        value = getattr(task, attr)
+                                        debug_info[attr] = f"{type(value).__name__}: {repr(value)[:100]}"
+                                logger.warning(f"Task {task.id} attribute values: {debug_info}")
+                                
                                 yield "Task completed successfully but no response content was found. This may indicate an issue with the Codegen API response format."
                             break
                         elif status == "FAILED":
