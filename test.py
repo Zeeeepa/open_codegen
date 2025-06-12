@@ -12,7 +12,7 @@ def test_google_gemini(prompt):
     """Test Google Gemini API endpoint."""
     print("\n--- Calling Google Gemini API ---\n")
     
-    url = "http://localhost:8887/v1/gemini/generateContent"
+    url = "http://localhost:8001/v1/gemini/generateContent"
     
     payload = {
         "contents": [
@@ -53,7 +53,7 @@ def test_anthropic_claude(prompt):
     """Test Anthropic Claude API endpoint."""
     print("\n--- Calling Anthropic Claude API ---\n")
     
-    url = "http://localhost:8887/v1/messages"
+    url = "http://localhost:8001/v1/messages"
     
     payload = {
         "model": "claude-3-sonnet-20240229",
@@ -91,7 +91,7 @@ def test_openai_gpt(prompt):
     """Test OpenAI GPT API endpoint."""
     print("\n--- Calling OpenAI API ---\n")
     
-    url = "http://localhost:8887/v1/chat/completions"
+    url = "http://localhost:8001/v1/chat/completions"
     
     payload = {
         "model": "gpt-3.5-turbo",
@@ -183,4 +183,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
