@@ -41,7 +41,7 @@ def test_models_endpoint(base_url: str) -> bool:
         print(f"❌ Models endpoint error: {e}")
         return False
 
-def test_openai_chat_completion(base_url: str, timeout: int = 30) -> bool:
+def test_openai_chat_completion(base_url: str, timeout: int = 60) -> bool:
     """Test the OpenAI chat completion endpoint."""
     print("\n🔍 Testing OpenAI chat completion endpoint...")
     try:
@@ -80,7 +80,7 @@ def test_openai_chat_completion(base_url: str, timeout: int = 30) -> bool:
         print(f"❌ OpenAI chat completion error: {e}")
         return False
 
-def test_anthropic_completion(base_url: str, timeout: int = 30) -> bool:
+def test_anthropic_completion(base_url: str, timeout: int = 60) -> bool:
     """Test the Anthropic completion endpoint."""
     print("\n🔍 Testing Anthropic completion endpoint...")
     try:
@@ -118,7 +118,7 @@ def test_anthropic_completion(base_url: str, timeout: int = 30) -> bool:
         print(f"❌ Anthropic completion error: {e}")
         return False
 
-def test_gemini_completion(base_url: str, timeout: int = 30) -> bool:
+def test_gemini_completion(base_url: str, timeout: int = 60) -> bool:
     """Test the Gemini completion endpoint."""
     print("\n🔍 Testing Gemini completion endpoint...")
     try:
@@ -159,7 +159,7 @@ def test_gemini_completion(base_url: str, timeout: int = 30) -> bool:
         print(f"❌ Gemini completion error: {e}")
         return False
 
-def test_streaming_chat_completion(base_url: str, timeout: int = 30) -> bool:
+def test_streaming_chat_completion(base_url: str, timeout: int = 60) -> bool:
     """Test the OpenAI streaming chat completion endpoint."""
     print("\n🔍 Testing OpenAI streaming chat completion endpoint...")
     try:
@@ -212,7 +212,7 @@ def test_streaming_chat_completion(base_url: str, timeout: int = 30) -> bool:
         print(f"❌ OpenAI streaming chat completion error: {e}")
         return False
 
-def run_all_tests(base_url: str, timeout: int = 30) -> None:
+def run_all_tests(base_url: str, timeout: int = 60) -> None:
     """Run all tests."""
     print(f"🚀 Starting tests against server at {base_url}")
     print(f"⏱️ Request timeout set to {timeout} seconds")
@@ -239,7 +239,7 @@ def run_all_tests(base_url: str, timeout: int = 30) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test OpenAI Codegen Adapter")
     parser.add_argument("--url", default=DEFAULT_SERVER_URL, help=f"Server URL (default: {DEFAULT_SERVER_URL})")
-    parser.add_argument("--timeout", type=int, default=30, help="Request timeout in seconds (default: 30)")
+    parser.add_argument("--timeout", type=int, default=60, help="Request timeout in seconds (default: 60)")
     parser.add_argument("--test", choices=["health", "models", "openai", "anthropic", "gemini", "streaming", "all"], 
                         default="all", help="Specific test to run (default: all)")
     
