@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Test script for Anthropic API.
-This script sends a message to the Anthropic API and receives a response.
+Test script for OpenAI API.
+This script sends a message to the OpenAI API and receives a response.
 """
 
 import requests
@@ -15,17 +15,17 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 RESET = "\033[0m"
 
-# Base URL for the Anthropic API
+# Base URL for the OpenAI API
 # This can be changed to point to the router program
-BASE_URL = os.environ.get("ANTHROPIC_API_URL", "http://localhost:8887/v1")
-API_URL = f"{BASE_URL}/anthropic/completions"
+BASE_URL = os.environ.get("OPENAI_API_BASE", "http://localhost:8887/v1")
+API_URL = f"{BASE_URL}/chat/completions"
 
 # Test message
-TEST_MESSAGE = "Hello, this is a test message from Anthropic API test."
+TEST_MESSAGE = "Hello, this is a test message from OpenAI API test."
 
-def test_anthropic_api():
-    """Send a message to the Anthropic API and receive a response."""
-    print(f"{YELLOW}🧪 Testing Anthropic API...{RESET}")
+def test_openai_api():
+    """Send a message to the OpenAI API and receive a response."""
+    print(f"{YELLOW}🧪 Testing OpenAI API...{RESET}")
     
     # Check if server is running
     try:
@@ -45,7 +45,7 @@ def test_anthropic_api():
     
     # Prepare request payload
     payload = {
-        "model": "claude-3-sonnet-20240229",
+        "model": "gpt-3.5-turbo",
         "messages": [
             {"role": "user", "content": TEST_MESSAGE}
         ]
@@ -76,12 +76,12 @@ def test_anthropic_api():
         
         # Extract content if available
         content = ""
-        if "content" in data and isinstance(data["content"], list) and len(data["content"]) > 0:
-            content_item = data["content"][0]
-            if "text" in content_item:
-                content = content_item["text"]
+        if "choices" in data and len(data["choices"]) > 0:
+            choice = data["choices"][0]
+            if "message" in choice and "content" in choice["message"]:
+                content = choice["message"]["content"]
         
-        print(f"{GREEN}✅ Anthropic API test passed!{RESET}")
+        print(f"{GREEN}✅ OpenAI API test passed!{RESET}")
         print(f"{YELLOW}Response content:{RESET} {content}")
         return True
         
@@ -96,10 +96,10 @@ def test_anthropic_api():
         return False
 
 if __name__ == "__main__":
-    print(f"{YELLOW}🔍 Using Anthropic API base URL: {BASE_URL}{RESET}")
-    print(f"{YELLOW}💡 Set ANTHROPIC_API_URL environment variable to change this.{RESET}")
+    print(f"{YELLOW}🔍 Using OpenAI API base URL: {BASE_URL}{RESET}")
+    print(f"{YELLOW}💡 Set OPENAI_API_BASE environment variable to change this.{RESET}")
     print()
     
-    success = test_anthropic_api()
+    success = test_openai_api()
     sys.exit(0 if success else 1)
 

@@ -15,7 +15,7 @@ from .response_transformer import (
     create_chat_stream_chunk, format_sse_chunk, format_sse_done,
     clean_content, estimate_tokens
 )
-from .codegen_client import CodegenClient
+from .client import CodegenClient
 
 logger = logging.getLogger(__name__)
 

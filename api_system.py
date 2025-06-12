@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 API Router System for OpenAI, Anthropic, and Google APIs.
 Routes requests from these APIs to the Codegen SDK.
@@ -46,9 +45,6 @@ if static_path.exists():
 # Codegen SDK API endpoint (default to localhost, can be overridden with env var)
 CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "http://localhost:8000/api/generate")
 
-# Flag to enable mock responses when Codegen SDK is unavailable
-ENABLE_MOCK_RESPONSES = os.environ.get("ENABLE_MOCK_RESPONSES", "true").lower() == "true"
-
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -64,21 +60,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    # Try to connect to Codegen SDK
-    codegen_available = False
-    try:
-        response = requests.get(CODEGEN_API_URL.replace("/api/generate", "/health"), timeout=2)
-        codegen_available = response.status_code == 200
-    except:
-        pass
-    
     return {
         "status": "healthy",
         "timestamp": time.time(),
         "providers": ["openai", "anthropic", "google"],
-        "routing_to": CODEGEN_API_URL,
-        "codegen_available": codegen_available,
-        "mock_responses_enabled": ENABLE_MOCK_RESPONSES
+        "routing_to": CODEGEN_API_URL
     }
 
 
@@ -115,34 +101,21 @@ async def openai_chat_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        try:
-            response = requests.post(CODEGEN_API_URL, json=codegen_request, timeout=10)
-            
-            # Check response status
-            if response.status_code != 200:
-                logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
-                if ENABLE_MOCK_RESPONSES:
-                    logger.warning("Using mock response due to Codegen SDK error")
-                    generated_text = f"Mock response (Codegen SDK error): {user_message}"
-                else:
-                    return JSONResponse(
-                        status_code=response.status_code,
-                        content={"error": f"Codegen SDK error: {response.text}"}
-                    )
-            else:
-                # Parse Codegen SDK response
-                codegen_response = response.json()
-                
-                # Extract the generated text from Codegen response
-                generated_text = codegen_response.get("response", "No response from Codegen SDK")
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
         
-        except requests.RequestException as e:
-            logger.error(f"Error connecting to Codegen SDK: {e}")
-            if ENABLE_MOCK_RESPONSES:
-                logger.warning("Using mock response due to connection error")
-                generated_text = f"Mock response (connection error): {user_message}"
-            else:
-                raise HTTPException(status_code=502, detail=f"Error connecting to Codegen SDK: {str(e)}")
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in OpenAI format
         openai_response = {
@@ -207,34 +180,21 @@ async def anthropic_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        try:
-            response = requests.post(CODEGEN_API_URL, json=codegen_request, timeout=10)
-            
-            # Check response status
-            if response.status_code != 200:
-                logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
-                if ENABLE_MOCK_RESPONSES:
-                    logger.warning("Using mock response due to Codegen SDK error")
-                    generated_text = f"Mock response (Codegen SDK error): {user_message}"
-                else:
-                    return JSONResponse(
-                        status_code=response.status_code,
-                        content={"error": f"Codegen SDK error: {response.text}"}
-                    )
-            else:
-                # Parse Codegen SDK response
-                codegen_response = response.json()
-                
-                # Extract the generated text from Codegen response
-                generated_text = codegen_response.get("response", "No response from Codegen SDK")
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
         
-        except requests.RequestException as e:
-            logger.error(f"Error connecting to Codegen SDK: {e}")
-            if ENABLE_MOCK_RESPONSES:
-                logger.warning("Using mock response due to connection error")
-                generated_text = f"Mock response (connection error): {user_message}"
-            else:
-                raise HTTPException(status_code=502, detail=f"Error connecting to Codegen SDK: {str(e)}")
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in Anthropic format
         anthropic_response = {
@@ -286,34 +246,21 @@ async def gemini_completions(request: Request):
         # Send request to Codegen SDK
         logger.info(f"Routing Google request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        try:
-            response = requests.post(CODEGEN_API_URL, json=codegen_request, timeout=10)
-            
-            # Check response status
-            if response.status_code != 200:
-                logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
-                if ENABLE_MOCK_RESPONSES:
-                    logger.warning("Using mock response due to Codegen SDK error")
-                    generated_text = f"Mock response (Codegen SDK error): {user_message}"
-                else:
-                    return JSONResponse(
-                        status_code=response.status_code,
-                        content={"error": f"Codegen SDK error: {response.text}"}
-                    )
-            else:
-                # Parse Codegen SDK response
-                codegen_response = response.json()
-                
-                # Extract the generated text from Codegen response
-                generated_text = codegen_response.get("response", "No response from Codegen SDK")
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
         
-        except requests.RequestException as e:
-            logger.error(f"Error connecting to Codegen SDK: {e}")
-            if ENABLE_MOCK_RESPONSES:
-                logger.warning("Using mock response due to connection error")
-                generated_text = f"Mock response (connection error): {user_message}"
-            else:
-                raise HTTPException(status_code=502, detail=f"Error connecting to Codegen SDK: {str(e)}")
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in Google/Gemini format
         gemini_response = {
@@ -527,14 +474,6 @@ async def web_ui():
                 margin: 15px 0;
                 border-radius: 0 5px 5px 0;
             }
-            .warning {
-                background-color: #fff3cd;
-                border-left: 4px solid #ffc107;
-                padding: 10px 15px;
-                margin: 15px 0;
-                border-radius: 0 5px 5px 0;
-                color: #856404;
-            }
         </style>
     </head>
     <body>
@@ -555,11 +494,6 @@ async def web_ui():
                 <div class="config-info">
                     <p><strong>Routing to:</strong> <span id="routing-to">Checking...</span></p>
                     <p>To change the Codegen SDK endpoint, set the <code>CODEGEN_API_URL</code> environment variable.</p>
-                </div>
-                
-                <div id="codegen-status" class="warning hidden">
-                    <p><strong>⚠️ Warning:</strong> Codegen SDK is not available. Mock responses are <span id="mock-status">enabled</span>.</p>
-                    <p>To disable mock responses, set <code>ENABLE_MOCK_RESPONSES=false</code> environment variable.</p>
                 </div>
             </div>
             
@@ -640,8 +574,6 @@ async def web_ui():
                     .then(data => {
                         const statusElement = document.getElementById('health-status');
                         const routingElement = document.getElementById('routing-to');
-                        const codegenStatusElement = document.getElementById('codegen-status');
-                        const mockStatusElement = document.getElementById('mock-status');
                         
                         if (data.status === 'healthy') {
                             statusElement.className = 'status healthy';
@@ -649,14 +581,6 @@ async def web_ui():
                             
                             if (data.routing_to) {
                                 routingElement.textContent = data.routing_to;
-                            }
-                            
-                            // Check Codegen SDK availability
-                            if (data.codegen_available === false) {
-                                codegenStatusElement.classList.remove('hidden');
-                                mockStatusElement.textContent = data.mock_responses_enabled ? 'enabled' : 'disabled';
-                            } else {
-                                codegenStatusElement.classList.add('hidden');
                             }
                         } else {
                             statusElement.className = 'status unhealthy';
@@ -742,7 +666,6 @@ def start_server(host="localhost", port=8887):
     logger.info(f"Starting API Router System on {host}:{port}")
     logger.info(f"Routing requests to Codegen SDK at: {CODEGEN_API_URL}")
     logger.info(f"Supported providers: openai, anthropic, google")
-    logger.info(f"Mock responses: {'enabled' if ENABLE_MOCK_RESPONSES else 'disabled'}")
     
     uvicorn.run(
         app,

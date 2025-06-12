@@ -8,7 +8,7 @@ import asyncio
 import logging
 from typing import AsyncGenerator
 from fastapi.responses import StreamingResponse
-from .codegen_client import CodegenClient
+from .client import CodegenClient
 from .gemini_transformer import create_gemini_stream_chunk
 from .response_transformer import estimate_tokens
 
