@@ -78,6 +78,275 @@ async def health_check():
     }
 
 
+# OpenAI endpoint
+@app.post("/v1/chat/completions")
+async def openai_chat_completions(request: Request):
+    """OpenAI chat completions endpoint - routes to Codegen SDK."""
+    try:
+        # Parse request body
+        body = await request.json()
+        
+        # Extract message content
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Use the Codegen SDK to run the agent
+        logger.info(f"Routing OpenAI request to Codegen SDK: {user_message}")
+        
+        try:
+            # Run the agent with the prompt
+            task = agent.run(prompt=user_message)
+            
+            # Wait for the task to complete (with timeout)
+            start_time = time.time()
+            timeout = 30  # 30 seconds timeout
+            
+            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
+                time.sleep(1)
+                task.refresh()
+            
+            if task.status == "completed":
+                generated_text = task.result
+                logger.info(f"Codegen SDK task completed successfully")
+            else:
+                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
+                generated_text = f"Error: Task {task.status}. Please try again later."
+        
+        except Exception as e:
+            logger.error(f"Error running Codegen agent: {e}")
+            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
+        
+        # Format response in OpenAI format
+        openai_response = {
+            "id": f"chatcmpl-{int(time.time())}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": body.get("model", "gpt-3.5-turbo"),
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": generated_text
+                    },
+                    "finish_reason": "stop"
+                }
+            ],
+            "usage": {
+                "prompt_tokens": len(user_message.split()),
+                "completion_tokens": len(generated_text.split()),
+                "total_tokens": len(user_message.split()) + len(generated_text.split())
+            }
+        }
+        
+        return openai_response
+        
+    except Exception as e:
+        logger.error(f"OpenAI chat completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Anthropic endpoint
+@app.post("/v1/anthropic/completions")
+async def anthropic_completions(request: Request):
+    """Anthropic completions endpoint - routes to Codegen SDK."""
+    try:
+        # Parse request body
+        body = await request.json()
+        
+        # Extract message
+        messages = body.get("messages", [])
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        # Get the last user message
+        user_message = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Use the Codegen SDK to run the agent
+        logger.info(f"Routing Anthropic request to Codegen SDK: {user_message}")
+        
+        try:
+            # Run the agent with the prompt
+            task = agent.run(prompt=user_message)
+            
+            # Wait for the task to complete (with timeout)
+            start_time = time.time()
+            timeout = 30  # 30 seconds timeout
+            
+            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
+                time.sleep(1)
+                task.refresh()
+            
+            if task.status == "completed":
+                generated_text = task.result
+                logger.info(f"Codegen SDK task completed successfully")
+            else:
+                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
+                generated_text = f"Error: Task {task.status}. Please try again later."
+        
+        except Exception as e:
+            logger.error(f"Error running Codegen agent: {e}")
+            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
+        
+        # Format response in Anthropic format
+        anthropic_response = {
+            "id": f"msg_{int(time.time())}",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": generated_text
+                }
+            ],
+            "model": body.get("model", "claude-3-sonnet-20240229"),
+            "stop_reason": "end_turn",
+            "usage": {
+                "input_tokens": len(user_message.split()),
+                "output_tokens": len(generated_text.split())
+            }
+        }
+        
+        return anthropic_response
+        
+    except Exception as e:
+        logger.error(f"Anthropic completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Google/Gemini endpoint
+@app.post("/v1/gemini/completions")
+async def gemini_completions(request: Request):
+    """Google Gemini completions endpoint - routes to Codegen SDK."""
+    try:
+        # Parse request body
+        body = await request.json()
+        
+        # Extract message from different possible formats
+        user_message = extract_user_message(body)
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        # Use the Codegen SDK to run the agent
+        logger.info(f"Routing Google request to Codegen SDK: {user_message}")
+        
+        try:
+            # Run the agent with the prompt
+            task = agent.run(prompt=user_message)
+            
+            # Wait for the task to complete (with timeout)
+            start_time = time.time()
+            timeout = 30  # 30 seconds timeout
+            
+            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
+                time.sleep(1)
+                task.refresh()
+            
+            if task.status == "completed":
+                generated_text = task.result
+                logger.info(f"Codegen SDK task completed successfully")
+            else:
+                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
+                generated_text = f"Error: Task {task.status}. Please try again later."
+        
+        except Exception as e:
+            logger.error(f"Error running Codegen agent: {e}")
+            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
+        
+        # Format response in Google/Gemini format
+        gemini_response = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {
+                                "text": generated_text
+                            }
+                        ],
+                        "role": "model"
+                    },
+                    "finishReason": "STOP",
+                    "index": 0
+                }
+            ],
+            "usageMetadata": {
+                "promptTokenCount": len(user_message.split()),
+                "candidatesTokenCount": len(generated_text.split()),
+                "totalTokenCount": len(user_message.split()) + len(generated_text.split())
+            }
+        }
+        
+        return gemini_response
+        
+    except Exception as e:
+        logger.error(f"Gemini completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Alternative Gemini endpoint
+@app.post("/v1/gemini/generateContent")
+async def gemini_generate_content(request: Request):
+    """Alternative Gemini endpoint - routes to the main Gemini endpoint."""
+    return await gemini_completions(request)
+
+
+# Alternative Anthropic endpoint
+@app.post("/v1/anthropic/messages")
+async def anthropic_messages(request: Request):
+    """Alternative Anthropic endpoint - routes to the main Anthropic endpoint."""
+    return await anthropic_completions(request)
+
+
+def extract_user_message(body):
+    """Extract user message from different possible formats."""
+    user_message = None
+    
+    # Try messages format first (like OpenAI)
+    messages = body.get("messages", [])
+    if messages:
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_message = msg.get("content")
+                break
+    
+    # If not found, try contents format (like Gemini)
+    if not user_message:
+        contents = body.get("contents", [])
+        for content in contents:
+            parts = content.get("parts", [])
+            for part in parts:
+                if "text" in part:
+                    user_message = part["text"]
+                    break
+            if user_message:
+                break
+    
+    # If still not found, try prompt field (fallback)
+    if not user_message:
+        user_message = body.get("prompt", "")
+    
+    return user_message
+
+
 # Root endpoint - HTML UI
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -403,271 +672,6 @@ async def root():
     """
 
 
-# OpenAI endpoint
-@app.post("/v1/chat/completions")
-async def openai_chat_completions(request: Request):
-    """OpenAI chat completions endpoint - routes to Codegen SDK."""
-    try:
-        # Parse request body
-        body = await request.json()
-        
-        # Extract message content
-        messages = body.get("messages", [])
-        if not messages:
-            raise HTTPException(status_code=400, detail="No messages provided")
-        
-        # Get the last user message
-        user_message = None
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                user_message = msg.get("content")
-                break
-        
-        if not user_message:
-            raise HTTPException(status_code=400, detail="No user message found")
-        
-        # Use the Codegen SDK to run the agent
-        logger.info(f"Routing OpenAI request to Codegen SDK: {user_message}")
-        
-        try:
-            # Run the agent with the prompt
-            task = agent.run(prompt=user_message)
-            
-            # Wait for the task to complete (with timeout)
-            start_time = time.time()
-            timeout = 30  # 30 seconds timeout
-            
-            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
-                time.sleep(1)
-                task.refresh()
-            
-            if task.status == "completed":
-                generated_text = task.result
-                logger.info(f"Codegen SDK task completed successfully")
-            else:
-                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
-                generated_text = f"Error: Task {task.status}. Please try again later."
-        
-        except Exception as e:
-            logger.error(f"Error running Codegen agent: {e}")
-            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
-        
-        # Format response in OpenAI format
-        openai_response = {
-            "id": f"chatcmpl-{int(time.time())}",
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": body.get("model", "gpt-3.5-turbo"),
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": generated_text
-                    },
-                    "finish_reason": "stop"
-                }
-            ],
-            "usage": {
-                "prompt_tokens": len(user_message.split()),
-                "completion_tokens": len(generated_text.split()),
-                "total_tokens": len(user_message.split()) + len(generated_text.split())
-            }
-        }
-        
-        return openai_response
-        
-    except Exception as e:
-        logger.error(f"OpenAI chat completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Anthropic endpoint
-@app.post("/v1/anthropic/completions")
-async def anthropic_completions(request: Request):
-    """Anthropic completions endpoint - routes to Codegen SDK."""
-    try:
-        # Parse request body
-        body = await request.json()
-        
-        # Extract message
-        messages = body.get("messages", [])
-        if not messages:
-            raise HTTPException(status_code=400, detail="No messages provided")
-        
-        # Get the last user message
-        user_message = None
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                user_message = msg.get("content")
-                break
-        
-        if not user_message:
-            raise HTTPException(status_code=400, detail="No user message found")
-        
-        # Use the Codegen SDK to run the agent
-        logger.info(f"Routing Anthropic request to Codegen SDK: {user_message}")
-        
-        try:
-            # Run the agent with the prompt
-            task = agent.run(prompt=user_message)
-            
-            # Wait for the task to complete (with timeout)
-            start_time = time.time()
-            timeout = 30  # 30 seconds timeout
-            
-            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
-                time.sleep(1)
-                task.refresh()
-            
-            if task.status == "completed":
-                generated_text = task.result
-                logger.info(f"Codegen SDK task completed successfully")
-            else:
-                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
-                generated_text = f"Error: Task {task.status}. Please try again later."
-        
-        except Exception as e:
-            logger.error(f"Error running Codegen agent: {e}")
-            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
-        
-        # Format response in Anthropic format
-        anthropic_response = {
-            "id": f"msg_{int(time.time())}",
-            "type": "message",
-            "role": "assistant",
-            "content": [
-                {
-                    "type": "text",
-                    "text": generated_text
-                }
-            ],
-            "model": body.get("model", "claude-3-sonnet-20240229"),
-            "stop_reason": "end_turn",
-            "usage": {
-                "input_tokens": len(user_message.split()),
-                "output_tokens": len(generated_text.split())
-            }
-        }
-        
-        return anthropic_response
-        
-    except Exception as e:
-        logger.error(f"Anthropic completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Google/Gemini endpoint
-@app.post("/v1/gemini/completions")
-async def gemini_completions(request: Request):
-    """Google Gemini completions endpoint - routes to Codegen SDK."""
-    try:
-        # Parse request body
-        body = await request.json()
-        
-        # Extract message from different possible formats
-        user_message = extract_user_message(body)
-        
-        if not user_message:
-            raise HTTPException(status_code=400, detail="No user message found")
-        
-        # Use the Codegen SDK to run the agent
-        logger.info(f"Routing Google request to Codegen SDK: {user_message}")
-        
-        try:
-            # Run the agent with the prompt
-            task = agent.run(prompt=user_message)
-            
-            # Wait for the task to complete (with timeout)
-            start_time = time.time()
-            timeout = 30  # 30 seconds timeout
-            
-            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
-                time.sleep(1)
-                task.refresh()
-            
-            if task.status == "completed":
-                generated_text = task.result
-                logger.info(f"Codegen SDK task completed successfully")
-            else:
-                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
-                generated_text = f"Error: Task {task.status}. Please try again later."
-        
-        except Exception as e:
-            logger.error(f"Error running Codegen agent: {e}")
-            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
-        
-        # Format response in Google/Gemini format
-        gemini_response = {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {
-                                "text": generated_text
-                            }
-                        ],
-                        "role": "model"
-                    },
-                    "finishReason": "STOP",
-                    "index": 0
-                }
-            ],
-            "usageMetadata": {
-                "promptTokenCount": len(user_message.split()),
-                "candidatesTokenCount": len(generated_text.split()),
-                "totalTokenCount": len(user_message.split()) + len(generated_text.split())
-            }
-        }
-        
-        return gemini_response
-        
-    except Exception as e:
-        logger.error(f"Gemini completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Alternative Gemini endpoint
-@app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: Request):
-    """Alternative Gemini endpoint - routes to the main Gemini endpoint."""
-    return await gemini_completions(request)
-
-
-# Alternative Anthropic endpoint
-@app.post("/v1/anthropic/messages")
-async def anthropic_messages(request: Request):
-    """Alternative Anthropic endpoint - routes to the main Anthropic endpoint."""
-    return await anthropic_completions(request)
-
-
-def extract_user_message(body):
-    """Extract user message from different possible formats."""
-    user_message = None
-    
-    # Try messages format first (like OpenAI)
-    messages = body.get("messages", [])
-    if messages:
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                user_message = msg.get("content")
-                break
-    
-    # If not found, try contents format (like Gemini)
-    if not user_message:
-        contents = body.get("contents", [])
-        for content in contents:
-            parts = content.get("parts", [])
-            for part in parts:
-                if "text" in part:
-                    user_message = part["text"]
-                    break
-            if user_message:
-                break
-    
-    return user_message
-
-
 def start_server(host="localhost", port=8887):
     """Start the server."""
     import uvicorn
@@ -679,3 +683,4 @@ def start_server(host="localhost", port=8887):
 
 if __name__ == "__main__":
     start_server()
+
