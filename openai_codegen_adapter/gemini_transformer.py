@@ -1,111 +1,126 @@
 """
-Request and response transformers for Google Gemini API compatibility.
-Converts between Gemini API format and Codegen SDK.
+Gemini-specific transformers for request and response handling.
 """
 
-from typing import List, Dict, Any
-from .models import (
-    GeminiRequest, GeminiResponse, GeminiContent, GeminiPart, 
-    GeminiCandidate, GeminiUsageMetadata
-)
-from .response_transformer import estimate_tokens, clean_content
+from typing import Dict, Any, List, Optional
+from .models import GeminiContent, GeminiCandidate, GeminiUsageMetadata, GeminiResponse
 
 
-def gemini_request_to_prompt(request: GeminiRequest) -> str:
+def gemini_request_to_prompt(request) -> str:
     """
-    Enhanced conversion of Gemini request to prompt with full multimodal support.
-    Handles text, images, video, audio, and function calling according to Vertex AI spec.
+    Convert Gemini request to prompt string.
+    
+    Args:
+        request: Gemini API request
+        
+    Returns:
+        Prompt string for Codegen
     """
-    prompt_parts = []
-    
-    # Add system instruction if provided
-    if request.systemInstruction and request.systemInstruction.parts:
-        system_parts = []
-        for part in request.systemInstruction.parts:
-            if part.text:
-                system_parts.append(part.text)
-        if system_parts:
-            prompt_parts.append(f"System: {' '.join(system_parts)}")
-    
-    # Process contents with full multimodal support
-    for content in request.contents:
-        role = content.role or "user"
-        role_name = "User" if role == "user" else "Model"
+    # Try to extract from messages
+    if hasattr(request, 'messages') and request.messages:
+        prompt_parts = []
         
-        content_parts = []
-        for part in content.parts:
-            if part.text:
-                content_parts.append(part.text)
-            elif part.inlineData:
-                # Handle inline media data
-                mime_type = part.inlineData.get("mimeType", "unknown")
-                content_parts.append(f"[{mime_type} content provided]")
-            elif part.fileData:
-                # Handle file data
-                file_uri = part.fileData.get("fileUri", "unknown")
-                content_parts.append(f"[File: {file_uri}]")
-            elif part.functionCall:
-                # Handle function calls
-                func_name = part.functionCall.get("name", "unknown")
-                content_parts.append(f"[Function call: {func_name}]")
-            elif part.functionResponse:
-                # Handle function responses
-                func_name = part.functionResponse.get("name", "unknown")
-                content_parts.append(f"[Function response: {func_name}]")
+        for message in request.messages:
+            role = message.role
+            content = message.content
+            
+            if role == "user":
+                prompt_parts.append(f"Human: {content}")
+            elif role == "model" or role == "assistant":
+                prompt_parts.append(f"Assistant: {content}")
         
-        if content_parts:
-            prompt_parts.append(f"{role_name}: {' '.join(content_parts)}")
-    
-    # Add generation config as context
-    if request.generationConfig:
-        config_parts = []
-        if request.generationConfig.temperature is not None:
-            config_parts.append(f"Temperature: {request.generationConfig.temperature}")
-        if request.generationConfig.maxOutputTokens is not None:
-            config_parts.append(f"Max tokens: {request.generationConfig.maxOutputTokens}")
-        if request.generationConfig.stopSequences:
-            config_parts.append(f"Stop sequences: {', '.join(request.generationConfig.stopSequences)}")
+        # Add a prompt for the assistant to respond if the last message is from user
+        if request.messages and request.messages[-1].role == "user":
+            prompt_parts.append("Assistant:")
         
-        if config_parts:
-            prompt_parts.append(f"[{', '.join(config_parts)}]")
+        return "\n\n".join(prompt_parts)
     
-    # Handle legacy prompt parameter
-    if request.prompt:
-        prompt_parts.append(f"User: {request.prompt}")
+    # Try to extract from contents
+    if hasattr(request, 'contents') and request.contents:
+        prompt_parts = []
+        
+        for content in request.contents:
+            role = content.role if hasattr(content, 'role') else None
+            parts = content.parts if hasattr(content, 'parts') else []
+            
+            text_parts = []
+            for part in parts:
+                if 'text' in part:
+                    text_parts.append(part['text'])
+            
+            combined_text = " ".join(text_parts)
+            
+            if role == "user":
+                prompt_parts.append(f"Human: {combined_text}")
+            elif role == "model" or role == "assistant":
+                prompt_parts.append(f"Assistant: {combined_text}")
+            else:
+                prompt_parts.append(combined_text)
+        
+        return "\n\n".join(prompt_parts)
     
-    return "\n\n".join(prompt_parts)
+    # Fallback to direct prompt if available
+    return getattr(request, 'prompt', "")
+
+
+def extract_gemini_generation_params(request) -> Dict[str, Any]:
+    """
+    Extract generation parameters from Gemini request.
+    
+    Args:
+        request: Gemini API request
+        
+    Returns:
+        Dictionary of generation parameters
+    """
+    params = {}
+    
+    if hasattr(request, 'temperature') and request.temperature is not None:
+        params['temperature'] = request.temperature
+    
+    if hasattr(request, 'max_output_tokens') and request.max_output_tokens is not None:
+        params['max_tokens'] = request.max_output_tokens
+    
+    if hasattr(request, 'top_p') and request.top_p is not None:
+        params['top_p'] = request.top_p
+    
+    if hasattr(request, 'top_k') and request.top_k is not None:
+        params['top_k'] = request.top_k
+    
+    if hasattr(request, 'stream') and request.stream is not None:
+        params['stream'] = request.stream
+    
+    return params
 
 
 def create_gemini_response(
     content: str,
-    model: str = "gemini-1.5-pro",
-    prompt_tokens: int = 0,
-    completion_tokens: int = 0,
-    finish_reason: str = "STOP"
+    prompt_tokens: int,
+    completion_tokens: int
 ) -> GeminiResponse:
     """
-    Enhanced creation of Gemini response matching official Vertex AI format.
+    Create a Gemini-compatible response.
+    
+    Args:
+        content: Generated content
+        prompt_tokens: Number of prompt tokens
+        completion_tokens: Number of completion tokens
+        
+    Returns:
+        Gemini-compatible response
     """
-    from .models import (
-        GeminiResponse, GeminiCandidate, GeminiContent, GeminiPart, 
-        GeminiUsageMetadata
-    )
-    
-    # Create response content
-    response_content = GeminiContent(
+    gemini_content = GeminiContent(
         role="model",
-        parts=[GeminiPart(text=content)]
+        parts=[{"text": content}]
     )
     
-    # Create candidate
     candidate = GeminiCandidate(
-        content=response_content,
-        finishReason=finish_reason,
+        content=gemini_content,
+        finishReason="STOP",
         index=0
     )
     
-    # Create usage metadata
-    usage = GeminiUsageMetadata(
+    usage_metadata = GeminiUsageMetadata(
         promptTokenCount=prompt_tokens,
         candidatesTokenCount=completion_tokens,
         totalTokenCount=prompt_tokens + completion_tokens
@@ -113,109 +128,6 @@ def create_gemini_response(
     
     return GeminiResponse(
         candidates=[candidate],
-        usageMetadata=usage,
-        modelVersion=model
+        usageMetadata=usage_metadata
     )
 
-
-def extract_gemini_generation_params(request: GeminiRequest) -> dict:
-    """
-    Enhanced extraction of generation parameters with full Vertex AI support.
-    """
-    params = {
-        "model": request.model or "gemini-1.5-pro"
-    }
-    
-    if request.generationConfig:
-        config = request.generationConfig
-        
-        if config.temperature is not None:
-            params["temperature"] = config.temperature
-        
-        if config.topP is not None:
-            params["top_p"] = config.topP
-        
-        if config.topK is not None:
-            params["top_k"] = config.topK
-        
-        if config.maxOutputTokens is not None:
-            params["max_tokens"] = config.maxOutputTokens
-        
-        if config.stopSequences:
-            params["stop_sequences"] = config.stopSequences
-        
-        if config.candidateCount is not None:
-            params["candidate_count"] = config.candidateCount
-        
-        if config.responseMimeType:
-            params["response_mime_type"] = config.responseMimeType
-    
-    # Handle safety settings
-    if request.safetySettings:
-        params["safety_settings"] = [
-            {"category": setting.category, "threshold": setting.threshold}
-            for setting in request.safetySettings
-        ]
-    
-    # Handle tools and function calling
-    if request.tools:
-        params["tools"] = [tool.dict() for tool in request.tools]
-    
-    if request.toolConfig:
-        params["tool_config"] = request.toolConfig.dict()
-    
-    # Handle caching
-    if request.cachedContent:
-        params["cached_content"] = request.cachedContent
-    
-    # Handle labels/metadata
-    if request.labels:
-        params["labels"] = request.labels
-    
-    return params
-
-
-def create_gemini_stream_chunk(
-    content: str,
-    is_final: bool = False,
-    prompt_tokens: int = 0,
-    completion_tokens: int = 0
-) -> Dict[str, Any]:
-    """
-    Create a Gemini streaming chunk.
-    
-    Args:
-        content: Content for the chunk
-        is_final: Whether this is the final chunk
-        prompt_tokens: Number of input tokens
-        completion_tokens: Number of output tokens
-        
-    Returns:
-        Dict[str, Any]: Streaming chunk data
-    """
-    # Create the response content
-    response_content = GeminiContent(
-        role="model",
-        parts=[GeminiPart(text=content)]
-    )
-    
-    # Create the candidate
-    candidate = GeminiCandidate(
-        content=response_content,
-        finishReason="STOP" if is_final else None,
-        index=0
-    )
-    
-    chunk = {
-        "candidates": [candidate.dict()]
-    }
-    
-    # Add usage metadata for final chunk
-    if is_final:
-        chunk["usageMetadata"] = {
-            "promptTokenCount": prompt_tokens,
-            "candidatesTokenCount": completion_tokens,
-            "totalTokenCount": prompt_tokens + completion_tokens
-        }
-    
-    return chunk
