@@ -1,118 +1,158 @@
 #!/usr/bin/env python3
 """
-Simple test for Anthropic Claude API compatibility.
-Uses Anthropic client with modified base_url to test the server.
+Anthropic API Test
+=================
+
+Comprehensive test for Anthropic Claude API through the Codegen adapter.
+Supports both CLI and UI integration with custom prompts.
 """
 
-import requests
+import os
+import sys
 import json
+import argparse
+import requests
 
-def test_anthropic_api():
-    """Test Anthropic API endpoint with modified base_url."""
-    print("🤖 Testing Anthropic Claude API Compatibility")
-    print("=" * 50)
+def test_anthropic_api(prompt=None, base_url=None, model=None):
+    """
+    Test the Anthropic API endpoint with custom or default parameters.
     
-    # Anthropic API endpoint
-    url = "http://localhost:8887/v1/messages"
+    Args:
+        prompt (str): Custom prompt to test with
+        base_url (str): Custom base URL for the API
+        model (str): Model to use for the test
     
-    # Anthropic API request format
-    payload = {
-        "model": "claude-3-sonnet-20240229",
-        "max_tokens": 1024,
-        "messages": [
-            {
-                "role": "user",
-                "content": "Hello, how are you today?"
-            }
-        ]
-    }
+    Returns:
+        dict: Test result with success status, response, and metadata
+    """
+    # Default values
+    default_prompt = "What are three fascinating facts about space exploration?"
+    default_base_url = os.getenv("ANTHROPIC_BASE_URL", "http://localhost:8887")
+    default_model = "claude-3-sonnet-20240229"
     
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": "dummy-key",  # Server doesn't validate this
-        "anthropic-version": "2023-06-01"
-    }
-    
-    print("📤 Sending test message...")
-    print(f"   🎯 URL: {url}")
-    print(f"   📝 Message: {payload['messages'][0]['content']}")
+    # Use provided values or defaults
+    test_prompt = prompt or default_prompt
+    test_base_url = base_url or default_base_url
+    test_model = model or default_model
+    api_key = os.getenv("ANTHROPIC_API_KEY", "dummy-key")
     
     try:
-        # Send request
-        response = requests.post(url, json=payload, headers=headers)
+        print(f"🧠 Testing Anthropic API", file=sys.stderr)
+        print(f"📍 Endpoint: {test_base_url}/v1/messages", file=sys.stderr)
+        print(f"🎯 Model: {test_model}", file=sys.stderr)
+        print(f"💬 Prompt: {test_prompt}", file=sys.stderr)
+        
+        url = f"{test_base_url}/v1/messages"
+        
+        payload = {
+            "model": test_model,
+            "max_tokens": 200,
+            "temperature": 0.7,
+            "messages": [
+                {"role": "user", "content": test_prompt}
+            ]
+        }
+        
+        headers = {
+            "x-api-key": api_key,
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01"
+        }
+        
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
         
         if response.status_code == 200:
             data = response.json()
-            print("📥 Response received:")
-            print(f"   ✅ Status: {response.status_code}")
-            print(f"   🆔 ID: {data.get('id', 'N/A')}")
-            print(f"   🤖 Model: {data.get('model', 'N/A')}")
-            print(f"   📄 Content: {data.get('content', [{}])[0].get('text', 'N/A')[:100]}...")
-            print(f"   🔢 Usage: {data.get('usage', {})}")
-            print("✅ Test completed successfully!")
-        else:
-            print(f"❌ Test failed with status {response.status_code}")
-            print(f"   📄 Response: {response.text}")
-        
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-
-def test_anthropic_streaming():
-    """Test Anthropic streaming API."""
-    print("\n🌊 Testing Anthropic Streaming API")
-    print("=" * 50)
-    
-    # Anthropic API endpoint
-    url = "http://localhost:8887/v1/messages"
-    
-    # Anthropic API request format with streaming
-    payload = {
-        "model": "claude-3-sonnet-20240229",
-        "max_tokens": 1024,
-        "stream": True,
-        "messages": [
-            {
-                "role": "user",
-                "content": "Tell me a short joke"
+            
+            # Extract response text from Anthropic format
+            response_text = ""
+            if "content" in data and len(data["content"]) > 0:
+                response_text = data["content"][0].get("text", "No response text")
+            else:
+                response_text = "No content in response"
+            
+            result = {
+                "success": True,
+                "service": "Anthropic",
+                "endpoint": url,
+                "model": data.get("model", test_model),
+                "prompt": test_prompt,
+                "response": response_text,
+                "usage": data.get("usage", {
+                    "input_tokens": 0,
+                    "output_tokens": 0
+                }),
+                "metadata": {
+                    "id": data.get("id", ""),
+                    "type": data.get("type", "message"),
+                    "role": data.get("role", "assistant"),
+                    "stop_reason": data.get("stop_reason", "")
+                }
             }
-        ]
-    }
-    
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": "dummy-key",
-        "anthropic-version": "2023-06-01"
-    }
-    
-    print("📤 Sending streaming test message...")
-    
-    try:
-        # Send streaming request
-        response = requests.post(url, json=payload, headers=headers, stream=True)
-        
-        if response.status_code == 200:
-            print("📥 Streaming response received:")
-            event_count = 0
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: '):
-                        event_count += 1
-                        data_str = line_str[6:]  # Remove 'data: ' prefix
-                        try:
-                            data = json.loads(data_str)
-                            print(f"   📦 Event {event_count}: {data.get('type', 'unknown')}")
-                        except json.JSONDecodeError:
-                            print(f"   📦 Event {event_count}: {data_str[:50]}...")
-            print(f"✅ Streaming test completed! Received {event_count} events")
+            
+            print(json.dumps(result))
+            return result
         else:
-            print(f"❌ Streaming test failed with status {response.status_code}")
-            print(f"   📄 Response: {response.text}")
+            error_msg = f"HTTP {response.status_code}: {response.text}"
+            
+            result = {
+                "success": False,
+                "service": "Anthropic",
+                "endpoint": url,
+                "model": test_model,
+                "prompt": test_prompt,
+                "response": "",
+                "error": error_msg,
+                "usage": {"input_tokens": 0, "output_tokens": 0}
+            }
+            
+            print(json.dumps(result))
+            return result
         
     except Exception as e:
-        print(f"❌ Streaming test failed: {e}")
+        error_msg = str(e)
+        
+        result = {
+            "success": False,
+            "service": "Anthropic",
+            "endpoint": f"{test_base_url}/v1/messages",
+            "model": test_model,
+            "prompt": test_prompt,
+            "response": "",
+            "error": error_msg,
+            "usage": {"input_tokens": 0, "output_tokens": 0}
+        }
+        
+        print(json.dumps(result))
+        return result
+
+def main():
+    """Main entry point for CLI usage."""
+    parser = argparse.ArgumentParser(description="Test Anthropic API endpoint")
+    parser.add_argument("--prompt", type=str, help="Custom prompt to test with")
+    parser.add_argument("--base-url", type=str, help="Custom base URL for the API")
+    parser.add_argument("--model", type=str, help="Model to use for the test")
+    parser.add_argument("--json", action="store_true", help="Output JSON format")
+    
+    args = parser.parse_args()
+    
+    result = test_anthropic_api(
+        prompt=args.prompt,
+        base_url=args.base_url,
+        model=args.model
+    )
+    
+    if not args.json:
+        if result["success"]:
+            print(f"✅ Anthropic API Test Successful!", file=sys.stderr)
+            print(f"📝 Response: {result['response']}", file=sys.stderr)
+            print(f"🔢 Tokens: {result['usage'].get('input_tokens', 0) + result['usage'].get('output_tokens', 0)}", file=sys.stderr)
+        else:
+            print(f"❌ Anthropic API Test Failed!", file=sys.stderr)
+            print(f"🚨 Error: {result['error']}", file=sys.stderr)
+    
+    sys.exit(0 if result["success"] else 1)
 
 if __name__ == "__main__":
-    test_anthropic_api()
-    test_anthropic_streaming()
+    main()
 

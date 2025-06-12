@@ -1,199 +1,177 @@
 #!/usr/bin/env python3
 """
-Simple test for Google Gemini API compatibility.
-Tests the Gemini generateContent endpoint with the adapter.
+Google Gemini API Test
+=====================
+
+Comprehensive test for Google Gemini API through the Codegen adapter.
+Supports both CLI and UI integration with custom prompts.
 """
 
-import requests
+import os
+import sys
 import json
+import argparse
+import requests
 
-def test_gemini_api():
-    """Test Gemini API endpoint with generateContent format."""
-    print("🤖 Testing Google Gemini API Compatibility")
-    print("=" * 50)
+def test_google_api(prompt=None, base_url=None, model=None):
+    """
+    Test the Google Gemini API endpoint with custom or default parameters.
     
-    # Gemini API endpoint
-    url = "http://localhost:8887/v1/gemini/generateContent"
+    Args:
+        prompt (str): Custom prompt to test with
+        base_url (str): Custom base URL for the API
+        model (str): Model to use for the test
     
-    # Gemini API request format
-    payload = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": [
-                    {
-                        "text": "Hello! Can you help me write a simple Python function to calculate the factorial of a number?"
-                    }
-                ]
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 1024,
-            "topP": 0.9
-        }
-    }
+    Returns:
+        dict: Test result with success status, response, and metadata
+    """
+    # Default values
+    default_prompt = "Explain the concept of artificial intelligence in simple terms."
+    default_base_url = os.getenv("GOOGLE_BASE_URL", "http://localhost:8887")
+    default_model = "gemini-1.5-pro"
     
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    print("📤 Sending test message...")
-    print(f"   🎯 URL: {url}")
-    print(f"   📝 Message: {payload['contents'][0]['parts'][0]['text']}")
+    # Use provided values or defaults
+    test_prompt = prompt or default_prompt
+    test_base_url = base_url or default_base_url
+    test_model = model or default_model
+    api_key = os.getenv("GOOGLE_API_KEY", "dummy-key")
     
     try:
-        # Send request
-        response = requests.post(url, json=payload, headers=headers)
+        print(f"🌟 Testing Google Gemini API", file=sys.stderr)
+        print(f"📍 Endpoint: {test_base_url}/v1/models/{test_model}:generateContent", file=sys.stderr)
+        print(f"🎯 Model: {test_model}", file=sys.stderr)
+        print(f"💬 Prompt: {test_prompt}", file=sys.stderr)
         
-        if response.status_code == 200:
-            data = response.json()
-            print("📥 Response received:")
-            print(f"   ✅ Status: {response.status_code}")
-            
-            if 'candidates' in data and len(data['candidates']) > 0:
-                candidate = data['candidates'][0]
-                if 'content' in candidate and 'parts' in candidate['content']:
-                    content = candidate['content']['parts'][0]['text']
-                    print(f"   📄 Content: {content[:200]}...")
-                    
-            if 'usageMetadata' in data:
-                usage = data['usageMetadata']
-                print(f"   🔢 Usage: {usage}")
-                
-            print("✅ Test completed successfully!")
-        else:
-            print(f"❌ Test failed with status {response.status_code}")
-            print(f"   📄 Response: {response.text}")
+        url = f"{test_base_url}/v1/models/{test_model}:generateContent"
         
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-
-def test_gemini_streaming():
-    """Test Gemini streaming API."""
-    print("\n🌊 Testing Gemini Streaming API")
-    print("=" * 50)
-    
-    # Gemini API endpoint
-    url = "http://localhost:8887/v1/gemini/generateContent"
-    
-    # Gemini API request format with streaming
-    payload = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": [
-                    {
-                        "text": "Write a short poem about coding"
-                    }
-                ]
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.8,
-            "maxOutputTokens": 512
-        }
-    }
-    
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    print("📤 Sending streaming test message...")
-    
-    try:
-        # Send streaming request
-        response = requests.post(url, json=payload, headers=headers, stream=True)
-        
-        if response.status_code == 200:
-            print("📥 Streaming response received:")
-            chunk_count = 0
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: '):
-                        chunk_count += 1
-                        data_str = line_str[6:]  # Remove 'data: ' prefix
-                        if data_str != '[DONE]':
-                            try:
-                                data = json.loads(data_str)
-                                print(f"   📦 Chunk {chunk_count}: {data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')[:50]}...")
-                            except json.JSONDecodeError:
-                                print(f"   📦 Chunk {chunk_count}: {data_str[:50]}...")
-                        else:
-                            print(f"   🏁 Stream completed")
-            print(f"✅ Streaming test completed! Received {chunk_count} chunks")
-        else:
-            print(f"❌ Streaming test failed with status {response.status_code}")
-            print(f"   📄 Response: {response.text}")
-        
-    except Exception as e:
-        print(f"❌ Streaming test failed: {e}")
-
-def test_gemini_with_system_instruction():
-    """Test Gemini API with system instruction."""
-    print("\n🎯 Testing Gemini with System Instruction")
-    print("=" * 50)
-    
-    # Gemini API endpoint
-    url = "http://localhost:8887/v1/gemini/generateContent"
-    
-    # Gemini API request format with system instruction
-    payload = {
-        "systemInstruction": {
-            "parts": [
+        payload = {
+            "contents": [
                 {
-                    "text": "You are a helpful coding assistant. Always provide clear, well-commented code examples."
+                    "parts": [
+                        {"text": test_prompt}
+                    ]
                 }
-            ]
-        },
-        "contents": [
-            {
-                "role": "user",
-                "parts": [
-                    {
-                        "text": "Show me how to create a simple REST API with FastAPI"
-                    }
-                ]
+            ],
+            "generationConfig": {
+                "maxOutputTokens": 200,
+                "temperature": 0.7,
+                "topP": 0.8,
+                "topK": 40
             }
-        ],
-        "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": 1024
         }
-    }
-    
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    print("📤 Sending test with system instruction...")
-    
-    try:
-        # Send request
-        response = requests.post(url, json=payload, headers=headers)
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        # Add API key if provided
+        if api_key and api_key != "dummy-key":
+            headers["Authorization"] = f"Bearer {api_key}"
+        
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
         
         if response.status_code == 200:
             data = response.json()
-            print("📥 Response received:")
-            print(f"   ✅ Status: {response.status_code}")
             
-            if 'candidates' in data and len(data['candidates']) > 0:
-                candidate = data['candidates'][0]
-                if 'content' in candidate and 'parts' in candidate['content']:
-                    content = candidate['content']['parts'][0]['text']
-                    print(f"   📄 Content: {content[:300]}...")
-                    
-            print("✅ System instruction test completed successfully!")
+            # Extract response text from Gemini format
+            response_text = ""
+            if "candidates" in data and len(data["candidates"]) > 0:
+                candidate = data["candidates"][0]
+                if "content" in candidate and "parts" in candidate["content"]:
+                    parts = candidate["content"]["parts"]
+                    if len(parts) > 0 and "text" in parts[0]:
+                        response_text = parts[0]["text"]
+                    else:
+                        response_text = "No text in response parts"
+                else:
+                    response_text = "No content in candidate"
+            else:
+                response_text = "No candidates in response"
+            
+            # Extract usage metadata
+            usage_metadata = data.get("usageMetadata", {})
+            
+            result = {
+                "success": True,
+                "service": "Google Gemini",
+                "endpoint": url,
+                "model": test_model,
+                "prompt": test_prompt,
+                "response": response_text,
+                "usage": {
+                    "prompt_token_count": usage_metadata.get("promptTokenCount", 0),
+                    "candidates_token_count": usage_metadata.get("candidatesTokenCount", 0),
+                    "total_token_count": usage_metadata.get("totalTokenCount", 0)
+                },
+                "metadata": {
+                    "finish_reason": data["candidates"][0].get("finishReason", "") if "candidates" in data and len(data["candidates"]) > 0 else "",
+                    "safety_ratings": data["candidates"][0].get("safetyRatings", []) if "candidates" in data and len(data["candidates"]) > 0 else []
+                }
+            }
+            
+            print(json.dumps(result))
+            return result
         else:
-            print(f"❌ Test failed with status {response.status_code}")
-            print(f"   📄 Response: {response.text}")
+            error_msg = f"HTTP {response.status_code}: {response.text}"
+            
+            result = {
+                "success": False,
+                "service": "Google Gemini",
+                "endpoint": url,
+                "model": test_model,
+                "prompt": test_prompt,
+                "response": "",
+                "error": error_msg,
+                "usage": {"prompt_token_count": 0, "candidates_token_count": 0, "total_token_count": 0}
+            }
+            
+            print(json.dumps(result))
+            return result
         
     except Exception as e:
-        print(f"❌ Test failed: {e}")
+        error_msg = str(e)
+        
+        result = {
+            "success": False,
+            "service": "Google Gemini",
+            "endpoint": f"{test_base_url}/v1/models/{test_model}:generateContent",
+            "model": test_model,
+            "prompt": test_prompt,
+            "response": "",
+            "error": error_msg,
+            "usage": {"prompt_token_count": 0, "candidates_token_count": 0, "total_token_count": 0}
+        }
+        
+        print(json.dumps(result))
+        return result
+
+def main():
+    """Main entry point for CLI usage."""
+    parser = argparse.ArgumentParser(description="Test Google Gemini API endpoint")
+    parser.add_argument("--prompt", type=str, help="Custom prompt to test with")
+    parser.add_argument("--base-url", type=str, help="Custom base URL for the API")
+    parser.add_argument("--model", type=str, help="Model to use for the test")
+    parser.add_argument("--json", action="store_true", help="Output JSON format")
+    
+    args = parser.parse_args()
+    
+    result = test_google_api(
+        prompt=args.prompt,
+        base_url=args.base_url,
+        model=args.model
+    )
+    
+    if not args.json:
+        if result["success"]:
+            print(f"✅ Google Gemini API Test Successful!", file=sys.stderr)
+            print(f"📝 Response: {result['response']}", file=sys.stderr)
+            print(f"🔢 Tokens: {result['usage']['total_token_count']}", file=sys.stderr)
+        else:
+            print(f"❌ Google Gemini API Test Failed!", file=sys.stderr)
+            print(f"🚨 Error: {result['error']}", file=sys.stderr)
+    
+    sys.exit(0 if result["success"] else 1)
 
 if __name__ == "__main__":
-    test_gemini_api()
-    test_gemini_streaming()
-    test_gemini_with_system_instruction()
+    main()
 

@@ -307,6 +307,96 @@
             border-top: 2px solid #eee;
         }
 
+        .test-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .url-config {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .url-config h4 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .url-inputs {
+            display: grid;
+            gap: 10px;
+        }
+
+        .url-input-group {
+            display: grid;
+            grid-template-columns: 120px 1fr 80px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .url-input-group label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .url-input-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .url-input-group button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .url-input-group button:hover {
+            background: #5a6fd8;
+        }
+
+        .prompt-config {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .prompt-config h4 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .prompt-config textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .prompt-config textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+        }
+
         .test-buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -398,7 +488,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎛️ OpenAI Codegen Adapter</h1>
+            <h1>🎛��� OpenAI Codegen Adapter</h1>
             <p>Control Panel & Session Monitor</p>
         </div>
 
@@ -440,9 +530,38 @@
                 <!-- Test Section -->
                 <div class="test-section">
                     <h3>🧪 Test API Endpoints</h3>
+                    
+                    <!-- URL Configuration -->
+                    <div class="url-config">
+                        <h4>📍 Service URLs</h4>
+                        <div class="url-inputs">
+                            <div class="url-input-group">
+                                <label for="openaiUrl">OpenAI API:</label>
+                                <input type="text" id="openaiUrl" value="http://localhost:8887/v1" placeholder="OpenAI base URL">
+                                <button onclick="saveUrl('openai')">Save</button>
+                            </div>
+                            <div class="url-input-group">
+                                <label for="anthropicUrl">Anthropic API:</label>
+                                <input type="text" id="anthropicUrl" value="http://localhost:8887" placeholder="Anthropic base URL">
+                                <button onclick="saveUrl('anthropic')">Save</button>
+                            </div>
+                            <div class="url-input-group">
+                                <label for="googleUrl">Google API:</label>
+                                <input type="text" id="googleUrl" value="http://localhost:8887" placeholder="Google base URL">
+                                <button onclick="saveUrl('google')">Save</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Prompt Input -->
+                    <div class="prompt-config">
+                        <h4>💬 Custom Prompt</h4>
+                        <textarea id="customPrompt" placeholder="Enter your custom prompt here (leave empty for default prompts)..." rows="3"></textarea>
+                    </div>
+
                     <div class="test-buttons">
-                        <button class="test-button gemini" onclick="testEndpoint('gemini')">
-                            🔷 Test Google Gemini
+                        <button class="test-button gemini" onclick="testEndpoint('google')">
+                            🔵 Test Google Gemini
                         </button>
                         <button class="test-button anthropic" onclick="testEndpoint('anthropic')">
                             🟠 Test Anthropic Claude
@@ -671,58 +790,28 @@
             }
         }
 
-        // Test endpoint functions
+        // Test endpoint function
         async function testEndpoint(provider) {
-            const prompts = {
-                gemini: "What are three interesting facts about space exploration?",
-                anthropic: "Write a short poem about technology.",
-                openai: "Explain quantum computing in simple terms."
+            // Get custom prompt if provided
+            const customPrompt = document.getElementById('customPrompt').value.trim();
+            
+            // Get saved URLs or use defaults
+            const savedUrls = {
+                openai: localStorage.getItem('openaiUrl') || 'http://localhost:8887/v1',
+                anthropic: localStorage.getItem('anthropicUrl') || 'http://localhost:8887',
+                google: localStorage.getItem('googleUrl') || 'http://localhost:8887'
             };
 
-            const endpoints = {
-                gemini: '/v1/gemini/generateContent',
-                anthropic: '/v1/messages',
-                openai: '/v1/chat/completions'
+            // Map provider names for consistency
+            const providerMap = {
+                'google': 'google',
+                'gemini': 'google',
+                'anthropic': 'anthropic',
+                'openai': 'openai'
             };
-
-            const payloads = {
-                gemini: {
-                    contents: [{
-                        parts: [{ text: prompts[provider] }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 1000
-                    }
-                },
-                anthropic: {
-                    model: "claude-3-sonnet-20240229",
-                    max_tokens: 1000,
-                    messages: [{
-                        role: "user",
-                        content: prompts[provider]
-                    }]
-                },
-                openai: {
-                    model: "gpt-3.5-turbo",
-                    messages: [{
-                        role: "user",
-                        content: prompts[provider]
-                    }],
-                    max_tokens: 1000,
-                    temperature: 0.7
-                }
-            };
-
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer dummy-key'
-            };
-
-            if (provider === 'anthropic') {
-                headers['anthropic-version'] = '2023-06-01';
-            }
-
+            
+            const actualProvider = providerMap[provider] || provider;
+            
             // Disable the button during request
             const button = document.querySelector(`.test-button.${provider}`);
             const originalText = button.textContent;
@@ -730,43 +819,66 @@
             button.textContent = '⏳ Testing...';
 
             try {
-                const response = await fetch(endpoints[provider], {
+                // Call the backend test endpoint with parameters
+                const testUrl = `/api/test/${actualProvider}`;
+                const payload = {
+                    base_url: savedUrls[actualProvider]
+                };
+                
+                // Add custom prompt if provided
+                if (customPrompt) {
+                    payload.prompt = customPrompt;
+                }
+
+                const response = await fetch(testUrl, {
                     method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payloads[provider])
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
-                let responseText = '';
-
-                if (response.ok) {
-                    // Extract response text based on provider
-                    if (provider === 'gemini' && data.candidates && data.candidates[0]) {
-                        responseText = data.candidates[0].content.parts[0].text;
-                    } else if (provider === 'anthropic' && data.content && data.content[0]) {
-                        responseText = data.content[0].text;
-                    } else if (provider === 'openai' && data.choices && data.choices[0]) {
-                        responseText = data.choices[0].message.content;
-                    } else {
-                        responseText = JSON.stringify(data);
-                    }
-                } else {
-                    responseText = `Error ${response.status}: ${JSON.stringify(data)}`;
-                }
-
-                // Add to history
-                controller.addToHistory(provider, prompts[provider], responseText, response.ok);
                 
-                if (response.ok) {
-                    controller.showSuccess(`${provider.toUpperCase()} test completed successfully!`);
+                let responseText = '';
+                if (response.ok && data.success) {
+                    responseText = data.response || 'Test completed successfully';
+                    
+                    // Add to history
+                    controller.addToHistory(
+                        actualProvider.toUpperCase(), 
+                        data.prompt || customPrompt || 'Default test prompt', 
+                        responseText, 
+                        true
+                    );
+                    
+                    controller.showSuccess(`${actualProvider.toUpperCase()} test completed successfully!`);
                 } else {
-                    controller.showError(`${provider.toUpperCase()} test failed: ${response.status}`);
+                    responseText = data.error || `Error ${response.status}: ${JSON.stringify(data)}`;
+                    
+                    // Add to history
+                    controller.addToHistory(
+                        actualProvider.toUpperCase(), 
+                        data.prompt || customPrompt || 'Default test prompt', 
+                        responseText, 
+                        false
+                    );
+                    
+                    controller.showError(`${actualProvider.toUpperCase()} test failed: ${response.status}`);
                 }
 
             } catch (error) {
                 const errorMsg = `Request failed: ${error.message}`;
-                controller.addToHistory(provider, prompts[provider], errorMsg, false);
-                controller.showError(`${provider.toUpperCase()} test failed: ${error.message}`);
+                
+                // Add to history
+                controller.addToHistory(
+                    actualProvider.toUpperCase(), 
+                    customPrompt || 'Default test prompt', 
+                    errorMsg, 
+                    false
+                );
+                
+                controller.showError(`${actualProvider.toUpperCase()} test failed: ${error.message}`);
             } finally {
                 // Re-enable the button
                 button.disabled = false;
@@ -778,9 +890,38 @@
             controller.clearHistory();
         }
 
+        // URL Configuration
+        function saveUrl(provider) {
+            const url = document.getElementById(`${provider}Url`).value;
+            localStorage.setItem(`${provider}Url`, url);
+            // Show success message
+            const input = document.getElementById(`${provider}Url`);
+            const originalBorder = input.style.border;
+            input.style.border = '2px solid #4CAF50';
+            setTimeout(() => {
+                input.style.border = originalBorder;
+            }, 1000);
+        }
+
+        // Load saved URLs on page load
+        function loadSavedUrls() {
+            const providers = ['openai', 'anthropic', 'google'];
+            providers.forEach(provider => {
+                const savedUrl = localStorage.getItem(`${provider}Url`);
+                if (savedUrl) {
+                    const input = document.getElementById(`${provider}Url`);
+                    if (input) {
+                        input.value = savedUrl;
+                    }
+                }
+            });
+        }
+
         // Initialize the controller
         const controller = new CodegenController();
+        
+        // Load saved URLs when page loads
+        document.addEventListener('DOMContentLoaded', loadSavedUrls);
     </script>
 </body>
 </html>
-
