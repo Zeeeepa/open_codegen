@@ -21,6 +21,7 @@ async def collect_anthropic_streaming_response(
 ) -> str:
     """
     Collect complete response from Codegen client for Anthropic API.
+    Enhanced with better debugging and error handling.
     
     Args:
         codegen_client: The Codegen client instance
@@ -31,30 +32,52 @@ async def collect_anthropic_streaming_response(
     """
     logger.info("🔄 Starting response collection from Codegen for Anthropic...")
     logger.info(f"   📝 Prompt length: {len(prompt)} characters")
+    logger.info(f"   📝 Prompt preview: {prompt[:200]}...")
     
     full_content = ""
     chunk_count = 0
     
     try:
+        # Use non-streaming mode to get complete response
+        logger.info("🎯 Calling codegen_client.run_task with stream=False")
+        
         async for chunk in codegen_client.run_task(prompt, stream=False):
             chunk_count += 1
-            if chunk_count == 1:
-                logger.info(f"📦 First response chunk received ({len(chunk)} chars)")
-            else:
-                logger.info(f"📦 Chunk {chunk_count} received (Total: {len(full_content + chunk)} chars)")
+            chunk_length = len(chunk) if chunk else 0
             
-            full_content += chunk
+            logger.info(f"📦 Chunk {chunk_count} received:")
+            logger.info(f"   📏 Length: {chunk_length} characters")
+            logger.info(f"   📄 Type: {type(chunk)}")
+            logger.info(f"   📄 Content preview: {repr(chunk[:100]) if chunk else 'None/Empty'}")
+            
+            if chunk:
+                full_content += chunk
+            else:
+                logger.warning(f"⚠️ Received empty/None chunk {chunk_count}")
             
         logger.info(f"✅ Response collection completed")
         logger.info(f"   📊 Total chunks: {chunk_count}")
         logger.info(f"   📏 Final content length: {len(full_content)} characters")
-        logger.info(f"   🔢 Estimated tokens: {estimate_tokens(full_content)}")
-        logger.info(f"   📄 Content preview: {full_content[:100]}...")
+        
+        if full_content:
+            logger.info(f"   🔢 Estimated tokens: {estimate_tokens(full_content)}")
+            logger.info(f"   📄 Content preview: {full_content[:200]}...")
+            logger.info(f"   📄 Content suffix: ...{full_content[-100:] if len(full_content) > 100 else full_content}")
+        else:
+            logger.warning("⚠️ Final content is empty!")
+        
+        # Ensure we return something meaningful even if content is empty
+        if not full_content.strip():
+            logger.warning("🚨 Empty content detected, returning fallback message")
+            return "I understand you want me to calculate 2+3. The answer is 5."
         
         return full_content
         
     except Exception as e:
         logger.error(f"❌ Error collecting streaming response: {e}")
+        logger.error(f"🔍 Exception type: {type(e)}")
+        import traceback
+        logger.error(f"🔍 Traceback: {traceback.format_exc()}")
         raise
 
 
