@@ -1,0 +1,10 @@
+🚀 Starting OpenAI Codegen Adapter Server
+📍 Server will be available at: http://localhost:8887
+🔗 OpenAI API endpoint: http://localhost:8887/v1
+==================================================
+INFO:     Started server process [2133]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('127.0.0.1', 8887): address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
