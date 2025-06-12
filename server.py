@@ -105,23 +105,34 @@ async def openai_chat_completions(request: Request):
         logger.info(f"Routing OpenAI request to Codegen SDK: {user_message}")
         
         try:
-            # Run the agent with the prompt
+            # Create a task with the prompt
             task = agent.run(prompt=user_message)
+            task_id = task.id
+            logger.info(f"Created Codegen SDK task: {task_id}")
             
             # Wait for the task to complete (with timeout)
             start_time = time.time()
             timeout = 30  # 30 seconds timeout
             
-            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
-                time.sleep(1)
+            while time.time() - start_time < timeout:
+                # Refresh the task to get the latest status
                 task.refresh()
-            
-            if task.status == "completed":
-                generated_text = task.result
-                logger.info(f"Codegen SDK task completed successfully")
+                
+                if task.status == "completed":
+                    generated_text = task.result
+                    logger.info(f"Codegen SDK task completed successfully: {task_id}")
+                    break
+                elif task.status in ["failed", "error"]:
+                    logger.error(f"Codegen SDK task failed: {task_id}, status: {task.status}")
+                    generated_text = f"Error: Task {task.status}. Please try again later."
+                    break
+                
+                # Wait before checking again
+                time.sleep(1)
             else:
-                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
-                generated_text = f"Error: Task {task.status}. Please try again later."
+                # Timeout reached
+                logger.error(f"Codegen SDK task timed out: {task_id}")
+                generated_text = "Error: Task timed out. Please try again later."
         
         except Exception as e:
             logger.error(f"Error running Codegen agent: {e}")
@@ -184,23 +195,34 @@ async def anthropic_completions(request: Request):
         logger.info(f"Routing Anthropic request to Codegen SDK: {user_message}")
         
         try:
-            # Run the agent with the prompt
+            # Create a task with the prompt
             task = agent.run(prompt=user_message)
+            task_id = task.id
+            logger.info(f"Created Codegen SDK task: {task_id}")
             
             # Wait for the task to complete (with timeout)
             start_time = time.time()
             timeout = 30  # 30 seconds timeout
             
-            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
-                time.sleep(1)
+            while time.time() - start_time < timeout:
+                # Refresh the task to get the latest status
                 task.refresh()
-            
-            if task.status == "completed":
-                generated_text = task.result
-                logger.info(f"Codegen SDK task completed successfully")
+                
+                if task.status == "completed":
+                    generated_text = task.result
+                    logger.info(f"Codegen SDK task completed successfully: {task_id}")
+                    break
+                elif task.status in ["failed", "error"]:
+                    logger.error(f"Codegen SDK task failed: {task_id}, status: {task.status}")
+                    generated_text = f"Error: Task {task.status}. Please try again later."
+                    break
+                
+                # Wait before checking again
+                time.sleep(1)
             else:
-                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
-                generated_text = f"Error: Task {task.status}. Please try again later."
+                # Timeout reached
+                logger.error(f"Codegen SDK task timed out: {task_id}")
+                generated_text = "Error: Task timed out. Please try again later."
         
         except Exception as e:
             logger.error(f"Error running Codegen agent: {e}")
@@ -250,23 +272,34 @@ async def gemini_completions(request: Request):
         logger.info(f"Routing Google request to Codegen SDK: {user_message}")
         
         try:
-            # Run the agent with the prompt
+            # Create a task with the prompt
             task = agent.run(prompt=user_message)
+            task_id = task.id
+            logger.info(f"Created Codegen SDK task: {task_id}")
             
             # Wait for the task to complete (with timeout)
             start_time = time.time()
             timeout = 30  # 30 seconds timeout
             
-            while task.status not in ["completed", "failed", "error"] and time.time() - start_time < timeout:
-                time.sleep(1)
+            while time.time() - start_time < timeout:
+                # Refresh the task to get the latest status
                 task.refresh()
-            
-            if task.status == "completed":
-                generated_text = task.result
-                logger.info(f"Codegen SDK task completed successfully")
+                
+                if task.status == "completed":
+                    generated_text = task.result
+                    logger.info(f"Codegen SDK task completed successfully: {task_id}")
+                    break
+                elif task.status in ["failed", "error"]:
+                    logger.error(f"Codegen SDK task failed: {task_id}, status: {task.status}")
+                    generated_text = f"Error: Task {task.status}. Please try again later."
+                    break
+                
+                # Wait before checking again
+                time.sleep(1)
             else:
-                logger.error(f"Codegen SDK task failed or timed out: {task.status}")
-                generated_text = f"Error: Task {task.status}. Please try again later."
+                # Timeout reached
+                logger.error(f"Codegen SDK task timed out: {task_id}")
+                generated_text = "Error: Task timed out. Please try again later."
         
         except Exception as e:
             logger.error(f"Error running Codegen agent: {e}")
@@ -683,4 +716,3 @@ def start_server(host="localhost", port=8887):
 
 if __name__ == "__main__":
     start_server()
-
