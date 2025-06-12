@@ -81,42 +81,89 @@ class CodegenClient:
                         logger.debug(f"🔍 COMPLETION CHECK | Task: {task.id} | Status: {status} | Attempt: {retry_count + 1} | Duration: {elapsed_time:.2f}s")
                         
                         if status == "COMPLETE":
-                            # Try multiple ways to get the task result
+                            # Enhanced task result retrieval with better debugging
                             result_content = None
+                            
+                            # Log all available attributes for debugging
+                            available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
+                            logger.debug(f"Task {task.id} completed. Available attributes: {available_attrs}")
                             
                             # Method 1: Check task.result
                             if hasattr(task, 'result') and task.result:
                                 result_content = task.result
-                                logger.info(f"Task {task.id} completed with result from task.result")
+                                logger.info(f"✅ Task {task.id} completed with result from task.result")
+                                logger.debug(f"Result type: {type(result_content)}, Content preview: {str(result_content)[:200]}...")
                             
                             # Method 2: Check task.output (alternative attribute)
                             elif hasattr(task, 'output') and task.output:
                                 result_content = task.output
-                                logger.info(f"Task {task.id} completed with result from task.output")
+                                logger.info(f"✅ Task {task.id} completed with result from task.output")
+                                logger.debug(f"Output type: {type(result_content)}, Content preview: {str(result_content)[:200]}...")
                             
                             # Method 3: Check task.response (another alternative)
                             elif hasattr(task, 'response') and task.response:
                                 result_content = task.response
-                                logger.info(f"Task {task.id} completed with result from task.response")
+                                logger.info(f"✅ Task {task.id} completed with result from task.response")
+                                logger.debug(f"Response type: {type(result_content)}, Content preview: {str(result_content)[:200]}...")
                             
                             # Method 4: Check task.content (yet another alternative)
                             elif hasattr(task, 'content') and task.content:
                                 result_content = task.content
-                                logger.info(f"Task {task.id} completed with result from task.content")
+                                logger.info(f"✅ Task {task.id} completed with result from task.content")
+                                logger.debug(f"Content type: {type(result_content)}, Content preview: {str(result_content)[:200]}...")
                             
                             # Method 5: Try to refresh and get result again
                             elif hasattr(task, 'get_result'):
                                 try:
                                     result_content = task.get_result()
-                                    logger.info(f"Task {task.id} completed with result from task.get_result()")
+                                    logger.info(f"✅ Task {task.id} completed with result from task.get_result()")
+                                    logger.debug(f"Get_result type: {type(result_content)}, Content preview: {str(result_content)[:200]}...")
                                 except Exception as e:
                                     logger.warning(f"Failed to get result via get_result(): {e}")
                             
-                            # If we found content, yield it
+                            # Method 6: Check for messages or text attributes
+                            elif hasattr(task, 'messages') and task.messages:
+                                result_content = task.messages
+                                logger.info(f"✅ Task {task.id} completed with result from task.messages")
+                                logger.debug(f"Messages type: {type(result_content)}, Content preview: {str(result_content)[:200]}...")
+                            
+                            # Method 7: Try to access the task's data attribute
+                            elif hasattr(task, 'data') and task.data:
+                                result_content = task.data
+                                logger.info(f"✅ Task {task.id} completed with result from task.data")
+                                logger.debug(f"Data type: {type(result_content)}, Content preview: {str(result_content)[:200]}...")
+                            
+                            # If we found content, process and yield it
                             if result_content:
-                                # Clean and validate the content
+                                # Handle different result types
                                 if isinstance(result_content, str) and result_content.strip():
                                     yield result_content.strip()
+                                elif isinstance(result_content, dict):
+                                    # Try to extract text from dict
+                                    if 'text' in result_content:
+                                        yield str(result_content['text']).strip()
+                                    elif 'content' in result_content:
+                                        yield str(result_content['content']).strip()
+                                    elif 'message' in result_content:
+                                        yield str(result_content['message']).strip()
+                                    else:
+                                        # Convert entire dict to string as fallback
+                                        yield str(result_content).strip()
+                                elif isinstance(result_content, list):
+                                    # Handle list of messages or content
+                                    if result_content:
+                                        if isinstance(result_content[0], dict):
+                                            # Extract text from first dict item
+                                            first_item = result_content[0]
+                                            if 'text' in first_item:
+                                                yield str(first_item['text']).strip()
+                                            elif 'content' in first_item:
+                                                yield str(first_item['content']).strip()
+                                            else:
+                                                yield str(first_item).strip()
+                                        else:
+                                            # Join list items
+                                            yield " ".join(str(item) for item in result_content).strip()
                                 elif hasattr(result_content, '__str__'):
                                     content_str = str(result_content).strip()
                                     if content_str:
@@ -128,12 +175,11 @@ class CodegenClient:
                                     logger.warning(f"Task {task.id} result is not a string: {type(result_content)}")
                                     yield f"Task completed with result type: {type(result_content).__name__}"
                             else:
-                                # Log all available attributes for debugging
-                                available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
-                                logger.warning(f"Task {task.id} completed but no result found. Available attributes: {available_attrs}")
+                                # Enhanced fallback: try to get any text-like attributes
+                                logger.warning(f"Task {task.id} completed but no result found in standard attributes")
                                 
                                 # Try to get any text-like attributes
-                                for attr in ['message', 'text', 'data', 'body']:
+                                for attr in ['message', 'text', 'body', 'value', 'answer']:
                                     if hasattr(task, attr):
                                         attr_value = getattr(task, attr)
                                         if attr_value and isinstance(attr_value, str) and attr_value.strip():
