@@ -82,79 +82,51 @@ class CodegenClient:
                         
                         if status == "COMPLETE":
                             # Try multiple ways to get the task result (original logic preserved)
+                            # Simplified and more robust content extraction
                             result_content = None
+                            extraction_method = None
                             
-                            # Method 1: Check task.result (original logic)
-                            if hasattr(task, 'result') and task.result:
-                                result_content = task.result
-                                logger.info(f"Task {task.id} completed with result from task.result")
+                            # Try all possible content attributes in order of preference
+                            content_attributes = [
+                                ('result', 'task.result'),
+                                ('output', 'task.output'), 
+                                ('response', 'task.response'),
+                                ('content', 'task.content'),
+                                ('message', 'task.message'),
+                                ('text', 'task.text'),
+                                ('data', 'task.data'),
+                                ('body', 'task.body')
+                            ]
                             
-                            # Method 2: Check task.output (alternative attribute)
-                            elif hasattr(task, 'output') and task.output:
-                                result_content = task.output
-                                logger.info(f"Task {task.id} completed with result from task.output")
+                            for attr_name, attr_desc in content_attributes:
+                                if hasattr(task, attr_name):
+                                    attr_value = getattr(task, attr_name)
+                                    if attr_value is not None and str(attr_value).strip():
+                                        result_content = str(attr_value).strip()
+                                        extraction_method = attr_desc
+                                        logger.info(f"Task {task.id} extracted content from {attr_desc}")
+                                        break
                             
-                            # Method 3: Check task.response (another alternative)
-                            elif hasattr(task, 'response') and task.response:
-                                result_content = task.response
-                                logger.info(f"Task {task.id} completed with result from task.response")
-                            
-                            # Method 4: Check task.content (yet another alternative)
-                            elif hasattr(task, 'content') and task.content:
-                                result_content = task.content
-                                logger.info(f"Task {task.id} completed with result from task.content")
-                            
-                            # Method 5: Try to refresh and get result again
-                            elif hasattr(task, 'get_result'):
+                            # Try get_result() method as last resort
+                            if not result_content and hasattr(task, 'get_result'):
                                 try:
-                                    result_content = task.get_result()
-                                    logger.info(f"Task {task.id} completed with result from task.get_result()")
+                                    result_value = task.get_result()
+                                    if result_value is not None and str(result_value).strip():
+                                        result_content = str(result_value).strip()
+                                        extraction_method = 'task.get_result()'
+                                        logger.info(f"Task {task.id} extracted content from task.get_result()")
                                 except Exception as e:
-                                    logger.warning(f"Failed to get result via get_result(): {e}")
+                                    logger.warning(f"Task {task.id} get_result() failed: {e}")
                             
-                            # NEW: Method 6: Check for None values that might still contain content
-                            # This addresses the Anthropic issue where result might be None but content exists elsewhere
-                            elif hasattr(task, 'result') and task.result is None:
-                                # Check if there are alternative attributes when result is explicitly None
-                                for attr in ['message', 'text', 'data', 'body']:
-                                    if hasattr(task, attr):
-                                        attr_value = getattr(task, attr)
-                                        if attr_value and isinstance(attr_value, str) and attr_value.strip():
-                                            result_content = attr_value
-                                            logger.info(f"Task {task.id} found content in task.{attr} when result was None")
-                                            break
-                            
-                            # If we found content, yield it (original logic preserved)
+                            # Yield the extracted content or error message
                             if result_content:
-                                # Clean and validate the content (original logic)
-                                if isinstance(result_content, str) and result_content.strip():
-                                    yield result_content.strip()
-                                elif hasattr(result_content, '__str__'):
-                                    content_str = str(result_content).strip()
-                                    if content_str:
-                                        yield content_str
-                                    else:
-                                        logger.warning(f"Task {task.id} result converted to empty string")
-                                        yield "Task completed but returned empty content."
-                                else:
-                                    logger.warning(f"Task {task.id} result is not a string: {type(result_content)}")
-                                    yield f"Task completed with result type: {type(result_content).__name__}"
+                                logger.info(f"Task {task.id} yielding content from {extraction_method}: {len(result_content)} chars")
+                                yield result_content
                             else:
-                                # Log all available attributes for debugging (original logic)
+                                # Log available attributes for debugging
                                 available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
-                                logger.warning(f"Task {task.id} completed but no result found. Available attributes: {available_attrs}")
-                                
-                                # Try to get any text-like attributes (original logic)
-                                for attr in ['message', 'text', 'data', 'body']:
-                                    if hasattr(task, attr):
-                                        attr_value = getattr(task, attr)
-                                        if attr_value and isinstance(attr_value, str) and attr_value.strip():
-                                            logger.info(f"Found content in task.{attr}")
-                                            yield attr_value.strip()
-                                            break
-                                else:
-                                    # Last resort: return a more informative message (original logic)
-                                    yield "Task completed successfully but no response content was found. This may indicate an issue with the Codegen API response format."
+                                logger.warning(f"Task {task.id} completed but no content found. Available attributes: {available_attrs}")
+                                yield "Task completed successfully but no response content was found. This may indicate an issue with the Codegen API response format."
                             break
                         elif status == "FAILED":
                             error_msg = getattr(task, 'error', 'Task failed with unknown error')

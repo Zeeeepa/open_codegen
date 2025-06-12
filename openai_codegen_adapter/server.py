@@ -470,8 +470,10 @@ async def gemini_completions(request: GeminiRequest):
         prompt_tokens = estimate_tokens(prompt)
         completion_tokens = estimate_tokens(content)
         
-        response = create_gemini_response(
+        # For /v1/gemini/completions, return OpenAI-compatible format
+        response = create_chat_response(
             content=content,
+            model="gemini-pro",
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens
         )
