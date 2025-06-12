@@ -1,16 +1,14 @@
 """
 Request transformation utilities to convert OpenAI API requests to Codegen format.
-Based on h2ogpt's backend_utils.py message conversion patterns.
 """
 
-from typing import List, Optional
+from typing import List, Dict, Any, Union
 from .models import Message, ChatRequest, TextRequest
 
 
 def messages_to_prompt(messages: List[Message]) -> str:
     """
     Convert OpenAI messages format to a single prompt string for Codegen.
-    Based on h2ogpt's convert_messages_to_structure function.
     
     Args:
         messages: List of OpenAI format messages
@@ -28,7 +26,7 @@ def messages_to_prompt(messages: List[Message]) -> str:
         if role == "system":
             system_message = content
         elif role == "user":
-            conversation_parts.append(f"User: {content}")
+            conversation_parts.append(f"Human: {content}")
         elif role == "assistant":
             conversation_parts.append(f"Assistant: {content}")
         elif role == "tool":
@@ -51,71 +49,56 @@ def messages_to_prompt(messages: List[Message]) -> str:
     return "\n\n".join(prompt_parts)
 
 
-def extract_user_message(messages: List[Message]) -> str:
+def extract_user_message(request_data: Dict[str, Any]) -> str:
     """
-    Extract the last user message for simple prompt-based requests.
+    Extract the user message from various request formats.
     
     Args:
-        messages: List of OpenAI format messages
+        request_data: Request data dictionary
         
     Returns:
-        The last user message content
+        The user message content
     """
-    for message in reversed(messages):
-        if message.role == "user":
-            return message.content
+    # Try to get from messages array (OpenAI format)
+    if "messages" in request_data:
+        messages = request_data["messages"]
+        for message in reversed(messages):
+            if message.get("role") == "user":
+                return message.get("content", "")
     
-    # Fallback to converting all messages
-    return messages_to_prompt(messages)
+    # Try to get from prompt field (older OpenAI format or Gemini)
+    if "prompt" in request_data:
+        prompt = request_data["prompt"]
+        if isinstance(prompt, str):
+            return prompt
+        elif isinstance(prompt, list) and all(isinstance(p, str) for p in prompt):
+            return "\n".join(prompt)
+    
+    # Try to get from contents (Gemini format)
+    if "contents" in request_data:
+        contents = request_data["contents"]
+        for content in reversed(contents):
+            if content.get("role") == "user":
+                parts = content.get("parts", [])
+                for part in parts:
+                    if "text" in part:
+                        return part["text"]
+    
+    # Fallback
+    return ""
 
 
 def chat_request_to_prompt(request: ChatRequest) -> str:
     """
     Convert OpenAI chat request to a prompt string for Codegen SDK.
-    Enhanced with better instructions for code generation tasks.
     
     Args:
         request: ChatRequest object
         
     Returns:
-        str: Formatted prompt string optimized for Codegen
+        str: Formatted prompt string
     """
-    prompt_parts = []
-    
-    # Enhanced system instruction for better code generation
-    system_instruction = """You are an expert software engineer and coding assistant. When responding to coding questions:
-
-1. Provide clear, well-commented code examples
-2. Explain your reasoning and approach
-3. Consider edge cases and best practices
-4. Use appropriate design patterns when relevant
-5. Provide complete, runnable code when possible
-6. Include error handling where appropriate
-7. Suggest improvements or alternatives when helpful
-
-For non-coding questions, provide thorough, accurate, and helpful responses."""
-    
-    # Check if there's already a system message
-    has_system_message = any(msg.role == "system" for msg in request.messages)
-    
-    if not has_system_message:
-        prompt_parts.append(f"System: {system_instruction}")
-    
-    # Process messages
-    for message in request.messages:
-        if message.role == "system":
-            # Enhance existing system message with coding context
-            enhanced_system = f"{message.content}\n\n{system_instruction}"
-            prompt_parts.append(f"System: {enhanced_system}")
-        elif message.role == "user":
-            prompt_parts.append(f"Human: {message.content}")
-        elif message.role == "assistant":
-            prompt_parts.append(f"Assistant: {message.content}")
-    
-    # Add final assistant prompt with enhanced instruction
-    prompt_parts.append("Assistant: I'll help you with that. Let me provide a comprehensive and well-structured response.")
-    
-    return "\n\n".join(prompt_parts)
+    return messages_to_prompt(request.messages)
 
 
 def text_request_to_prompt(request: TextRequest) -> str:
@@ -141,7 +124,7 @@ def text_request_to_prompt(request: TextRequest) -> str:
         raise ValueError(f"Unsupported prompt type: {type(request.prompt)}")
 
 
-def extract_generation_params(request) -> dict:
+def extract_generation_params(request) -> Dict[str, Any]:
     """
     Extract generation parameters from OpenAI request.
     
@@ -172,3 +155,100 @@ def extract_generation_params(request) -> dict:
         params['stop'] = request.stop
     
     return params
+
+
+# Anthropic-specific transformers
+def anthropic_request_to_prompt(request) -> str:
+    """Convert Anthropic request to prompt string."""
+    if hasattr(request, 'messages'):
+        # Convert messages to a format Codegen understands
+        system_content = getattr(request, 'system', None)
+        messages = request.messages
+        
+        prompt_parts = []
+        
+        if system_content:
+            prompt_parts.append(f"System: {system_content}")
+        
+        for message in messages:
+            role = message.role
+            content = message.content
+            
+            if role == "user":
+                prompt_parts.append(f"Human: {content}")
+            elif role == "assistant":
+                prompt_parts.append(f"Assistant: {content}")
+        
+        return "\n\n".join(prompt_parts)
+    
+    # Fallback to direct prompt if available
+    return getattr(request, 'prompt', "")
+
+
+def extract_anthropic_generation_params(request) -> Dict[str, Any]:
+    """Extract generation parameters from Anthropic request."""
+    params = {}
+    
+    if hasattr(request, 'temperature') and request.temperature is not None:
+        params['temperature'] = request.temperature
+    
+    if hasattr(request, 'max_tokens') and request.max_tokens is not None:
+        params['max_tokens'] = request.max_tokens
+    
+    if hasattr(request, 'top_p') and request.top_p is not None:
+        params['top_p'] = request.top_p
+    
+    if hasattr(request, 'top_k') and request.top_k is not None:
+        params['top_k'] = request.top_k
+    
+    if hasattr(request, 'stop_sequences') and request.stop_sequences is not None:
+        params['stop'] = request.stop_sequences
+    
+    return params
+
+
+# Gemini-specific transformers
+def gemini_request_to_prompt(request) -> str:
+    """Convert Gemini request to prompt string."""
+    # Try to extract from messages
+    if hasattr(request, 'messages') and request.messages:
+        prompt_parts = []
+        
+        for message in request.messages:
+            role = message.role
+            content = message.content
+            
+            if role == "user":
+                prompt_parts.append(f"Human: {content}")
+            elif role == "model" or role == "assistant":
+                prompt_parts.append(f"Assistant: {content}")
+        
+        return "\n\n".join(prompt_parts)
+    
+    # Try to extract from contents
+    if hasattr(request, 'contents') and request.contents:
+        prompt_parts = []
+        
+        for content in request.contents:
+            role = content.role if hasattr(content, 'role') else None
+            parts = content.parts if hasattr(content, 'parts') else []
+            
+            text_parts = []
+            for part in parts:
+                if 'text' in part:
+                    text_parts.append(part['text'])
+            
+            combined_text = " ".join(text_parts)
+            
+            if role == "user":
+                prompt_parts.append(f"Human: {combined_text}")
+            elif role == "model" or role == "assistant":
+                prompt_parts.append(f"Assistant: {combined_text}")
+            else:
+                prompt_parts.append(combined_text)
+        
+        return "\n\n".join(prompt_parts)
+    
+    # Fallback to direct prompt if available
+    return getattr(request, 'prompt', "")
+

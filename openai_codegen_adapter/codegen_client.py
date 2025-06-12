@@ -13,7 +13,6 @@ from .config import CodegenConfig
 
 logger = logging.getLogger(__name__)
 
-
 class CodegenClient:
     """Wrapper for Codegen SDK with async support and error handling."""
     
@@ -81,68 +80,12 @@ class CodegenClient:
                         logger.debug(f"🔍 COMPLETION CHECK | Task: {task.id} | Status: {status} | Attempt: {retry_count + 1} | Duration: {elapsed_time:.2f}s")
                         
                         if status == "COMPLETE":
-                            # Try multiple ways to get the task result
-                            result_content = None
-                            
-                            # Method 1: Check task.result
                             if hasattr(task, 'result') and task.result:
-                                result_content = task.result
-                                logger.info(f"Task {task.id} completed with result from task.result")
-                            
-                            # Method 2: Check task.output (alternative attribute)
-                            elif hasattr(task, 'output') and task.output:
-                                result_content = task.output
-                                logger.info(f"Task {task.id} completed with result from task.output")
-                            
-                            # Method 3: Check task.response (another alternative)
-                            elif hasattr(task, 'response') and task.response:
-                                result_content = task.response
-                                logger.info(f"Task {task.id} completed with result from task.response")
-                            
-                            # Method 4: Check task.content (yet another alternative)
-                            elif hasattr(task, 'content') and task.content:
-                                result_content = task.content
-                                logger.info(f"Task {task.id} completed with result from task.content")
-                            
-                            # Method 5: Try to refresh and get result again
-                            elif hasattr(task, 'get_result'):
-                                try:
-                                    result_content = task.get_result()
-                                    logger.info(f"Task {task.id} completed with result from task.get_result()")
-                                except Exception as e:
-                                    logger.warning(f"Failed to get result via get_result(): {e}")
-                            
-                            # If we found content, yield it
-                            if result_content:
-                                # Clean and validate the content
-                                if isinstance(result_content, str) and result_content.strip():
-                                    yield result_content.strip()
-                                elif hasattr(result_content, '__str__'):
-                                    content_str = str(result_content).strip()
-                                    if content_str:
-                                        yield content_str
-                                    else:
-                                        logger.warning(f"Task {task.id} result converted to empty string")
-                                        yield "Task completed but returned empty content."
-                                else:
-                                    logger.warning(f"Task {task.id} result is not a string: {type(result_content)}")
-                                    yield f"Task completed with result type: {type(result_content).__name__}"
+                                logger.info(f"Task {task.id} completed with result")
+                                yield task.result
                             else:
-                                # Log all available attributes for debugging
-                                available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
-                                logger.warning(f"Task {task.id} completed but no result found. Available attributes: {available_attrs}")
-                                
-                                # Try to get any text-like attributes
-                                for attr in ['message', 'text', 'data', 'body']:
-                                    if hasattr(task, attr):
-                                        attr_value = getattr(task, attr)
-                                        if attr_value and isinstance(attr_value, str) and attr_value.strip():
-                                            logger.info(f"Found content in task.{attr}")
-                                            yield attr_value.strip()
-                                            break
-                                else:
-                                    # Last resort: return a more informative message
-                                    yield "Task completed successfully but no response content was found. This may indicate an issue with the Codegen API response format."
+                                logger.warning(f"Task {task.id} completed but no result found")
+                                yield "Task completed successfully."
                             break
                         elif status == "FAILED":
                             error_msg = getattr(task, 'error', 'Task failed with unknown error')
@@ -160,14 +103,12 @@ class CodegenClient:
                             logger.warning(f"Task {task.id} unknown status {status}, waiting {delay:.1f}s...")
                             await asyncio.sleep(delay)
                             retry_count += 1
-                            
                     except ApiException as e:
                         if e.status == 429:  # Rate limit exceeded
                             # Respect the Retry-After header if present
                             retry_after = 5  # Default to 5 seconds
                             if hasattr(e, 'headers') and 'Retry-After' in e.headers:
                                 retry_after = int(e.headers['Retry-After'])
-                            
                             logger.warning(f"Rate limit hit for task {task.id}, waiting {retry_after + 2} seconds...")
                             await asyncio.sleep(retry_after + 2)  # Add 2 second buffer
                             retry_count += 1
@@ -183,7 +124,7 @@ class CodegenClient:
                 if retry_count >= max_retries:
                     logger.error(f"Task {task.id} polling exceeded maximum retries ({max_retries})")
                     raise RuntimeError(f"Task polling exceeded maximum retries ({max_retries})")
-                        
+        
         except Exception as e:
             logger.error(f"Error running Codegen task: {e}")
             raise
@@ -191,9 +132,8 @@ class CodegenClient:
     async def _stream_task_response(self, task) -> AsyncGenerator[str, None]:
         """
         Stream task response by polling status and yielding partial results.
-        
-        This is a simplified streaming implementation since we don't know
-        the exact streaming capabilities of the Codegen SDK.
+        This is a simplified streaming implementation since we don't know the exact
+        streaming capabilities of the Codegen SDK.
         """
         last_content = ""
         retry_count = 0
@@ -224,20 +164,18 @@ class CodegenClient:
                             new_content = task.partial_result[len(last_content):]
                             if new_content:
                                 yield new_content
-                                last_content = task.partial_result
+                            last_content = task.partial_result
                     # If no partial results, yield a small indicator
                     elif not last_content:
                         yield ""  # Empty chunk to indicate streaming started
                         last_content = " "  # Mark that we've started
                 
                 retry_count += 1
-                
             except ApiException as e:
                 if e.status == 429:  # Rate limit exceeded
                     retry_after = 5
                     if hasattr(e, 'headers') and 'Retry-After' in e.headers:
                         retry_after = int(e.headers['Retry-After'])
-                    
                     logger.warning(f"Rate limit hit during streaming, waiting {retry_after + 2} seconds...")
                     await asyncio.sleep(retry_after + 2)
                     retry_count += 1
@@ -248,12 +186,12 @@ class CodegenClient:
                 logger.error(f"Error during streaming: {e}")
                 await asyncio.sleep(base_delay)
                 retry_count += 1
-
+    
     def count_tokens(self, text: str) -> int:
         """
         Estimate token count for a given text.
-        This is a simple approximation - in production you might want
-        to use a proper tokenizer.
+        This is a simple approximation - in production you might want to use a proper tokenizer.
         """
         # Simple approximation: ~4 characters per token
         return max(1, len(text) // 4)
+

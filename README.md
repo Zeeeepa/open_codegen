@@ -1,139 +1,108 @@
-# OpenAI Codegen Adapter - Simple Setup
+# OpenAI Codegen Adapter
 
-## Quick Start
+A unified API server that routes OpenAI, Anthropic, and Google API requests to the Codegen SDK.
 
-### 1. Configure Environment
-Copy `.env.example` to `.env` and update with your credentials:
-```bash
-cp .env.example .env
-# Edit .env with your actual CODEGEN_ORG_ID and CODEGEN_TOKEN
+## Features
+
+- OpenAI-compatible API endpoints
+- Anthropic Claude API compatibility
+- Google Gemini API compatibility
+- Web UI for testing and configuration
+- Direct integration with Codegen SDK
+
+## Setup
+
+1. Clone this repository
+2. Create a `.env` file with your Codegen credentials:
+
+```
+CODEGEN_ORG_ID=your_org_id_here
+CODEGEN_TOKEN=sk-your-codegen-token-here
 ```
 
-### 2. Start the Server
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Start the server:
+
 ```bash
 python server.py
 ```
-This starts the OpenAI-compatible server at `http://localhost:8887`
 
-### 3. Test the Server
+Or use the provided script:
 
-**OpenAI API Test:**
 ```bash
-python test.py
+./start_server.sh
 ```
-This sends a test message using OpenAI client with modified baseURL.
 
-**Anthropic API Test:**
-```bash
-python test_anthropic.py
-```
-This tests Anthropic Claude API compatibility.
+## Environment Variables
 
-**Google Gemini API Test:**
-```bash
-python test_google.py
-```
-This tests Google Gemini API compatibility.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| CODEGEN_ORG_ID | Your Codegen organization ID | (required) |
+| CODEGEN_TOKEN | Your Codegen API token | (required) |
+| SERVER_HOST | Host to bind the server to | localhost |
+| SERVER_PORT | Port to run the server on | 8887 |
+| LOG_LEVEL | Logging level | info |
 
 ## API Endpoints
 
-### OpenAI Compatible
-- **`/v1/chat/completions`** - OpenAI chat completions
-- **`/v1/completions`** - OpenAI text completions
-- **`/v1/models`** - List available models
+### OpenAI
 
-### Anthropic Compatible
-- **`/v1/messages`** - Anthropic Claude messages
-- **`/v1/anthropic/completions`** - Anthropic completions
+- **POST** `/v1/chat/completions` - OpenAI chat completions API
 
-### Google Gemini Compatible
-- **`/v1/gemini/generateContent`** - Google Gemini content generation
-- **`/v1/gemini/completions`** - Google Gemini completions
+### Anthropic
 
-## Usage Examples
+- **POST** `/v1/anthropic/completions` - Anthropic completions API
 
-### OpenAI Client
-```python
-from openai import OpenAI
+### Google
 
-client = OpenAI(
-    api_key="dummy-key",
-    base_url="http://localhost:8887/v1"
-)
+- **POST** `/v1/gemini/completions` - Google Gemini completions API
+- **POST** `/v1/gemini/generateContent` - Google Gemini generateContent API
 
-response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
+## Using with Existing Applications
+
+### OpenAI
+
+```
+OPENAI_API_BASE=http://localhost:8887/v1
 ```
 
-### Anthropic Client
-```python
-import requests
+### Anthropic
 
-response = requests.post(
-    "http://localhost:8887/v1/messages",
-    json={
-        "model": "claude-3-sonnet-20240229",
-        "max_tokens": 1024,
-        "messages": [{"role": "user", "content": "Hello!"}]
-    },
-    headers={"x-api-key": "dummy-key"}
-)
+```
+ANTHROPIC_API_URL=http://localhost:8887/v1
 ```
 
-## Environment Configuration Examples
+### Google
 
-### OpenAI Environment Setup
-```python
-from openai import OpenAI
-
-def main():
-    client = OpenAI(
-        api_key="dummy-key",  # Server doesn't validate this
-        base_url="http://localhost:8887/v1"  # Point to our server
-    )
+```
+GEMINI_API_URL=http://localhost:8887/v1
 ```
 
-### Anthropic Environment Setup
-```python
-import anthropic
+## Testing
 
-def main():
-    client = anthropic.Anthropic(
-        api_key="dummy-key",  # Server doesn't validate this
-        base_url="http://localhost:8887/v1"  # Point to our server
-    )
+Run the included test scripts:
+
+```bash
+./test_openai.py
+./test_anthropic.py
+./test_google.py
 ```
 
-### Google Gemini Environment Setup
-```python
-import requests
+## How It Works
 
-def main():
-    # Point Gemini requests to our server
-    base_url = "http://localhost:8887/v1/gemini"
-    
-    response = requests.post(
-        f"{base_url}/generateContent",
-        json={"contents": [{"role": "user", "parts": [{"text": "Hello!"}]}]}
-    )
-```
+This server acts as a proxy that:
 
-## Files
+1. Receives API requests in OpenAI, Anthropic, or Google format
+2. Extracts the prompt/message content
+3. Uses the Codegen SDK to process the request
+4. Formats the response back into the appropriate API format
 
-- **`server.py`** - Starts the FastAPI server
-- **`test.py`** - Simple OpenAI client test with modified baseURL
-- **`test_anthropic.py`** - Anthropic API compatibility test
-- **`test_google.py`** - Google Gemini API compatibility test
-- **`.env.example`** - Environment configuration template
-- **`openai_codegen_adapter/`** - Core adapter implementation
+## License
 
-## How it Works
+MIT
 
-1. The server runs on `localhost:8887` and provides both OpenAI and Anthropic-compatible endpoints
-2. Tests use standard clients but point to our local server
-3. Requests are transformed and sent to Codegen API
-4. Responses are transformed back to the appropriate API format
-
-That's it! 🚀

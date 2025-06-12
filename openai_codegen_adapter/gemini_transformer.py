@@ -1,177 +1,133 @@
 """
-Request and response transformers for Google Gemini API compatibility.
-Converts between Gemini API format and Codegen SDK.
+Gemini-specific transformers for request and response handling.
 """
 
-from typing import List, Dict, Any
-from .models import (
-    GeminiRequest, GeminiResponse, GeminiContent, GeminiPart, 
-    GeminiCandidate, GeminiUsageMetadata
-)
-from .response_transformer import estimate_tokens, clean_content
+from typing import Dict, Any, List, Optional
+from .models import GeminiContent, GeminiCandidate, GeminiUsageMetadata, GeminiResponse
 
 
-def gemini_request_to_prompt(request: GeminiRequest) -> str:
+def gemini_request_to_prompt(request) -> str:
     """
-    Convert Gemini API request to a prompt string for Codegen SDK.
+    Convert Gemini request to prompt string.
     
     Args:
-        request: GeminiRequest object
+        request: Gemini API request
         
     Returns:
-        str: Formatted prompt string
+        Prompt string for Codegen
     """
-    prompt_parts = []
-    
-    # Add system instruction if provided
-    if request.systemInstruction:
-        system_text = " ".join([part.text for part in request.systemInstruction.parts])
-        prompt_parts.append(f"System: {system_text}")
-    
-    # Add conversation contents
-    for content in request.contents:
-        text = " ".join([part.text for part in content.parts])
+    # Try to extract from messages
+    if hasattr(request, 'messages') and request.messages:
+        prompt_parts = []
         
-        if content.role == "user":
-            prompt_parts.append(f"Human: {text}")
-        elif content.role == "model":
-            prompt_parts.append(f"Assistant: {text}")
-        else:
-            # Default to user if role is not specified
-            prompt_parts.append(f"Human: {text}")
+        for message in request.messages:
+            role = message.role
+            content = message.content
+            
+            if role == "user":
+                prompt_parts.append(f"Human: {content}")
+            elif role == "model" or role == "assistant":
+                prompt_parts.append(f"Assistant: {content}")
+        
+        # Add a prompt for the assistant to respond if the last message is from user
+        if request.messages and request.messages[-1].role == "user":
+            prompt_parts.append("Assistant:")
+        
+        return "\n\n".join(prompt_parts)
     
-    # Add final assistant prompt
-    prompt_parts.append("Assistant:")
+    # Try to extract from contents
+    if hasattr(request, 'contents') and request.contents:
+        prompt_parts = []
+        
+        for content in request.contents:
+            role = content.role if hasattr(content, 'role') else None
+            parts = content.parts if hasattr(content, 'parts') else []
+            
+            text_parts = []
+            for part in parts:
+                if 'text' in part:
+                    text_parts.append(part['text'])
+            
+            combined_text = " ".join(text_parts)
+            
+            if role == "user":
+                prompt_parts.append(f"Human: {combined_text}")
+            elif role == "model" or role == "assistant":
+                prompt_parts.append(f"Assistant: {combined_text}")
+            else:
+                prompt_parts.append(combined_text)
+        
+        return "\n\n".join(prompt_parts)
     
-    return "\n\n".join(prompt_parts)
+    # Fallback to direct prompt if available
+    return getattr(request, 'prompt', "")
+
+
+def extract_gemini_generation_params(request) -> Dict[str, Any]:
+    """
+    Extract generation parameters from Gemini request.
+    
+    Args:
+        request: Gemini API request
+        
+    Returns:
+        Dictionary of generation parameters
+    """
+    params = {}
+    
+    if hasattr(request, 'temperature') and request.temperature is not None:
+        params['temperature'] = request.temperature
+    
+    if hasattr(request, 'max_output_tokens') and request.max_output_tokens is not None:
+        params['max_tokens'] = request.max_output_tokens
+    
+    if hasattr(request, 'top_p') and request.top_p is not None:
+        params['top_p'] = request.top_p
+    
+    if hasattr(request, 'top_k') and request.top_k is not None:
+        params['top_k'] = request.top_k
+    
+    if hasattr(request, 'stream') and request.stream is not None:
+        params['stream'] = request.stream
+    
+    return params
 
 
 def create_gemini_response(
     content: str,
-    prompt_tokens: int = None,
-    completion_tokens: int = None
+    prompt_tokens: int,
+    completion_tokens: int
 ) -> GeminiResponse:
     """
-    Create a Gemini API compatible response.
+    Create a Gemini-compatible response.
     
     Args:
-        content: The response content
-        prompt_tokens: Number of input tokens (estimated if not provided)
-        completion_tokens: Number of output tokens (estimated if not provided)
+        content: Generated content
+        prompt_tokens: Number of prompt tokens
+        completion_tokens: Number of completion tokens
         
     Returns:
-        GeminiResponse: Formatted response
+        Gemini-compatible response
     """
-    # Clean the content
-    cleaned_content = clean_content(content)
-    
-    # Estimate tokens if not provided
-    if completion_tokens is None:
-        completion_tokens = estimate_tokens(cleaned_content)
-    if prompt_tokens is None:
-        prompt_tokens = 0  # We don't have the original prompt here
-    
-    # Create the response content
-    response_content = GeminiContent(
+    gemini_content = GeminiContent(
         role="model",
-        parts=[GeminiPart(text=cleaned_content)]
+        parts=[{"text": content}]
     )
     
-    # Create the candidate
     candidate = GeminiCandidate(
-        content=response_content,
+        content=gemini_content,
         finishReason="STOP",
         index=0
     )
     
-    # Create usage metadata
     usage_metadata = GeminiUsageMetadata(
         promptTokenCount=prompt_tokens,
         candidatesTokenCount=completion_tokens,
         totalTokenCount=prompt_tokens + completion_tokens
     )
     
-    # Create the response
-    response = GeminiResponse(
+    return GeminiResponse(
         candidates=[candidate],
-        usageMetadata=usage_metadata,
-        modelVersion="gemini-1.5-pro"
+        usageMetadata=usage_metadata
     )
-    
-    return response
-
-
-def extract_gemini_generation_params(request: GeminiRequest) -> Dict[str, Any]:
-    """
-    Extract generation parameters from Gemini request.
-    
-    Args:
-        request: GeminiRequest object
-        
-    Returns:
-        Dict[str, Any]: Generation parameters
-    """
-    params = {}
-    
-    if request.generationConfig:
-        config = request.generationConfig
-        
-        if config.temperature is not None:
-            params["temperature"] = config.temperature
-        if config.topP is not None:
-            params["top_p"] = config.topP
-        if config.topK is not None:
-            params["top_k"] = config.topK
-        if config.maxOutputTokens is not None:
-            params["max_tokens"] = config.maxOutputTokens
-        if config.stopSequences:
-            params["stop_sequences"] = config.stopSequences
-    
-    return params
-
-
-def create_gemini_stream_chunk(
-    content: str,
-    is_final: bool = False,
-    prompt_tokens: int = 0,
-    completion_tokens: int = 0
-) -> Dict[str, Any]:
-    """
-    Create a Gemini streaming chunk.
-    
-    Args:
-        content: Content for the chunk
-        is_final: Whether this is the final chunk
-        prompt_tokens: Number of input tokens
-        completion_tokens: Number of output tokens
-        
-    Returns:
-        Dict[str, Any]: Streaming chunk data
-    """
-    # Create the response content
-    response_content = GeminiContent(
-        role="model",
-        parts=[GeminiPart(text=content)]
-    )
-    
-    # Create the candidate
-    candidate = GeminiCandidate(
-        content=response_content,
-        finishReason="STOP" if is_final else None,
-        index=0
-    )
-    
-    chunk = {
-        "candidates": [candidate.dict()]
-    }
-    
-    # Add usage metadata for final chunk
-    if is_final:
-        chunk["usageMetadata"] = {
-            "promptTokenCount": prompt_tokens,
-            "candidatesTokenCount": completion_tokens,
-            "totalTokenCount": prompt_tokens + completion_tokens
-        }
-    
-    return chunk
 

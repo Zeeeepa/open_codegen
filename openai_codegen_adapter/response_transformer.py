@@ -1,15 +1,15 @@
 """
 Response transformation utilities to convert Codegen responses to OpenAI format.
-Based on h2ogpt's backend.py response formatting patterns.
 """
 
 import time
 import uuid
-from typing import Optional
+from typing import Optional, Dict, Any, List
 from .models import (
     ChatResponse, ChatResponseStream, TextResponse,
     ChatChoice, ChatChoiceStream, TextChoice,
-    Message, Usage
+    Message, Usage, AnthropicContentBlock, AnthropicResponse,
+    GeminiContent, GeminiCandidate, GeminiUsageMetadata, GeminiResponse
 )
 
 
@@ -22,7 +22,6 @@ def create_chat_response(
 ) -> ChatResponse:
     """
     Create a ChatResponse from Codegen output.
-    Based on h2ogpt's achat_completion_action response format.
     
     Args:
         content: The generated content from Codegen
@@ -61,7 +60,6 @@ def create_chat_stream_chunk(
 ) -> ChatResponseStream:
     """
     Create a streaming chat response chunk.
-    Based on h2ogpt's chat_streaming_chunk function.
     
     Args:
         content: The content chunk
@@ -99,7 +97,6 @@ def create_text_response(
 ) -> TextResponse:
     """
     Create a TextResponse from Codegen output.
-    Based on h2ogpt's acompletions_action response format.
     
     Args:
         content: The generated content from Codegen
@@ -132,7 +129,6 @@ def create_text_response(
 def format_sse_chunk(chunk: ChatResponseStream) -> str:
     """
     Format a streaming chunk as Server-Sent Event.
-    Based on h2ogpt's streaming response format.
     
     Args:
         chunk: The streaming response chunk
@@ -190,4 +186,56 @@ def clean_content(content: str) -> str:
     content = content.strip()
     
     return content
+
+
+# Anthropic-specific transformers
+def create_anthropic_response(
+    content: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int
+) -> AnthropicResponse:
+    """Create an Anthropic-compatible response."""
+    content_block = AnthropicContentBlock(type="text", text=content)
+    
+    usage = {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens
+    }
+    
+    return AnthropicResponse(
+        model=model,
+        content=[content_block],
+        usage=usage
+    )
+
+
+# Gemini-specific transformers
+def create_gemini_response(
+    content: str,
+    prompt_tokens: int,
+    completion_tokens: int
+) -> GeminiResponse:
+    """Create a Gemini-compatible response."""
+    gemini_content = GeminiContent(
+        role="model",
+        parts=[{"text": content}]
+    )
+    
+    candidate = GeminiCandidate(
+        content=gemini_content,
+        finishReason="STOP",
+        index=0
+    )
+    
+    usage_metadata = GeminiUsageMetadata(
+        promptTokenCount=prompt_tokens,
+        candidatesTokenCount=completion_tokens,
+        totalTokenCount=prompt_tokens + completion_tokens
+    )
+    
+    return GeminiResponse(
+        candidates=[candidate],
+        usageMetadata=usage_metadata
+    )
 

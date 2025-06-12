@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 API Router System for OpenAI, Anthropic, and Google APIs.
 Routes requests from these APIs to the Codegen SDK.
@@ -8,17 +7,15 @@ import logging
 import time
 import json
 import os
+import requests
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-from fastapi import FastAPI, Request, HTTPException, Response
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
-# Import Codegen SDK
-from codegen.agents.agent import Agent
+import uvicorn
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -40,29 +37,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files if available
+# Mount static files for Web UI if available
 static_path = Path("static")
 if static_path.exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Codegen SDK configuration
-CODEGEN_ORG_ID = os.environ.get("CODEGEN_ORG_ID", "")
-CODEGEN_TOKEN = os.environ.get("CODEGEN_TOKEN", "")
+# Codegen SDK API endpoint (default to localhost, can be overridden with env var)
+CODEGEN_API_URL = os.environ.get("CODEGEN_API_URL", "http://localhost:8000/api/generate")
 
-# Initialize Codegen SDK Agent
-agent = Agent(
-    org_id=CODEGEN_ORG_ID,
-    token=CODEGEN_TOKEN
-)
 
-# Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler."""
     logger.error(f"Global exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)}
+        content={"detail": f"Internal server error: {str(exc)}"}
     )
 
 
@@ -74,7 +64,7 @@ async def health_check():
         "status": "healthy",
         "timestamp": time.time(),
         "providers": ["openai", "anthropic", "google"],
-        "routing_to": "Codegen SDK"
+        "routing_to": CODEGEN_API_URL
     }
 
 
@@ -101,42 +91,31 @@ async def openai_chat_completions(request: Request):
         if not user_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Use the Codegen SDK to run the agent
-        logger.info(f"Routing OpenAI request to Codegen SDK: {user_message}")
+        # Prepare request to Codegen SDK
+        codegen_request = {
+            "prompt": user_message,
+            "source": "openai_proxy",
+            "model": body.get("model", "gpt-3.5-turbo")
+        }
         
-        try:
-            # Create a task with the prompt
-            task = agent.run(prompt=user_message)
-            task_id = task.id
-            logger.info(f"Created Codegen SDK task: {task_id}")
-            
-            # Wait for the task to complete (with timeout)
-            start_time = time.time()
-            timeout = 30  # 30 seconds timeout
-            
-            while time.time() - start_time < timeout:
-                # Refresh the task to get the latest status
-                task.refresh()
-                
-                if task.status == "completed":
-                    generated_text = task.result
-                    logger.info(f"Codegen SDK task completed successfully: {task_id}")
-                    break
-                elif task.status in ["failed", "error"]:
-                    logger.error(f"Codegen SDK task failed: {task_id}, status: {task.status}")
-                    generated_text = f"Error: Task {task.status}. Please try again later."
-                    break
-                
-                # Wait before checking again
-                time.sleep(1)
-            else:
-                # Timeout reached
-                logger.error(f"Codegen SDK task timed out: {task_id}")
-                generated_text = "Error: Task timed out. Please try again later."
+        # Send request to Codegen SDK
+        logger.info(f"Routing OpenAI request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        except Exception as e:
-            logger.error(f"Error running Codegen agent: {e}")
-            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in OpenAI format
         openai_response = {
@@ -191,42 +170,31 @@ async def anthropic_completions(request: Request):
         if not user_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Use the Codegen SDK to run the agent
-        logger.info(f"Routing Anthropic request to Codegen SDK: {user_message}")
+        # Prepare request to Codegen SDK
+        codegen_request = {
+            "prompt": user_message,
+            "source": "anthropic_proxy",
+            "model": body.get("model", "claude-3-sonnet-20240229")
+        }
         
-        try:
-            # Create a task with the prompt
-            task = agent.run(prompt=user_message)
-            task_id = task.id
-            logger.info(f"Created Codegen SDK task: {task_id}")
-            
-            # Wait for the task to complete (with timeout)
-            start_time = time.time()
-            timeout = 30  # 30 seconds timeout
-            
-            while time.time() - start_time < timeout:
-                # Refresh the task to get the latest status
-                task.refresh()
-                
-                if task.status == "completed":
-                    generated_text = task.result
-                    logger.info(f"Codegen SDK task completed successfully: {task_id}")
-                    break
-                elif task.status in ["failed", "error"]:
-                    logger.error(f"Codegen SDK task failed: {task_id}, status: {task.status}")
-                    generated_text = f"Error: Task {task.status}. Please try again later."
-                    break
-                
-                # Wait before checking again
-                time.sleep(1)
-            else:
-                # Timeout reached
-                logger.error(f"Codegen SDK task timed out: {task_id}")
-                generated_text = "Error: Task timed out. Please try again later."
+        # Send request to Codegen SDK
+        logger.info(f"Routing Anthropic request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        except Exception as e:
-            logger.error(f"Error running Codegen agent: {e}")
-            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in Anthropic format
         anthropic_response = {
@@ -268,42 +236,31 @@ async def gemini_completions(request: Request):
         if not user_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Use the Codegen SDK to run the agent
-        logger.info(f"Routing Google request to Codegen SDK: {user_message}")
+        # Prepare request to Codegen SDK
+        codegen_request = {
+            "prompt": user_message,
+            "source": "google_proxy",
+            "model": body.get("model", "gemini-1.5-pro")
+        }
         
-        try:
-            # Create a task with the prompt
-            task = agent.run(prompt=user_message)
-            task_id = task.id
-            logger.info(f"Created Codegen SDK task: {task_id}")
-            
-            # Wait for the task to complete (with timeout)
-            start_time = time.time()
-            timeout = 30  # 30 seconds timeout
-            
-            while time.time() - start_time < timeout:
-                # Refresh the task to get the latest status
-                task.refresh()
-                
-                if task.status == "completed":
-                    generated_text = task.result
-                    logger.info(f"Codegen SDK task completed successfully: {task_id}")
-                    break
-                elif task.status in ["failed", "error"]:
-                    logger.error(f"Codegen SDK task failed: {task_id}, status: {task.status}")
-                    generated_text = f"Error: Task {task.status}. Please try again later."
-                    break
-                
-                # Wait before checking again
-                time.sleep(1)
-            else:
-                # Timeout reached
-                logger.error(f"Codegen SDK task timed out: {task_id}")
-                generated_text = "Error: Task timed out. Please try again later."
+        # Send request to Codegen SDK
+        logger.info(f"Routing Google request to Codegen SDK: {json.dumps(codegen_request)}")
         
-        except Exception as e:
-            logger.error(f"Error running Codegen agent: {e}")
-            raise HTTPException(status_code=500, detail=f"Error running Codegen agent: {str(e)}")
+        response = requests.post(CODEGEN_API_URL, json=codegen_request)
+        
+        # Check response status
+        if response.status_code != 200:
+            logger.error(f"Codegen SDK error: {response.status_code} - {response.text}")
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"error": f"Codegen SDK error: {response.text}"}
+            )
+        
+        # Parse Codegen SDK response
+        codegen_response = response.json()
+        
+        # Extract the generated text from Codegen response
+        generated_text = codegen_response.get("response", "No response from Codegen SDK")
         
         # Format response in Google/Gemini format
         gemini_response = {
@@ -335,20 +292,6 @@ async def gemini_completions(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Alternative Gemini endpoint
-@app.post("/v1/gemini/generateContent")
-async def gemini_generate_content(request: Request):
-    """Alternative Gemini endpoint - routes to the main Gemini endpoint."""
-    return await gemini_completions(request)
-
-
-# Alternative Anthropic endpoint
-@app.post("/v1/anthropic/messages")
-async def anthropic_messages(request: Request):
-    """Alternative Anthropic endpoint - routes to the main Anthropic endpoint."""
-    return await anthropic_completions(request)
-
-
 def extract_user_message(body):
     """Extract user message from different possible formats."""
     user_message = None
@@ -373,18 +316,33 @@ def extract_user_message(body):
             if user_message:
                 break
     
-    # If still not found, try prompt field (fallback)
-    if not user_message:
-        user_message = body.get("prompt", "")
-    
     return user_message
 
 
-# Root endpoint - HTML UI
+# Alternative Gemini endpoint
+@app.post("/v1/gemini/generateContent")
+async def gemini_generate_content(request: Request):
+    """Alternative Gemini endpoint."""
+    return await gemini_completions(request)
+
+
+# Alternative Anthropic endpoint
+@app.post("/v1/messages")
+async def anthropic_messages(request: Request):
+    """Alternative Anthropic endpoint."""
+    return await anthropic_completions(request)
+
+
+# Web UI endpoint
 @app.get("/", response_class=HTMLResponse)
-async def root():
-    """Root endpoint - returns HTML UI."""
-    return """
+async def web_ui():
+    """Serve the web UI."""
+    static_index = Path("static/index.html")
+    if static_index.exists():
+        return HTMLResponse(content=static_index.read_text(), status_code=200)
+    
+    # Fallback HTML
+    return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
     <head>
@@ -534,7 +492,8 @@ async def root():
                 </div>
                 
                 <div class="config-info">
-                    <p><strong>Routing to:</strong> <span id="routing-to">Codegen SDK</span></p>
+                    <p><strong>Routing to:</strong> <span id="routing-to">Checking...</span></p>
+                    <p>To change the Codegen SDK endpoint, set the <code>CODEGEN_API_URL</code> environment variable.</p>
                 </div>
             </div>
             
@@ -564,155 +523,158 @@ async def root():
             <div class="card">
                 <h2>Available Endpoints</h2>
                 <div class="endpoint">
-                    <span class="method">POST</span> /v1/chat/completions - OpenAI API
-                </div>
-                <div class="endpoint">
-                    <span class="method">POST</span> /v1/anthropic/completions - Anthropic API
-                </div>
-                <div class="endpoint">
-                    <span class="method">POST</span> /v1/anthropic/messages - Anthropic API (alternative)
-                </div>
-                <div class="endpoint">
-                    <span class="method">POST</span> /v1/gemini/completions - Google Gemini API
-                </div>
-                <div class="endpoint">
-                    <span class="method">POST</span> /v1/gemini/generateContent - Google Gemini API (alternative)
-                </div>
-                <div class="endpoint">
                     <span class="method">GET</span> /health - Health check
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /v1/chat/completions - OpenAI chat completions
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /v1/anthropic/completions - Anthropic completions
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /v1/gemini/completions - Google Gemini completions
                 </div>
             </div>
             
-            <footer>
-                <p>API Router System - Routes requests to Codegen SDK</p>
-            </footer>
+            <div class="card">
+                <h2>How to Use</h2>
+                <p>To use this API router with your existing applications:</p>
+                <ol>
+                    <li>Start this server on your desired host and port</li>
+                    <li>In your application that uses OpenAI, Anthropic, or Google APIs, change the API base URL to point to this server</li>
+                    <li>No API keys or other configuration needed - all requests will be routed to the Codegen SDK</li>
+                </ol>
+                
+                <h3>Example Configuration</h3>
+                <div class="endpoint">
+                    <strong>OpenAI:</strong> <code>OPENAI_API_BASE=http://localhost:8887/v1</code>
+                </div>
+                <div class="endpoint">
+                    <strong>Anthropic:</strong> <code>ANTHROPIC_API_URL=http://localhost:8887/v1</code>
+                </div>
+                <div class="endpoint">
+                    <strong>Google/Gemini:</strong> <code>GEMINI_API_URL=http://localhost:8887/v1</code>
+                </div>
+            </div>
         </div>
+
+        <footer>
+            <div class="container">
+                <p>API Router System &copy; 2024</p>
+            </div>
+        </footer>
         
         <script>
-            // Check health status on page load
-            window.onload = function() {
-                checkHealth();
-            };
+            // Check server health on page load
+            document.addEventListener('DOMContentLoaded', checkHealth);
             
-            // Function to check health status
             function checkHealth() {
                 fetch('/health')
                     .then(response => response.json())
                     .then(data => {
-                        const healthStatus = document.getElementById('health-status');
-                        if (data.status === 'healthy') {
-                            healthStatus.className = 'status healthy';
-                            healthStatus.innerHTML = '✅ System is healthy';
-                        } else {
-                            healthStatus.className = 'status unhealthy';
-                            healthStatus.innerHTML = '❌ System is unhealthy';
-                        }
+                        const statusElement = document.getElementById('health-status');
+                        const routingElement = document.getElementById('routing-to');
                         
-                        // Update routing info
-                        const routingTo = document.getElementById('routing-to');
-                        routingTo.textContent = data.routing_to || 'Unknown';
+                        if (data.status === 'healthy') {
+                            statusElement.className = 'status healthy';
+                            statusElement.innerHTML = '✅ Server is healthy';
+                            
+                            if (data.routing_to) {
+                                routingElement.textContent = data.routing_to;
+                            }
+                        } else {
+                            statusElement.className = 'status unhealthy';
+                            statusElement.innerHTML = '❌ Server is unhealthy';
+                        }
                     })
                     .catch(error => {
-                        const healthStatus = document.getElementById('health-status');
-                        healthStatus.className = 'status unhealthy';
-                        healthStatus.innerHTML = '❌ Health check failed: ' + error.message;
+                        const statusElement = document.getElementById('health-status');
+                        statusElement.className = 'status unhealthy';
+                        statusElement.innerHTML = '❌ Server is unhealthy';
+                        console.error('Error checking health:', error);
                     });
             }
             
-            // Function to test API with default prompt
             function testAPI(provider) {
-                testAPIWithPrompt(provider, 'Hello! Please respond with a short greeting.');
+                const defaultPrompt = "Hello! Please respond with a short greeting.";
+                sendRequest(provider, defaultPrompt);
             }
             
-            // Function to test API with custom prompt
             function testAPIWithCustomPrompt(provider) {
-                const prompt = document.getElementById('custom-prompt').value;
-                testAPIWithPrompt(provider, prompt);
+                const prompt = document.getElementById('custom-prompt').value.trim();
+                if (!prompt) {
+                    alert('Please enter a prompt');
+                    return;
+                }
+                sendRequest(provider, prompt);
             }
             
-            // Function to test API with specified prompt
-            function testAPIWithPrompt(provider, prompt) {
-                let endpoint = '';
-                let requestBody = {};
+            function sendRequest(provider, message) {
+                const responseContainer = document.getElementById('response-container');
+                const responseContent = document.getElementById('response-content');
                 
-                // Set endpoint and request body based on provider
+                responseContainer.className = ''; // Show container
+                responseContent.textContent = 'Sending request...';
+                
+                let endpoint = '';
+                let payload = {};
+                
                 if (provider === 'openai') {
                     endpoint = '/v1/chat/completions';
-                    requestBody = {
+                    payload = {
                         model: 'gpt-3.5-turbo',
-                        messages: [
-                            {
-                                role: 'user',
-                                content: prompt
-                            }
-                        ]
+                        messages: [{ role: 'user', content: message }]
                     };
                 } else if (provider === 'anthropic') {
                     endpoint = '/v1/anthropic/completions';
-                    requestBody = {
+                    payload = {
                         model: 'claude-3-sonnet-20240229',
-                        messages: [
-                            {
-                                role: 'user',
-                                content: prompt
-                            }
-                        ]
+                        messages: [{ role: 'user', content: message }]
                     };
                 } else if (provider === 'google') {
                     endpoint = '/v1/gemini/completions';
-                    requestBody = {
+                    payload = {
                         model: 'gemini-1.5-pro',
-                        messages: [
-                            {
-                                role: 'user',
-                                content: prompt
-                            }
-                        ]
+                        messages: [{ role: 'user', content: message }]
                     };
                 }
                 
-                // Show loading state
-                const responseContainer = document.getElementById('response-container');
-                const responseContent = document.getElementById('response-content');
-                responseContainer.classList.remove('hidden');
-                responseContent.textContent = 'Loading...';
-                
-                // Make API request
                 fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify(payload)
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    // Format and display response
-                    responseContent.textContent = JSON.stringify(data, null, 2);
+                    responseContent.textContent = 'Request successful!\nResponse:\n' + JSON.stringify(data, null, 2);
                 })
                 .catch(error => {
                     responseContent.textContent = 'Error: ' + error.message;
+                    console.error('Error:', error);
                 });
             }
         </script>
     </body>
     </html>
-    """
+    """, status_code=200)
 
 
 def start_server(host="localhost", port=8887):
     """Start the server."""
-    import uvicorn
     logger.info(f"Starting API Router System on {host}:{port}")
-    logger.info(f"Routing requests to Codegen SDK")
+    logger.info(f"Routing requests to Codegen SDK at: {CODEGEN_API_URL}")
     logger.info(f"Supported providers: openai, anthropic, google")
-    uvicorn.run(app, host=host, port=port)
+    
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level="info"
+    )
 
 
 if __name__ == "__main__":
     start_server()
+

@@ -3,7 +3,7 @@ Configuration management for the OpenAI Codegen Adapter.
 """
 
 import os
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 
@@ -20,7 +20,7 @@ class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8887
     log_level: str = "info"
-    cors_origins: list = ["*"]
+    cors_origins: List[str] = ["*"]
 
 
 def get_codegen_config() -> CodegenConfig:
