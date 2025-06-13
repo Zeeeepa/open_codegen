@@ -9,14 +9,14 @@ import asyncio
 import json
 
 # Configure OpenAI client to use our adapter
-openai.api_base = "http://localhost:8887/v1"
+openai.api_base = "http://localhost:8001/v1"
 openai.api_key = "dummy-key"  # Not used by our adapter, but required by OpenAI client
 
 # Alternative using the new OpenAI client (v1.0+)
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://localhost:8887/v1",
+    base_url="http://localhost:8001/v1",
     api_key="dummy-key"  # Not used by our adapter
 )
 
@@ -132,7 +132,7 @@ async def example_async_usage():
     from openai import AsyncOpenAI
     
     async_client = AsyncOpenAI(
-        base_url="http://localhost:8887/v1",
+        base_url="http://localhost:8001/v1",
         api_key="dummy-key"
     )
     
@@ -160,7 +160,7 @@ def test_health_endpoint():
     import requests
     
     try:
-        response = requests.get("http://localhost:8887/health")
+        response = requests.get("http://localhost:8001/health")
         print(f"Health status: {response.json()}")
     except Exception as e:
         print(f"Health check failed: {e}")
@@ -182,7 +182,7 @@ def test_models_endpoint():
 if __name__ == "__main__":
     print("OpenAI Codegen Adapter Usage Examples")
     print("=====================================")
-    print("Make sure the adapter server is running on localhost:8887")
+    print("Make sure the adapter server is running on localhost:8001")
     print()
     
     # Test health first
@@ -202,6 +202,5 @@ if __name__ == "__main__":
     
     print("\n=== Examples completed ===")
     print("You can now use any OpenAI-compatible application with:")
-    print("  base_url: http://localhost:8887/v1")
+    print("  base_url: http://localhost:8001/v1")
     print("  api_key: any-dummy-key (not validated)")
-

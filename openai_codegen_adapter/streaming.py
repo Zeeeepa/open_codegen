@@ -157,9 +157,19 @@ async def collect_streaming_response(
         
         logger.info(f"✅ Response collection completed in {collection_time:.2f}s")
         logger.info(f"   📊 Total chunks: {chunk_count}")
-        logger.info(f"   📏 Final content length: {len(cleaned_content)} characters")
+        logger.info(f"   📏 Raw content length: {len(full_content)} characters")
+        logger.info(f"   📏 Cleaned content length: {len(cleaned_content)} characters")
         logger.info(f"   🔢 Estimated tokens: {estimate_tokens(cleaned_content)}")
-        logger.info(f"   📄 Content preview: {cleaned_content[:100]}...")
+        logger.info(f"   📄 Raw content preview: {full_content[:100]}...")
+        logger.info(f"   📄 Cleaned content preview: {cleaned_content[:100]}...")
+        
+        # Debug: Check if content is the error message
+        if "Task completed successfully but no response content was found" in cleaned_content:
+            logger.warning("🚨 OpenAI path received error message from extraction!")
+            logger.warning(f"🔍 Raw content parts: {content_parts}")
+            print(f"🚨 DEBUG: OpenAI received error message! Raw parts: {content_parts}")
+            print(f"🚨 DEBUG: Full content: {full_content}")
+            print(f"🚨 DEBUG: Cleaned content: {cleaned_content}")
         
         return cleaned_content
         

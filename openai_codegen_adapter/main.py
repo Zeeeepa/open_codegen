@@ -27,17 +27,16 @@ def main():
         sys.exit(1)
     
     print(f"✅ Credentials configured for org: {org_id}")
-    print(f"🌐 Server starting at: http://localhost:8887")
+    print(f"🌐 Server starting at: http://localhost:8001")
     
     # Start the server
     uvicorn.run(
         "openai_codegen_adapter.server:app",
         host="0.0.0.0",
-        port=8887,
+        port=8001,
         log_level="info",
         reload=False
     )
 
 if __name__ == "__main__":
     main()
-

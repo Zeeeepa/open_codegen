@@ -81,139 +81,60 @@ class CodegenClient:
                         logger.debug(f"🔍 COMPLETION CHECK | Task: {task.id} | Status: {status} | Attempt: {retry_count + 1} | Duration: {elapsed_time:.2f}s")
                         
                         if status == "COMPLETE":
-                            # Enhanced result extraction with better debugging and multiple extraction methods
+                            # Try multiple ways to get the task result (original logic preserved)
+                            # Simplified and more robust content extraction
                             result_content = None
                             extraction_method = None
                             
-                            # Log task attributes for debugging
-                            available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
-                            logger.debug(f"Task {task.id} available attributes: {available_attrs}")
+                            # Try all possible content attributes in order of preference
+                            content_attributes = [
+                                ('result', 'task.result'),
+                                ('output', 'task.output'), 
+                                ('response', 'task.response'),
+                                ('content', 'task.content'),
+                                ('message', 'task.message'),
+                                ('text', 'task.text'),
+                                ('data', 'task.data'),
+                                ('body', 'task.body')
+                            ]
                             
-                            # Method 1: Check task.result
-                            if hasattr(task, 'result') and task.result is not None:
-                                result_content = task.result
-                                extraction_method = "task.result"
-                                logger.info(f"Task {task.id} completed with result from task.result")
+                            for attr_name, attr_desc in content_attributes:
+                                if hasattr(task, attr_name):
+                                    attr_value = getattr(task, attr_name)
+                                    if attr_value is not None and str(attr_value).strip():
+                                        result_content = str(attr_value).strip()
+                                        extraction_method = attr_desc
+                                        logger.info(f"Task {task.id} extracted content from {attr_desc}")
+                                        break
                             
-                            # Method 2: Check task.output (alternative attribute)
-                            elif hasattr(task, 'output') and task.output is not None:
-                                result_content = task.output
-                                extraction_method = "task.output"
-                                logger.info(f"Task {task.id} completed with result from task.output")
-                            
-                            # Method 3: Check task.response (another alternative)
-                            elif hasattr(task, 'response') and task.response is not None:
-                                result_content = task.response
-                                extraction_method = "task.response"
-                                logger.info(f"Task {task.id} completed with result from task.response")
-                            
-                            # Method 4: Check task.content (yet another alternative)
-                            elif hasattr(task, 'content') and task.content is not None:
-                                result_content = task.content
-                                extraction_method = "task.content"
-                                logger.info(f"Task {task.id} completed with result from task.content")
-                            
-                            # Method 5: Try to refresh and get result again
-                            elif hasattr(task, 'get_result'):
+                            # Try get_result() method as last resort
+                            if not result_content and hasattr(task, 'get_result'):
                                 try:
-                                    result_content = task.get_result()
-                                    extraction_method = "task.get_result()"
-                                    logger.info(f"Task {task.id} completed with result from task.get_result()")
+                                    result_value = task.get_result()
+                                    if result_value is not None and str(result_value).strip():
+                                        result_content = str(result_value).strip()
+                                        extraction_method = 'task.get_result()'
+                                        logger.info(f"Task {task.id} extracted content from task.get_result()")
                                 except Exception as e:
-                                    logger.warning(f"Failed to get result via get_result(): {e}")
+                                    logger.warning(f"Task {task.id} get_result() failed: {e}")
                             
-                            # Method 6: Check for nested result structures (common in API responses)
-                            elif hasattr(task, 'data') and task.data is not None:
-                                data = task.data
-                                if isinstance(data, dict):
-                                    # Try common response keys
-                                    for key in ['content', 'text', 'message', 'response', 'result', 'output']:
-                                        if key in data and data[key]:
-                                            result_content = data[key]
-                                            extraction_method = f"task.data['{key}']"
-                                            logger.info(f"Task {task.id} completed with result from task.data['{key}']")
-                                            break
-                                elif hasattr(data, '__str__') and str(data).strip():
-                                    result_content = str(data)
-                                    extraction_method = "task.data (converted to string)"
-                                    logger.info(f"Task {task.id} completed with result from task.data (string conversion)")
-                            
-                            # Method 7: Try alternative attribute names that might contain results
-                            if result_content is None:
-                                for attr in ['message', 'text', 'body', 'value', 'answer', 'completion']:
-                                    if hasattr(task, attr):
-                                        attr_value = getattr(task, attr)
-                                        if attr_value and isinstance(attr_value, str) and attr_value.strip():
-                                            result_content = attr_value
-                                            extraction_method = f"task.{attr}"
-                                            logger.info(f"Task {task.id} completed with result from task.{attr}")
-                                            break
-                            
-                            # Process and yield the result content
-                            if result_content is not None:
-                                logger.info(f"Task {task.id} extracted content using method: {extraction_method}")
-                                
-                                # Handle different content types
-                                if isinstance(result_content, str):
-                                    content_str = result_content.strip()
-                                    if content_str:
-                                        yield content_str
-                                    else:
-                                        logger.warning(f"Task {task.id} result is empty string")
-                                        yield "Task completed but returned empty content."
-                                elif isinstance(result_content, dict):
-                                    # Handle dictionary responses (common in API responses)
-                                    if 'content' in result_content:
-                                        yield str(result_content['content']).strip()
-                                    elif 'text' in result_content:
-                                        yield str(result_content['text']).strip()
-                                    elif 'message' in result_content:
-                                        yield str(result_content['message']).strip()
-                                    else:
-                                        # Convert entire dict to string as fallback
-                                        yield str(result_content)
-                                elif isinstance(result_content, list):
-                                    # Handle list responses
-                                    if result_content and len(result_content) > 0:
-                                        first_item = result_content[0]
-                                        if isinstance(first_item, dict):
-                                            # Extract from first dict item
-                                            for key in ['content', 'text', 'message']:
-                                                if key in first_item:
-                                                    yield str(first_item[key]).strip()
-                                                    break
-                                            else:
-                                                yield str(first_item)
-                                        else:
-                                            yield str(first_item).strip()
-                                    else:
-                                        yield "Task completed but returned empty list."
-                                elif hasattr(result_content, '__str__'):
-                                    content_str = str(result_content).strip()
-                                    if content_str and content_str != 'None':
-                                        yield content_str
-                                    else:
-                                        logger.warning(f"Task {task.id} result converted to empty/None string")
-                                        yield "Task completed but returned empty content."
-                                else:
-                                    logger.warning(f"Task {task.id} result is unexpected type: {type(result_content)}")
-                                    yield f"Task completed with result type: {type(result_content).__name__}"
+                            # Yield the extracted content or error message
+                            if result_content:
+                                logger.info(f"Task {task.id} yielding content from {extraction_method}: {len(result_content)} chars")
+                                yield result_content
                             else:
-                                # Enhanced debugging for when no result is found
-                                logger.warning(f"Task {task.id} completed but no result found after all extraction methods")
+                                # Log available attributes for debugging
+                                available_attrs = [attr for attr in dir(task) if not attr.startswith('_')]
+                                logger.warning(f"Task {task.id} completed but no content found. Available attributes: {available_attrs}")
                                 
-                                # Log detailed attribute inspection
-                                for attr in available_attrs:
-                                    if not attr.startswith('_') and hasattr(task, attr):
-                                        try:
-                                            attr_value = getattr(task, attr)
-                                            attr_type = type(attr_value).__name__
-                                            attr_repr = repr(attr_value)[:100] if attr_value is not None else 'None'
-                                            logger.debug(f"Task {task.id} attribute {attr}: {attr_type} = {attr_repr}")
-                                        except Exception as e:
-                                            logger.debug(f"Task {task.id} attribute {attr}: Error accessing - {e}")
+                                # DEBUG: Log actual values of key attributes
+                                debug_info = {}
+                                for attr in ['result', 'output', 'response', 'content', 'message', 'text']:
+                                    if hasattr(task, attr):
+                                        value = getattr(task, attr)
+                                        debug_info[attr] = f"{type(value).__name__}: {repr(value)[:100]}"
+                                logger.warning(f"Task {task.id} attribute values: {debug_info}")
                                 
-                                # Last resort: return a more informative message
                                 yield "Task completed successfully but no response content was found. This may indicate an issue with the Codegen API response format."
                             break
                         elif status == "FAILED":

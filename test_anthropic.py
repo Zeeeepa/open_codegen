@@ -13,7 +13,7 @@ def test_anthropic_api():
     print("=" * 50)
     
     # Anthropic API endpoint
-    url = "http://localhost:8887/v1/messages"
+    url = "http://localhost:8001/v1/messages"
     
     # Anthropic API request format
     payload = {
@@ -63,7 +63,7 @@ def test_anthropic_streaming():
     print("=" * 50)
     
     # Anthropic API endpoint
-    url = "http://localhost:8887/v1/messages"
+    url = "http://localhost:8001/v1/messages"
     
     # Anthropic API request format with streaming
     payload = {

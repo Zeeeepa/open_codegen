@@ -13,7 +13,7 @@ from pathlib import Path
 
 async def test_webui():
     """Test the Web UI endpoints."""
-    base_url = "http://localhost:8887"
+    base_url = "http://localhost:8001"
     
     print("🧪 Testing Web UI functionality")
     print("=" * 50)
@@ -78,7 +78,7 @@ async def test_webui():
                 print(f"   ❌ Health API failed: {response.status_code}")
                 
     except httpx.ConnectError:
-        print("❌ Could not connect to server. Make sure it's running on localhost:8887")
+        print("❌ Could not connect to server. Make sure it's running on localhost:8001")
         return False
     except Exception as e:
         print(f"❌ Test failed with error: {e}")
