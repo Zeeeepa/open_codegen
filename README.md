@@ -4,8 +4,25 @@ Transform any OpenAI API application to use Codegen SDK **without code changes**
 
 ## 🚀 Quick Start (Ubuntu)
 
-### Option 1: Transparent Interception (Recommended)
-**Applications work without ANY code modifications!**
+### Option 1: Auto-Transparent Mode (Recommended)
+**One command starts everything - DNS interception, server, and cleanup!**
+
+```bash
+# Start transparent interception (auto-manages everything)
+sudo python3 server.py
+
+# Test with any OpenAI application (no code changes needed!)
+python3 test_auto_transparent.py
+```
+
+**Features:**
+- ✅ Automatically enables DNS interception
+- ✅ Starts the interceptor server  
+- ✅ Cleans up DNS settings on exit (Ctrl+C)
+- ✅ Works with any existing OpenAI application
+
+### Option 2: Manual Installation
+**Traditional installation with separate setup steps**
 
 ```bash
 # One-command installation
@@ -15,14 +32,12 @@ sudo ./install-ubuntu.sh
 python3 test_transparent_mode.py
 ```
 
-That's it! All OpenAI API calls are now intercepted and routed to Codegen SDK.
-
-### Option 2: Direct Mode (Manual Configuration)
+### Option 3: Direct Mode (Manual Configuration)
 **Requires changing base_url in applications**
 
 ```bash
-# Start the server
-python server.py
+# Start the server in direct mode
+TRANSPARENT_MODE=false python3 server.py
 
 # Test with modified client
 python test.py
@@ -40,7 +55,10 @@ python test.py
 
 ### Test Transparent Interception
 ```bash
-# Test that unmodified OpenAI code works
+# Test auto-transparent mode (recommended)
+python3 test_auto_transparent.py
+
+# Test manual transparent mode
 python3 test_transparent_mode.py
 
 # Test specific APIs
