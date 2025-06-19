@@ -12,11 +12,12 @@ Transform any OpenAI API application to use Codegen SDK **without code changes**
 sudo python3 server.py
 
 # Test with any OpenAI application (no code changes needed!)
-python3 test_auto_transparent.py
+python3 test_standard_ports.py
 ```
 
 **Features:**
 - ✅ Automatically enables DNS interception
+- ✅ Runs on standard HTTP port 80 (true transparency!)
 - ✅ Starts the interceptor server  
 - ✅ Cleans up DNS settings on exit (Ctrl+C)
 - ✅ Works with any existing OpenAI application
@@ -55,7 +56,10 @@ python test.py
 
 ### Test Transparent Interception
 ```bash
-# Test auto-transparent mode (recommended)
+# Test standard port transparent mode (recommended)
+python3 test_standard_ports.py
+
+# Test auto-transparent mode (legacy)
 python3 test_auto_transparent.py
 
 # Test manual transparent mode

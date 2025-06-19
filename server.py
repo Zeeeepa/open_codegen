@@ -87,7 +87,10 @@ def main():
     
     # Auto-detect transparent mode if not explicitly set
     transparent_mode = os.getenv('TRANSPARENT_MODE', 'true').lower() == 'true'
-    bind_privileged = os.getenv('BIND_PRIVILEGED_PORTS', 'false').lower() == 'true'
+    
+    # In transparent mode, we should use standard ports (80/443) for true transparency
+    # Users can override with BIND_PRIVILEGED_PORTS=false if needed
+    bind_privileged = os.getenv('BIND_PRIVILEGED_PORTS', 'true' if transparent_mode else 'false').lower() == 'true'
     
     # Setup signal handlers for cleanup
     signal.signal(signal.SIGINT, signal_handler)
@@ -113,7 +116,14 @@ def main():
     if transparent_mode:
         print("🔄 Mode: TRANSPARENT INTERCEPTION")
         print(f"🌐 Intercepting: api.openai.com -> {host}")
-        print(f"📍 HTTP Server: http://{host}:{port}")
+        
+        if bind_privileged:
+            print(f"📍 HTTP Server: http://{host}:{port} (standard port)")
+            print("✅ Using standard HTTP port 80 - OpenAI clients will work without modification!")
+        else:
+            print(f"📍 HTTP Server: http://{host}:{port} (non-standard port)")
+            print("⚠️ OpenAI clients need base_url='http://api.openai.com:8001/v1' to work")
+        
         print("🎯 Applications using OpenAI API will automatically use Codegen!")
         
         if ssl_cert_path and ssl_key_path and Path(ssl_cert_path).exists() and Path(ssl_key_path).exists():
