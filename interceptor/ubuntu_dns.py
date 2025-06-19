@@ -18,13 +18,16 @@ class UbuntuDNSManager:
     
     HOSTS_FILE = "/etc/hosts"
     HOSTS_BACKUP = "/etc/hosts.openai-interceptor.backup"
-    INTERCEPTOR_MARKER = "# OpenAI Interceptor - DO NOT EDIT MANUALLY"
+    INTERCEPTOR_MARKER = "# OpenAI/Anthropic Interceptor - DO NOT EDIT MANUALLY"
     
     def __init__(self):
         self.domains_to_intercept = [
             "api.openai.com",
             "openai.com",
-            "*.openai.com"
+            "*.openai.com",
+            "api.anthropic.com",
+            "anthropic.com",
+            "*.anthropic.com"
         ]
         self.redirect_ip = "127.0.0.1"
     

@@ -1,17 +1,71 @@
 """
 Request and response transformers for Anthropic Claude API compatibility.
 Converts between Anthropic API format and Codegen SDK.
+Enhanced with comprehensive content block and tool support.
 """
 
-from typing import List, Dict, Any
-from .models import AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage
+from typing import List, Dict, Any, Union
+from .models import (
+    AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
+    ContentBlockText, ContentBlockToolUse, TokenCountRequest, TokenCountResponse
+)
 from .response_transformer import estimate_tokens, clean_content
 import uuid
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def parse_tool_result_content(content):
+    """Helper function to properly parse and normalize tool result content."""
+    if content is None:
+        return "No content provided"
+        
+    if isinstance(content, str):
+        return content
+        
+    if isinstance(content, list):
+        result = ""
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                result += item.get("text", "") + "\n"
+            elif isinstance(item, str):
+                result += item + "\n"
+            elif isinstance(item, dict):
+                if "text" in item:
+                    result += item.get("text", "") + "\n"
+                else:
+                    try:
+                        result += json.dumps(item) + "\n"
+                    except:
+                        result += str(item) + "\n"
+            else:
+                try:
+                    result += str(item) + "\n"
+                except:
+                    result += "Unparseable content\n"
+        return result.strip()
+        
+    if isinstance(content, dict):
+        if content.get("type") == "text":
+            return content.get("text", "")
+        try:
+            return json.dumps(content)
+        except:
+            return str(content)
+            
+    # Fallback for any other type
+    try:
+        return str(content)
+    except:
+        return "Unparseable content"
 
 
 def anthropic_request_to_prompt(request: AnthropicRequest) -> str:
     """
     Convert Anthropic API request to a prompt string for Codegen SDK.
+    Enhanced to handle complex content blocks, tools, and system messages.
     
     Args:
         request: AnthropicRequest object
@@ -23,14 +77,53 @@ def anthropic_request_to_prompt(request: AnthropicRequest) -> str:
     
     # Add system message if provided
     if request.system:
-        prompt_parts.append(f"System: {request.system}")
+        # Handle different formats of system messages
+        if isinstance(request.system, str):
+            prompt_parts.append(f"System: {request.system}")
+        elif isinstance(request.system, list):
+            system_text = ""
+            for block in request.system:
+                if hasattr(block, 'type') and block.type == "text":
+                    system_text += block.text + "\n\n"
+                elif isinstance(block, dict) and block.get("type") == "text":
+                    system_text += block.get("text", "") + "\n\n"
+            
+            if system_text:
+                prompt_parts.append(f"System: {system_text.strip()}")
     
     # Add conversation messages
     for message in request.messages:
-        if message.role == "user":
-            prompt_parts.append(f"Human: {message.content}")
-        elif message.role == "assistant":
-            prompt_parts.append(f"Assistant: {message.content}")
+        content = message.content
+        if isinstance(content, str):
+            # Simple string content
+            if message.role == "user":
+                prompt_parts.append(f"Human: {content}")
+            elif message.role == "assistant":
+                prompt_parts.append(f"Assistant: {content}")
+        else:
+            # Complex content blocks
+            message_content = ""
+            
+            for block in content:
+                if hasattr(block, "type"):
+                    if block.type == "text":
+                        message_content += block.text + "\n"
+                    elif block.type == "tool_use":
+                        # Format tool use
+                        tool_input = json.dumps(block.input) if isinstance(block.input, dict) else str(block.input)
+                        message_content += f"[Tool: {block.name} (ID: {block.id})]\nInput: {tool_input}\n\n"
+                    elif block.type == "tool_result":
+                        # Format tool result
+                        tool_id = block.tool_use_id if hasattr(block, "tool_use_id") else ""
+                        result_content = parse_tool_result_content(block.content)
+                        message_content += f"[Tool Result ID: {tool_id}]\n{result_content}\n\n"
+                    elif block.type == "image":
+                        message_content += "[Image content - not displayed in text format]\n"
+            
+            if message.role == "user":
+                prompt_parts.append(f"Human: {message_content.strip()}")
+            elif message.role == "assistant":
+                prompt_parts.append(f"Assistant: {message_content.strip()}")
     
     # Add final assistant prompt
     prompt_parts.append("Assistant:")
@@ -42,16 +135,19 @@ def create_anthropic_response(
     content: str,
     model: str,
     input_tokens: int = None,
-    output_tokens: int = None
+    output_tokens: int = None,
+    request_id: str = None
 ) -> AnthropicResponse:
     """
     Create an Anthropic API compatible response.
+    Enhanced to match the exact Anthropic API format.
     
     Args:
         content: The response content
         model: Model name used
         input_tokens: Number of input tokens (estimated if not provided)
         output_tokens: Number of output tokens (estimated if not provided)
+        request_id: Optional request ID
         
     Returns:
         AnthropicResponse: Formatted response
@@ -65,10 +161,17 @@ def create_anthropic_response(
     if input_tokens is None:
         input_tokens = 0  # We don't have the original prompt here
     
+    # Create content blocks
+    content_blocks = []
+    if cleaned_content:
+        content_blocks.append(ContentBlockText(type="text", text=cleaned_content))
+    
     # Create the response
     response = AnthropicResponse(
+        id=request_id or f"msg_{uuid.uuid4().hex[:29]}",
         model=model,
-        content=[{"type": "text", "text": cleaned_content}],
+        content=content_blocks,
+        stop_reason="end_turn",
         usage=AnthropicUsage(
             input_tokens=input_tokens,
             output_tokens=output_tokens
@@ -151,4 +254,3 @@ def create_anthropic_stream_event(
         pass  # No additional data needed
     
     return event
-

@@ -21,7 +21,7 @@ from pathlib import Path
 from .models import (
     ChatRequest, TextRequest, ChatResponse, TextResponse,
     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
-    GeminiRequest, GeminiResponse
+    TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
 )
 from .config import get_codegen_config, get_server_config
 from .codegen_client import CodegenClient
@@ -416,7 +416,7 @@ async def anthropic_messages(request: AnthropicRequest):
             input_tokens = estimate_tokens(prompt)
             output_tokens = estimate_tokens(content)
             
-            logger.info(f"🔢 Token estimation - Input: {input_tokens}, Output: {output_tokens}")
+            logger.info(f"�� Token estimation - Input: {input_tokens}, Output: {output_tokens}")
             
             response = create_anthropic_response(
                 content=content,
@@ -436,6 +436,54 @@ async def anthropic_messages(request: AnthropicRequest):
         processing_time = time.time() - start_time
         logger.error(f"❌ Error in Anthropic message completion after {processing_time:.2f}s: {e}")
         logger.error(f"🔍 Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": {
+                    "message": str(e),
+                    "type": "server_error",
+                    "code": "500"
+                }
+            }
+        )
+
+
+@app.post("/v1/messages/count_tokens")
+async def anthropic_count_tokens(request: TokenCountRequest, http_request: Request):
+    """
+    Count tokens for Anthropic Claude API messages.
+    Compatible with Anthropic's /v1/messages/count_tokens endpoint.
+    """
+    try:
+        # Check if this is a transparent interception
+        host = http_request.headers.get("host", "")
+        is_transparent = server_config.transparent_mode and ("api.anthropic.com" in host or "anthropic.com" in host)
+        
+        log_request_start("/v1/messages/count_tokens", request.dict(), host, is_transparent)
+        
+        # Convert the messages to a prompt format for token estimation
+        prompt = anthropic_request_to_prompt(
+            AnthropicRequest(
+                model=request.model,
+                max_tokens=100,  # Arbitrary value not used for token counting
+                messages=request.messages,
+                system=request.system,
+                tools=request.tools,
+                tool_choice=request.tool_choice,
+                thinking=request.thinking
+            )
+        )
+        
+        # Estimate input tokens
+        input_tokens = estimate_tokens(prompt)
+        
+        logger.info(f"🔢 Token count estimation - Input: {input_tokens} tokens")
+        
+        # Return Anthropic-style response
+        return TokenCountResponse(input_tokens=input_tokens)
+        
+    except Exception as e:
+        logger.error(f"❌ Error counting tokens: {e}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail={

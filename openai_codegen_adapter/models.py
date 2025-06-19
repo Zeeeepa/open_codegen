@@ -42,39 +42,85 @@ class TextRequest(BaseModel):
     user: Optional[str] = None
 
 
-# Anthropic Claude API Models
-class AnthropicMessage(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str
+# Anthropic Claude API Models - Comprehensive Implementation
+class ContentBlockText(BaseModel):
+    type: Literal["text"]
+    text: str
 
+class ContentBlockImage(BaseModel):
+    type: Literal["image"]
+    source: Dict[str, Any]
+
+class ContentBlockToolUse(BaseModel):
+    type: Literal["tool_use"]
+    id: str
+    name: str
+    input: Dict[str, Any]
+
+class ContentBlockToolResult(BaseModel):
+    type: Literal["tool_result"]
+    tool_use_id: str
+    content: Union[str, List[Dict[str, Any]], Dict[str, Any], List[Any], Any]
+
+class SystemContent(BaseModel):
+    type: Literal["text"]
+    text: str
+
+class AnthropicMessage(BaseModel):
+    role: Literal["user", "assistant"] 
+    content: Union[str, List[Union[ContentBlockText, ContentBlockImage, ContentBlockToolUse, ContentBlockToolResult]]]
+
+class Tool(BaseModel):
+    name: str
+    description: Optional[str] = None
+    input_schema: Dict[str, Any]
+
+class ThinkingConfig(BaseModel):
+    enabled: bool
 
 class AnthropicRequest(BaseModel):
-    model: str = "claude-3-sonnet-20240229"
-    max_tokens: int = Field(default=1024, ge=1)
+    model: str
+    max_tokens: int
     messages: List[AnthropicMessage]
-    temperature: Optional[float] = Field(default=1.0, ge=0.0, le=1.0)
-    top_p: Optional[float] = Field(default=None, ge=0.0, le=1.0)
-    top_k: Optional[int] = Field(default=None, ge=1)
-    stream: Optional[bool] = False
+    system: Optional[Union[str, List[SystemContent]]] = None
     stop_sequences: Optional[List[str]] = None
-    system: Optional[str] = None
+    stream: Optional[bool] = False
+    temperature: Optional[float] = 1.0
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+    tools: Optional[List[Tool]] = None
+    tool_choice: Optional[Dict[str, Any]] = None
+    thinking: Optional[ThinkingConfig] = None
+    original_model: Optional[str] = None  # Will store the original model name
 
+class TokenCountRequest(BaseModel):
+    model: str
+    messages: List[AnthropicMessage]
+    system: Optional[Union[str, List[SystemContent]]] = None
+    tools: Optional[List[Tool]] = None
+    thinking: Optional[ThinkingConfig] = None
+    tool_choice: Optional[Dict[str, Any]] = None
+    original_model: Optional[str] = None  # Will store the original model name
+
+class TokenCountResponse(BaseModel):
+    input_tokens: int
 
 class AnthropicUsage(BaseModel):
     input_tokens: int
     output_tokens: int
-
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
 
 class AnthropicResponse(BaseModel):
     id: str = Field(default_factory=lambda: f"msg_{uuid.uuid4().hex[:29]}")
-    type: str = "message"
-    role: str = "assistant"
-    content: List[Dict[str, str]] = Field(default_factory=lambda: [{"type": "text", "text": ""}])
     model: str
-    stop_reason: Optional[str] = "end_turn"
+    role: Literal["assistant"] = "assistant"
+    content: List[Union[ContentBlockText, ContentBlockToolUse]]
+    type: Literal["message"] = "message"
+    stop_reason: Optional[Literal["end_turn", "max_tokens", "stop_sequence", "tool_use"]] = None
     stop_sequence: Optional[str] = None
     usage: AnthropicUsage
-
 
 class AnthropicStreamEvent(BaseModel):
     type: str
