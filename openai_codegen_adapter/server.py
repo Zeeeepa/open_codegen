@@ -83,9 +83,12 @@ app.add_middleware(
 # Add static files for Web UI
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-def log_request_start(endpoint: str, request_data: dict):
+def log_request_start(endpoint: str, request_data: dict, host: str = None, transparent: bool = False):
     """Log the start of a request with enhanced details."""
-    logger.info(f"🚀 REQUEST START | Endpoint: {endpoint}")
+    mode_indicator = "🔄 TRANSPARENT" if transparent else "🚀 DIRECT"
+    logger.info(f"{mode_indicator} REQUEST START | Endpoint: {endpoint}")
+    if host and transparent:
+        logger.info(f"   🌐 Original Host: {host} -> Intercepted")
     logger.info(f"   📊 Request Data: {request_data}")
     logger.info(f"   🕐 Timestamp: {datetime.now().isoformat()}")
 
@@ -198,7 +201,7 @@ async def list_models():
 
 
 @app.post("/v1/chat/completions")
-async def chat_completions(request: ChatRequest):
+async def chat_completions(request: ChatRequest, http_request: Request):
     """
     Create a chat completion using Codegen SDK.
     Compatible with OpenAI's /v1/chat/completions endpoint.
@@ -206,7 +209,11 @@ async def chat_completions(request: ChatRequest):
     start_time = time.time()
     
     try:
-        log_request_start("/v1/chat/completions", request.dict())
+        # Check if this is a transparent interception
+        host = http_request.headers.get("host", "")
+        is_transparent = server_config.transparent_mode and ("api.openai.com" in host or "openai.com" in host)
+        
+        log_request_start("/v1/chat/completions", request.dict(), host, is_transparent)
         
         # Convert request to prompt
         prompt = chat_request_to_prompt(request)
