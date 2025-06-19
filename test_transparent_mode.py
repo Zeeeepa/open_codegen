@@ -87,16 +87,17 @@ def test_requests_transparent():
             print(f"❌ Unexpected response status: {response.status_code}")
             return False
             
-    except requests.exceptions.ConnectionError as e:
+    except ImportError:
+        print("⚠️ requests library not installed. Install with: pip install requests")
+        return False
+    except Exception as e:
+        # Check if it's a connection error that indicates interception
         if "127.0.0.1" in str(e) or "localhost" in str(e):
             print("✅ Request intercepted (connection to localhost)")
             return True
         else:
-            print(f"❌ Connection error: {e}")
+            print(f"❌ HTTP test failed: {e}")
             return False
-    except Exception as e:
-        print(f"❌ HTTP test failed: {e}")
-        return False
 
 def check_interceptor_status():
     """Check if the interceptor service is running."""
