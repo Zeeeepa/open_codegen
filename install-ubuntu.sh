@@ -1,8 +1,6 @@
 #!/bin/bash
-"""
-Ubuntu Installation Script for OpenAI API Interceptor
-Complete setup for transparent OpenAI API interception on Ubuntu.
-"""
+# Ubuntu Installation Script for OpenAI API Interceptor
+# Complete setup for transparent OpenAI API interception on Ubuntu.
 
 set -e
 
@@ -44,11 +42,16 @@ apt update
 
 # Install required packages
 echo -e "${BLUE}📦 Installing required packages...${NC}"
-apt install -y python3 python3-pip openssl curl
+apt install -y python3 python3-pip python3-venv python3-full openssl curl
 
-# Install Python dependencies
+# Install Python dependencies (handle externally-managed environment)
 echo -e "${BLUE}🐍 Installing Python dependencies...${NC}"
-pip3 install fastapi uvicorn pydantic requests
+if pip3 install fastapi uvicorn pydantic requests codegen 2>/dev/null; then
+    echo -e "${GREEN}✅ Python packages installed globally${NC}"
+else
+    echo -e "${YELLOW}⚠️ Using --break-system-packages for externally-managed environment${NC}"
+    pip3 install --break-system-packages fastapi uvicorn pydantic requests codegen
+fi
 
 # Create installation directory
 echo -e "${BLUE}📁 Creating installation directory...${NC}"
