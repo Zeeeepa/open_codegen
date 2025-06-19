@@ -13,7 +13,7 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
+# StaticFiles import removed - using minimal server setup
 import uvicorn
 import os
 from pathlib import Path
@@ -80,8 +80,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add static files for Web UI
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Static files removed - using minimal server setup
 
 def log_request_start(endpoint: str, request_data: dict):
     """Log the start of a request with enhanced details."""
