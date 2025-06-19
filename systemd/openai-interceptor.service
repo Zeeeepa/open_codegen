@@ -1,0 +1,41 @@
+[Unit]
+Description=OpenAI API Interceptor
+Documentation=https://github.com/Zeeeepa/open_codegen
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/openai-interceptor
+ExecStart=/usr/bin/python3 -m openai_codegen_adapter.server
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openai-interceptor
+
+# Environment variables
+Environment=TRANSPARENT_MODE=true
+Environment=BIND_PRIVILEGED_PORTS=true
+Environment=SERVER_HOST=0.0.0.0
+Environment=SERVER_PORT=80
+Environment=HTTPS_PORT=443
+Environment=SSL_CERT_PATH=/usr/local/share/ca-certificates/openai-interceptor/api.openai.com.crt
+Environment=SSL_KEY_PATH=/usr/local/share/ca-certificates/openai-interceptor/api.openai.com.key
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/openai-interceptor
+PrivateTmp=true
+
+# Network capabilities for binding to privileged ports
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

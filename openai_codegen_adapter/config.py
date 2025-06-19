@@ -19,8 +19,13 @@ class ServerConfig(BaseModel):
     """Configuration for the adapter server."""
     host: str = "0.0.0.0"
     port: int = 8001
+    https_port: int = 8443
     log_level: str = "info"
     cors_origins: list = ["*"]
+    transparent_mode: bool = False
+    ssl_cert_path: Optional[str] = None
+    ssl_key_path: Optional[str] = None
+    bind_privileged_ports: bool = False  # For ports 80/443
 
 
 def get_codegen_config() -> CodegenConfig:
@@ -38,6 +43,11 @@ def get_server_config() -> ServerConfig:
     return ServerConfig(
         host=os.getenv("SERVER_HOST", "0.0.0.0"),
         port=int(os.getenv("SERVER_PORT", "8001")),
+        https_port=int(os.getenv("HTTPS_PORT", "8443")),
         log_level=os.getenv("LOG_LEVEL", "info"),
-        cors_origins=os.getenv("CORS_ORIGINS", "*").split(",")
+        cors_origins=os.getenv("CORS_ORIGINS", "*").split(","),
+        transparent_mode=os.getenv("TRANSPARENT_MODE", "false").lower() == "true",
+        ssl_cert_path=os.getenv("SSL_CERT_PATH"),
+        ssl_key_path=os.getenv("SSL_KEY_PATH"),
+        bind_privileged_ports=os.getenv("BIND_PRIVILEGED_PORTS", "false").lower() == "true"
     )

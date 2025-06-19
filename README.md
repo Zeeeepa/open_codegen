@@ -1,41 +1,96 @@
-# OpenAI Codegen Adapter - Simple Setup
+# OpenAI Codegen Adapter - Transparent API Interception
 
-## Quick Start
+Transform any OpenAI API application to use Codegen SDK **without code changes**!
 
-### 1. Configure Environment
-Copy `.env.example` to `.env` and update with your credentials:
+## 🚀 Quick Start (Ubuntu)
+
+### Option 1: Transparent Interception (Recommended)
+**Applications work without ANY code modifications!**
+
 ```bash
-cp .env.example .env
-# Edit .env with your actual CODEGEN_ORG_ID and CODEGEN_TOKEN
+# One-command installation
+sudo ./install-ubuntu.sh
+
+# Test transparent interception
+python3 test_transparent_mode.py
 ```
 
-### 2. Start the Server
+That's it! All OpenAI API calls are now intercepted and routed to Codegen SDK.
+
+### Option 2: Direct Mode (Manual Configuration)
+**Requires changing base_url in applications**
+
 ```bash
+# Start the server
 python server.py
-```
-This starts the OpenAI-compatible server at `http://localhost:8887`
 
-### 3. Test the Server
-
-**OpenAI API Test:**
-```bash
+# Test with modified client
 python test.py
 ```
-This sends a test message using OpenAI client with modified baseURL.
 
-**Anthropic API Test:**
+## 🔄 Transparent Mode Features
+
+✅ **Zero Code Changes** - Existing OpenAI applications work immediately  
+✅ **DNS Interception** - Redirects `api.openai.com` to local server  
+✅ **HTTPS Support** - Full SSL certificate management  
+✅ **Systemd Integration** - Runs as Ubuntu service  
+✅ **Multi-API Support** - OpenAI, Anthropic, Google Gemini compatible
+
+## 🧪 Testing
+
+### Test Transparent Interception
 ```bash
-python test_anthropic.py
-```
-This tests Anthropic Claude API compatibility.
+# Test that unmodified OpenAI code works
+python3 test_transparent_mode.py
 
-**Google Gemini API Test:**
+# Test specific APIs
+python test.py              # OpenAI API
+python test_anthropic.py    # Anthropic API  
+python test_google.py       # Google Gemini API
+```
+
+### Example: Transparent Usage
+```python
+# This code works WITHOUT modification after installation!
+from openai import OpenAI
+
+client = OpenAI(api_key="your-key")  # No base_url needed!
+
+response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+# ✅ Automatically routed to Codegen SDK
+```
+
+## 📋 Management Commands
+
+### Service Management
 ```bash
-python test_google.py
+sudo systemctl status openai-interceptor    # Check status
+sudo systemctl start openai-interceptor     # Start service
+sudo systemctl stop openai-interceptor      # Stop service
+sudo systemctl restart openai-interceptor   # Restart service
+sudo journalctl -u openai-interceptor -f    # View logs
 ```
-This tests Google Gemini API compatibility.
 
-## API Endpoints
+### DNS & SSL Management
+```bash
+sudo python3 -m interceptor.ubuntu_dns status    # DNS status
+sudo python3 -m interceptor.ubuntu_dns enable    # Enable DNS
+sudo python3 -m interceptor.ubuntu_dns disable   # Disable DNS
+
+sudo python3 -m interceptor.ubuntu_ssl status    # SSL status
+sudo python3 -m interceptor.ubuntu_ssl setup     # Setup SSL
+sudo python3 -m interceptor.ubuntu_ssl remove    # Remove SSL
+```
+
+### Uninstall
+```bash
+sudo ./uninstall-ubuntu.sh  # Complete removal
+```
+
+## 🔧 API Endpoints
 
 ### OpenAI Compatible
 - **`/v1/chat/completions`** - OpenAI chat completions
