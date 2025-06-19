@@ -154,8 +154,21 @@ def main():
     if not os.getenv('CODEGEN_TOKEN'):
         os.environ['CODEGEN_TOKEN'] = "sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99"
     
+    # Parse command line arguments
+    import sys
+    port_arg = None
+    for i, arg in enumerate(sys.argv):
+        if arg == '--port' and i + 1 < len(sys.argv):
+            port_arg = int(sys.argv[i + 1])
+            break
+    
     # Auto-detect transparent mode if not explicitly set
-    transparent_mode = os.getenv('TRANSPARENT_MODE', 'true').lower() == 'true'
+    # Disable transparent mode if custom port is specified
+    if port_arg and port_arg not in [80, 443]:
+        transparent_mode = False
+        print(f"🔧 Custom port {port_arg} specified - running in DIRECT ACCESS mode")
+    else:
+        transparent_mode = os.getenv('TRANSPARENT_MODE', 'true').lower() == 'true'
     
     # In transparent mode, we should use standard ports (80/443) for true transparency
     # Users can override with BIND_PRIVILEGED_PORTS=false if needed
@@ -172,7 +185,7 @@ def main():
     
     # Get server configuration
     host = os.getenv('SERVER_HOST', '0.0.0.0' if transparent_mode else '127.0.0.1')
-    port = int(os.getenv('SERVER_PORT', '80' if bind_privileged else '8001'))
+    port = port_arg if port_arg else int(os.getenv('SERVER_PORT', '80' if bind_privileged else '8001'))
     https_port = int(os.getenv('HTTPS_PORT', '443' if bind_privileged else '8443'))
     
     # SSL configuration
