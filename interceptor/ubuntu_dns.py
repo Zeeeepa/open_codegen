@@ -153,7 +153,7 @@ class UbuntuDNSManager:
     def flush_dns_cache(self) -> bool:
         """Flush DNS cache on Ubuntu."""
         try:
-            # Try systemd-resolved first (Ubuntu 18.04+)
+            # Check if systemd-resolved is active
             result = subprocess.run(
                 ["systemctl", "is-active", "systemd-resolved"],
                 capture_output=True,
@@ -161,10 +161,21 @@ class UbuntuDNSManager:
             )
             
             if result.returncode == 0:
-                subprocess.run(["systemd-resolve", "--flush-caches"], check=True)
-                logger.info("✅ Flushed systemd-resolved DNS cache")
+                # Try modern resolvectl command first (Ubuntu 20.04+)
+                try:
+                    subprocess.run(["resolvectl", "flush-caches"], check=True)
+                    logger.info("✅ Flushed DNS cache using resolvectl")
+                    return True
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    # Fallback to deprecated systemd-resolve (Ubuntu 18.04-19.10)
+                    try:
+                        subprocess.run(["systemd-resolve", "--flush-caches"], check=True)
+                        logger.info("✅ Flushed DNS cache using systemd-resolve")
+                        return True
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        logger.warning("⚠️ Both resolvectl and systemd-resolve failed")
             else:
-                # Fallback for older systems
+                # Fallback for older systems without systemd-resolved
                 subprocess.run(["service", "networking", "restart"], check=True)
                 logger.info("✅ Restarted networking service")
             

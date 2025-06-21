@@ -1,5 +1,8 @@
-
 #!/bin/bash
+
+# OpenAI Codegen Adapter Startup Script
+# This starts both the API interceptor and the Web UI interface
+# Web UI will be available at: http://localhost (or https://localhost if using transparent mode)
 
 # Path to Python executable
 PYTHON_PATH="/home/l/.pyenv/versions/3.13.0/bin/python"
@@ -17,4 +20,5 @@ if [ ! -f "server.py" ]; then
 fi
 
 # Run server.py with specific Python version
+# This starts both the OpenAI API interceptor and the Web UI
 sudo "$PYTHON_PATH" server.py
