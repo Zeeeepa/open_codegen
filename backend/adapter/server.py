@@ -81,7 +81,7 @@ app.add_middleware(
 )
 
 # Add static files for Web UI
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="src"), name="static")
 
 def log_request_start(endpoint: str, request_data: dict, host: str = None, transparent: bool = False):
     """Log the start of a request with enhanced details."""
@@ -655,7 +655,7 @@ service_state = ServiceState()
 @app.get("/", response_class=HTMLResponse)
 async def web_ui():
     """Serve the Web UI for service control."""
-    static_path = Path("static/index.html")
+    static_path = Path("src/index.html")
     if static_path.exists():
         return HTMLResponse(content=static_path.read_text(), status_code=200)
     else:

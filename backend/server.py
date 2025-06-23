@@ -16,7 +16,7 @@ import time
 import ssl
 import ipaddress
 from pathlib import Path
-from interceptor.ubuntu_dns import UbuntuDNSManager
+from .interceptor.ubuntu_dns import UbuntuDNSManager
 
 # Global DNS manager instance for cleanup
 dns_manager = None
@@ -249,7 +249,7 @@ def main():
         try:
             print(f"🌐 Starting HTTP server on port {port}...")
             uvicorn.run(
-                "openai_codegen_adapter.server:app",
+                "backend.adapter.server:app",
                 host=host,
                 port=port,
                 log_level="error",  # Reduce log noise
@@ -263,7 +263,7 @@ def main():
         try:
             print(f"🔐 Starting HTTPS server on port {https_port}...")
             uvicorn.run(
-                "openai_codegen_adapter.server:app",
+                "backend.adapter.server:app",
                 host=host,
                 port=https_port,
                 ssl_certfile=ssl_cert_path,
