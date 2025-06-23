@@ -10,12 +10,12 @@ import logging
 import time
 from typing import AsyncGenerator
 from fastapi.responses import StreamingResponse
-from .models import ChatResponseStream
-from .response_transformer import (
+from backend.adapter.models import ChatResponseStream
+from backend.adapter.response_transformer import (
     create_chat_stream_chunk, format_sse_chunk, format_sse_done,
     clean_content, estimate_tokens
 )
-from .codegen_client import CodegenClient
+from backend.adapter.codegen_client import CodegenClient
 
 logger = logging.getLogger(__name__)
 

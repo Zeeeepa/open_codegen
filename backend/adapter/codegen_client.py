@@ -9,7 +9,7 @@ import time
 from typing import Optional, AsyncGenerator
 from codegen import Agent
 from codegen_api_client.exceptions import ApiException
-from .config import CodegenConfig
+from backend.adapter.config import CodegenConfig
 
 logger = logging.getLogger(__name__)
 

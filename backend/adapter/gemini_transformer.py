@@ -4,11 +4,11 @@ Converts between Gemini API format and Codegen SDK.
 """
 
 from typing import List, Dict, Any
-from .models import (
+from backend.adapter.models import (
     GeminiRequest, GeminiResponse, GeminiContent, GeminiPart, 
     GeminiCandidate, GeminiUsageMetadata
 )
-from .response_transformer import estimate_tokens, clean_content
+from backend.adapter.response_transformer import estimate_tokens, clean_content
 
 
 def gemini_request_to_prompt(request: GeminiRequest) -> str:

@@ -5,11 +5,11 @@ Enhanced with comprehensive content block and tool support.
 """
 
 from typing import List, Dict, Any, Union
-from .models import (
+from backend.adapter.models import (
     AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
     ContentBlockText, ContentBlockToolUse, TokenCountRequest, TokenCountResponse
 )
-from .response_transformer import estimate_tokens, clean_content
+from backend.adapter.response_transformer import estimate_tokens, clean_content
 import uuid
 import json
 import logging

@@ -8,11 +8,12 @@ import requests
 import json
 import sys
 
-def test_google_gemini(prompt):
+def test_google_gemini():
     """Test Google Gemini API endpoint."""
     print("\n--- Calling Google Gemini API ---\n")
     
-    url = "http://localhost:8001/v1/gemini/generateContent"
+    prompt = "Write a simple Python function to calculate factorial"
+    url = "http://localhost:8000/v1/gemini/generateContent"
     
     payload = {
         "contents": [
@@ -49,11 +50,12 @@ def test_google_gemini(prompt):
     except requests.exceptions.RequestException as e:
         return f"Request failed: {e}"
 
-def test_anthropic_claude(prompt):
+def test_anthropic_claude():
     """Test Anthropic Claude API endpoint."""
     print("\n--- Calling Anthropic Claude API ---\n")
     
-    url = "http://localhost:8001/v1/messages"
+    prompt = "Write a simple Python function to calculate factorial"
+    url = "http://localhost:8000/v1/messages"
     
     payload = {
         "model": "claude-3-sonnet-20240229",
@@ -87,11 +89,12 @@ def test_anthropic_claude(prompt):
     except requests.exceptions.RequestException as e:
         return f"Request failed: {e}"
 
-def test_openai_gpt(prompt):
+def test_openai_gpt():
     """Test OpenAI GPT API endpoint."""
     print("\n--- Calling OpenAI API ---\n")
     
-    url = "http://localhost:8001/v1/chat/completions"
+    prompt = "Write a simple Python function to calculate factorial"
+    url = "http://localhost:8000/v1/chat/completions"
     
     payload = {
         "model": "gpt-3.5-turbo",

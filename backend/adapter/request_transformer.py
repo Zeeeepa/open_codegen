@@ -4,7 +4,7 @@ Based on h2ogpt's backend_utils.py message conversion patterns.
 """
 
 from typing import List, Optional
-from .models import Message, ChatRequest, TextRequest
+from backend.adapter.models import Message, ChatRequest, TextRequest
 
 
 def messages_to_prompt(messages: List[Message]) -> str:

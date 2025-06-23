@@ -6,7 +6,7 @@ Based on h2ogpt's backend.py response formatting patterns.
 import time
 import uuid
 from typing import Optional
-from .models import (
+from backend.adapter.models import (
     ChatResponse, ChatResponseStream, TextResponse,
     ChatChoice, ChatChoiceStream, TextChoice,
     Message, Usage

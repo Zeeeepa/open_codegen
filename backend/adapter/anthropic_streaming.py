@@ -9,9 +9,9 @@ import logging
 import uuid
 from typing import AsyncGenerator
 from fastapi.responses import StreamingResponse
-from .codegen_client import CodegenClient
-from .anthropic_transformer import create_anthropic_stream_event
-from .response_transformer import estimate_tokens
+from backend.adapter.codegen_client import CodegenClient
+from backend.adapter.anthropic_transformer import create_anthropic_stream_event
+from backend.adapter.response_transformer import estimate_tokens
 
 logger = logging.getLogger(__name__)
 

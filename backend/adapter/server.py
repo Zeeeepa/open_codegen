@@ -18,34 +18,34 @@ import uvicorn
 import os
 from pathlib import Path
 
-from .models import (
+from backend.adapter.models import (
     ChatRequest, TextRequest, ChatResponse, TextResponse,
     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
 )
-from .config import get_codegen_config, get_server_config
-from .codegen_client import CodegenClient
-from .request_transformer import (
+from backend.adapter.config import get_codegen_config, get_server_config
+from backend.adapter.codegen_client import CodegenClient
+from backend.adapter.request_transformer import (
     chat_request_to_prompt, text_request_to_prompt,
     extract_generation_params
 )
-from .response_transformer import (
+from backend.adapter.response_transformer import (
     create_chat_response, create_text_response,
     estimate_tokens, clean_content
 )
-from .streaming import create_streaming_response, collect_streaming_response
-from .anthropic_transformer import (
+from backend.adapter.streaming import create_streaming_response, collect_streaming_response
+from backend.adapter.anthropic_transformer import (
     anthropic_request_to_prompt, create_anthropic_response,
     extract_anthropic_generation_params
 )
-from .anthropic_streaming import (
+from backend.adapter.anthropic_streaming import (
     create_anthropic_streaming_response, collect_anthropic_streaming_response
 )
-from .gemini_transformer import (
+from backend.adapter.gemini_transformer import (
     gemini_request_to_prompt, create_gemini_response,
     extract_gemini_generation_params
 )
-from .gemini_streaming import (
+from backend.adapter.gemini_streaming import (
     create_gemini_streaming_response, collect_gemini_streaming_response
 )
 

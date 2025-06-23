@@ -16,7 +16,7 @@ import time
 import ssl
 import ipaddress
 from pathlib import Path
-from .interceptor.ubuntu_dns import UbuntuDNSManager
+from backend.interceptor.ubuntu_dns import UbuntuDNSManager
 
 # Global DNS manager instance for cleanup
 dns_manager = None
