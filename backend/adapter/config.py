@@ -18,7 +18,7 @@ class CodegenConfig(BaseModel):
 class ServerConfig(BaseModel):
     """Configuration for the adapter server."""
     host: str = "0.0.0.0"
-    port: int = 8001
+    port: int = 8000
     https_port: int = 8443
     log_level: str = "info"
     cors_origins: list = ["*"]
@@ -42,7 +42,7 @@ def get_server_config() -> ServerConfig:
     """Get server configuration from environment variables or defaults."""
     return ServerConfig(
         host=os.getenv("SERVER_HOST", "0.0.0.0"),
-        port=int(os.getenv("SERVER_PORT", "8001")),
+        port=int(os.getenv("SERVER_PORT", "8000")),
         https_port=int(os.getenv("HTTPS_PORT", "8443")),
         log_level=os.getenv("LOG_LEVEL", "info"),
         cors_origins=os.getenv("CORS_ORIGINS", "*").split(","),
