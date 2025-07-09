@@ -707,6 +707,79 @@ async def toggle_service():
         raise HTTPException(status_code=500, detail="Failed to toggle service")
 
 
+@app.get("/api/system-message")
+async def get_system_message():
+    """Get the current system message."""
+    try:
+        from backend.adapter.system_message_manager import get_system_message_manager
+        manager = get_system_message_manager()
+        message = manager.get_system_message()
+        
+        if message:
+            return {
+                "success": True,
+                "data": {
+                    "message": message,
+                    "character_count": len(message)
+                }
+            }
+        else:
+            return {
+                "success": True,
+                "data": None
+            }
+    except Exception as e:
+        logger.error(f"Error getting system message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get system message")
+
+
+@app.post("/api/system-message")
+async def save_system_message(request: dict):
+    """Save a new system message."""
+    try:
+        message = request.get("message", "").strip()
+        if not message:
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
+        
+        from backend.adapter.system_message_manager import get_system_message_manager
+        manager = get_system_message_manager()
+        manager.save_system_message(message)
+        
+        logger.info(f"System message saved: {len(message)} characters")
+        
+        return {
+            "success": True,
+            "data": {
+                "message": message,
+                "character_count": len(message)
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving system message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save system message")
+
+
+@app.delete("/api/system-message")
+async def clear_system_message():
+    """Clear the current system message."""
+    try:
+        from backend.adapter.system_message_manager import get_system_message_manager
+        manager = get_system_message_manager()
+        manager.clear_system_message()
+        
+        logger.info("System message cleared")
+        
+        return {
+            "success": True,
+            "message": "System message cleared successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error clearing system message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to clear system message")
+
+
 # Middleware to check service status for API endpoints
 @app.middleware("http")
 async def service_status_middleware(request: Request, call_next):
@@ -737,7 +810,7 @@ async def service_status_middleware(request: Request, call_next):
 
 if __name__ == "__main__":
     uvicorn.run(
-        "openai_codegen_adapter.server:app",
+        "backend.adapter.server:app",
         host=server_config.host,
         port=server_config.port,
         log_level=server_config.log_level,
