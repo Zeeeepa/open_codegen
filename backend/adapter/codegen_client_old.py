@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from typing import Optional, AsyncGenerator
-from codegen import Agent
+from codegen.agents import Agent
 from codegen_api_client.exceptions import ApiException
 from backend.adapter.config import CodegenConfig
 
