@@ -11,7 +11,7 @@ import time
 from typing import Dict, Any
 
 # Test configuration
-BASE_URL = "http://localhost:8001"  # Adjust port as needed
+BASE_URL = "http://localhost:8000"  # Adjust port as needed
 TEST_MODEL = "claude-3-sonnet-20240229"
 
 async def test_anthropic_messages_non_streaming():
