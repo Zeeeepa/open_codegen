@@ -1,216 +1,332 @@
-# OpenAI Codegen Adapter - Transparent API Interception
+# 🚀 Codegen AI Proxy
 
-Transform any OpenAI API application to use Codegen SDK **without code changes**!
+**Transparent API Gateway for OpenAI, Anthropic & Gemini → Codegen API**
 
-## 🚀 Quick Start (Ubuntu)
+A lightweight Docker container that intercepts AI API calls and routes them to Codegen API with automatic system message injection. **Zero code changes required** - just point your existing applications to the proxy!
 
-### Option 1: Auto-Transparent Mode (Recommended)
-**One command starts everything - DNS interception, server, and cleanup!**
+## ✨ Features
 
+- 🔄 **Drop-in Replacement**: No code changes required in existing applications
+- 🐳 **Docker-Ready**: One-command deployment with docker-compose
+- 🎯 **Zero Configuration**: Works out of the box with Web UI setup
+- 🌐 **Multi-Provider Support**: OpenAI, Anthropic, and Gemini API compatibility
+- 🎛️ **Interactive Web UI**: Beautiful settings dialog for credential management
+- 🔍 **Credential Verification**: Real-time validation of Codegen credentials
+- 🎨 **System Message Injection**: Automatic prompt enhancement
+- 📊 **Monitoring**: Health checks and status endpoints
+- 🪟 **Windows-Friendly**: PowerShell setup script included
+
+## 🚀 Quick Start
+
+### 1. Docker Deployment (Recommended)
 ```bash
-# Start transparent interception (auto-manages everything)
-sudo python3 server.py
+# Clone the repository
+git clone https://github.com/Zeeeepa/open_codegen.git
+cd open_codegen
 
-# Test with any OpenAI application (no code changes needed!)
-python3 test_standard_ports.py
+# Start the proxy (no credentials needed initially)
+docker-compose up -d
+
+# Access Web UI to configure credentials
+open http://localhost:8000
 ```
 
-**Features:**
-- ✅ Automatically enables DNS interception
-- ✅ Runs on standard HTTP port 80 (true transparency!)
-- ✅ Starts the interceptor server  
-- ✅ Cleans up DNS settings on exit (Ctrl+C)
-- ✅ Works with any existing OpenAI application
+### 2. Windows PowerShell Setup
+```powershell
+# Download and run setup script
+.\setup-windows.ps1
 
-### Option 2: Manual Installation
-**Traditional installation with separate setup steps**
-
-```bash
-# One-command installation
-sudo ./install-ubuntu.sh
-
-# Test transparent interception
-python3 test_transparent_mode.py
+# Or with credentials
+.\setup-windows.ps1 -CodegenOrgId "323" -CodegenToken "sk-..."
 ```
 
-### Option 3: Direct Mode (Manual Configuration)
-**Requires changing base_url in applications**
-
 ```bash
-# Start the server in direct mode
-TRANSPARENT_MODE=false python3 server.py
+# Set environment variables
+export CODEGEN_ORG_ID="323"
+export CODEGEN_TOKEN="sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99"
+export DEFAULT_SYSTEM_MESSAGE="You are a helpful AI assistant."
 
-# Test with modified client
-python test.py
+# Start with Docker
+docker-compose up -d
 ```
 
-## 🔄 Transparent Mode Features
+## 🌐 Web UI Configuration
 
-✅ **Zero Code Changes** - Existing OpenAI applications work immediately  
-✅ **DNS Interception** - Redirects `api.openai.com` to local server  
-✅ **HTTPS Support** - Full SSL certificate management  
-✅ **Systemd Integration** - Runs as Ubuntu service  
-✅ **Multi-API Support** - OpenAI, Anthropic, Google Gemini compatible
+The proxy includes a **beautiful Web UI** for easy configuration:
 
-## 🧪 Testing
+### **Access the Interface**
+- Open **http://localhost:8000** in your browser
+- Click **"⚙️ Configure Codegen"** to open settings dialog
 
-### Test Transparent Interception
-```bash
-# Test standard port transparent mode (recommended)
-python3 test_standard_ports.py
+### **Configure Credentials**
+1. **Organization ID**: Your Codegen organization ID (e.g., `323`)
+2. **API Token**: Your Codegen API token (e.g., `sk-ce027fa7-...`)
+3. **System Message**: Default message for all requests (e.g., `your name is "Bubu"`)
+4. **Base URL**: Codegen API endpoint (usually default is fine)
 
-# Test auto-transparent mode (legacy)
-python3 test_auto_transparent.py
+### **Automatic Verification**
+- Click **"🔍 Verify & Save"** to test credentials
+- Real-time validation against Codegen API
+- Configuration saved only if verification succeeds
+- Status updates immediately upon successful setup
 
-# Test manual transparent mode
-python3 test_transparent_mode.py
+## 📡 API Endpoints
 
-# Test specific APIs
-python test.py              # OpenAI API
-python test_anthropic.py    # Anthropic API  
-python test_google.py       # Google Gemini API
-```
+Once configured, the proxy exposes these **100% compatible** endpoints:
 
-### Example: Transparent Usage
+| Provider | Original API | Proxy URL |
+|----------|-------------|-----------|
+| **OpenAI** | `api.openai.com/v1/chat/completions` | `localhost:8000/v1/chat/completions` |
+| **Anthropic** | `api.anthropic.com/v1/messages` | `localhost:8000/v1/messages` |
+| **Gemini** | `generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent` | `localhost:8000/v1/models/gemini-pro:generateContent` |
+
+## 💡 Usage Examples
+
+### OpenAI Python Client
 ```python
-# This code works WITHOUT modification after installation!
-from openai import OpenAI
+import openai
 
-client = OpenAI(api_key="your-key")  # No base_url needed!
+# Just change the base URL - everything else stays the same!
+openai.api_base = "http://localhost:8000/v1"
+openai.api_key = "any-key"  # Proxy handles auth
 
-response = client.chat.completions.create(
+response = openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-# ✅ Automatically routed to Codegen SDK
-```
-
-## 📋 Management Commands
-
-### Service Management
-```bash
-sudo systemctl status openai-interceptor    # Check status
-sudo systemctl start openai-interceptor     # Start service
-sudo systemctl stop openai-interceptor      # Stop service
-sudo systemctl restart openai-interceptor   # Restart service
-sudo journalctl -u openai-interceptor -f    # View logs
-```
-
-### DNS & SSL Management
-```bash
-sudo python3 -m interceptor.ubuntu_dns status    # DNS status
-sudo python3 -m interceptor.ubuntu_dns enable    # Enable DNS
-sudo python3 -m interceptor.ubuntu_dns disable   # Disable DNS
-
-sudo python3 -m interceptor.ubuntu_ssl status    # SSL status
-sudo python3 -m interceptor.ubuntu_ssl setup     # Setup SSL
-sudo python3 -m interceptor.ubuntu_ssl remove    # Remove SSL
-```
-
-### Uninstall
-```bash
-sudo ./uninstall-ubuntu.sh  # Complete removal
-```
-
-## 🔧 API Endpoints
-
-### OpenAI Compatible
-- **`/v1/chat/completions`** - OpenAI chat completions
-- **`/v1/completions`** - OpenAI text completions
-- **`/v1/models`** - List available models
-
-### Anthropic Compatible
-- **`/v1/messages`** - Anthropic Claude messages
-- **`/v1/anthropic/completions`** - Anthropic completions
-
-### Google Gemini Compatible
-- **`/v1/gemini/generateContent`** - Google Gemini content generation
-- **`/v1/gemini/completions`** - Google Gemini completions
-
-## Usage Examples
-
-### OpenAI Client
-```python
-from openai import OpenAI
-
-client = OpenAI(
-    api_key="dummy-key",
-    base_url="http://localhost:8887/v1"
+    messages=[{"role": "user", "content": "What is your name?"}]
 )
 
-response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
+# Will respond with your configured system message!
+print(response.choices[0].message.content)
 ```
 
-### Anthropic Client
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8887/v1/messages",
-    json={
-        "model": "claude-3-sonnet-20240229",
-        "max_tokens": 1024,
-        "messages": [{"role": "user", "content": "Hello!"}]
-    },
-    headers={"x-api-key": "dummy-key"}
-)
-```
-
-## Environment Configuration Examples
-
-### OpenAI Environment Setup
-```python
-from openai import OpenAI
-
-def main():
-    client = OpenAI(
-        api_key="dummy-key",  # Server doesn't validate this
-        base_url="http://localhost:8887/v1"  # Point to our server
-    )
-```
-
-### Anthropic Environment Setup
+### Anthropic Python Client
 ```python
 import anthropic
 
-def main():
-    client = anthropic.Anthropic(
-        api_key="dummy-key",  # Server doesn't validate this
-        base_url="http://localhost:8887/v1"  # Point to our server
-    )
+# Point to proxy
+client = anthropic.Anthropic(
+    api_key="any-key",
+    base_url="http://localhost:8000"
+)
+
+response = client.messages.create(
+    model="claude-3-sonnet-20240229",
+    max_tokens=1000,
+    messages=[{"role": "user", "content": "Hello!"}]
+)
 ```
 
-### Google Gemini Environment Setup
-```python
-import requests
+### Environment Variable Method
+```bash
+# Set environment variable once
+export OPENAI_API_BASE=http://localhost:8000/v1
 
-def main():
-    # Point Gemini requests to our server
-    base_url = "http://localhost:8887/v1/gemini"
-    
-    response = requests.post(
-        f"{base_url}/generateContent",
-        json={"contents": [{"role": "user", "parts": [{"text": "Hello!"}]}]}
-    )
+# All OpenAI client libraries will use the proxy automatically
+python your_existing_script.py
 ```
 
-## Files
+### cURL Testing
+```bash
+# Test OpenAI API
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer any-key" \
+  -d '{
+    "model": "gpt-3.5-turbo",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
 
-- **`server.py`** - Starts the FastAPI server
-- **`test.py`** - Simple OpenAI client test with modified baseURL
-- **`test_anthropic.py`** - Anthropic API compatibility test
-- **`test_google.py`** - Google Gemini API compatibility test
-- **`.env.example`** - Environment configuration template
-- **`openai_codegen_adapter/`** - Core adapter implementation
+## 🐳 Docker Deployment
 
-## How it Works
+### Docker Compose (Recommended)
+```yaml
+version: '3.8'
+services:
+  codegen-proxy:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - CODEGEN_ORG_ID=323
+      - CODEGEN_TOKEN=sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99
+      - DEFAULT_SYSTEM_MESSAGE=You are a helpful assistant.
+    restart: unless-stopped
+```
 
-1. The server runs on `localhost:8887` and provides both OpenAI and Anthropic-compatible endpoints
-2. Tests use standard clients but point to our local server
-3. Requests are transformed and sent to Codegen API
-4. Responses are transformed back to the appropriate API format
+### Docker Run
+```bash
+docker build -t codegen-proxy .
+docker run -d \
+  -p 8000:8000 \
+  -e CODEGEN_ORG_ID=323 \
+  -e CODEGEN_TOKEN=sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99 \
+  --name codegen-proxy \
+  codegen-proxy
+```
 
-That's it! 🚀
+## ⚙️ Configuration
+
+### Environment Variables
+```bash
+# Required
+CODEGEN_ORG_ID=323
+CODEGEN_TOKEN=sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99
+
+# Optional
+CODEGEN_BASE_URL=https://api.codegen.com
+DEFAULT_SYSTEM_MESSAGE=You are a helpful AI assistant.
+LOG_LEVEL=INFO
+LOG_REQUESTS=true
+```
+
+### Configuration File (Advanced)
+Create `config/config.yaml`:
+```yaml
+codegen:
+  org_id: "323"
+  token: "sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99"
+  base_url: "https://api.codegen.com"
+
+system_message: "You are a helpful AI assistant."
+
+logging:
+  level: "INFO"
+  log_requests: true
+```
+
+## 🔧 Development
+
+### Local Development
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export CODEGEN_ORG_ID=323
+export CODEGEN_TOKEN=sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99
+
+# Run locally
+python main.py
+```
+
+### Testing
+```bash
+# Test health endpoint
+curl http://localhost:8000/health
+
+# Test configuration endpoint
+curl http://localhost:8000/api/config
+
+# Test OpenAI compatibility
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "test"}]}'
+```
+
+## 📋 System Requirements
+
+- **Docker** (recommended) or Python 3.11+
+- **2GB RAM** minimum
+- **Network access** to Codegen API
+- **Web browser** for configuration UI
+
+## 🔍 Monitoring
+
+### Health Check
+```bash
+curl http://localhost:8000/health
+```
+
+### Status Endpoint
+```bash
+curl http://localhost:8000/status
+```
+
+### Configuration API
+```bash
+# Get current config (without sensitive data)
+curl http://localhost:8000/api/config
+
+# Verify credentials
+curl -X POST http://localhost:8000/api/config/verify \
+  -H "Content-Type: application/json" \
+  -d '{"org_id": "323", "token": "sk-..."}'
+```
+
+### Logs
+```bash
+# Docker logs
+docker logs codegen-proxy
+
+# Follow logs
+docker logs -f codegen-proxy
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+**1. "Connection refused" error**
+- Check if Docker container is running: `docker ps`
+- Verify port 8000 is not in use: `netstat -an | grep 8000`
+
+**2. "Invalid credentials" error**
+- Use Web UI to verify credentials: http://localhost:8000
+- Check Organization ID and Token are correct
+- Ensure network access to Codegen API
+
+**3. "System message not working"**
+- Configure via Web UI or set `DEFAULT_SYSTEM_MESSAGE` environment variable
+- Check logs for system message injection: `docker logs codegen-proxy`
+
+**4. Web UI not loading**
+- Ensure container is running: `docker ps`
+- Check port mapping: `docker port codegen-proxy`
+- Try accessing directly: `curl http://localhost:8000/health`
+
+### Debug Mode
+```bash
+# Enable debug logging
+docker run -e LOG_LEVEL=DEBUG -e LOG_REQUESTS=true codegen-proxy
+```
+
+## 🎯 How It Works
+
+1. **Web UI Configuration**: Users configure credentials through beautiful settings dialog
+2. **Credential Verification**: Real-time validation against Codegen API
+3. **Request Interception**: Proxy intercepts OpenAI/Anthropic/Gemini API calls
+4. **Format Transformation**: Converts provider-specific formats to Codegen format
+5. **System Message Injection**: Automatically adds configured system messages
+6. **API Routing**: Forwards requests to Codegen API with proper authentication
+7. **Response Transformation**: Converts Codegen responses back to original format
+8. **Transparent Operation**: Client applications receive expected response format
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](https://github.com/Zeeeepa/open_codegen/issues)
+- **Documentation**: [Wiki](https://github.com/Zeeeepa/open_codegen/wiki)
+- **Discussions**: [GitHub Discussions](https://github.com/Zeeeepa/open_codegen/discussions)
+
+---
+
+**🎯 Perfect for:**
+- Migrating from OpenAI/Anthropic/Gemini to Codegen
+- Adding system message injection to existing apps
+- Centralizing AI API management
+- Development and testing environments
+- Cost optimization and monitoring
+
+**Made with ❤️ for the developer community**

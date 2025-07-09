@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  codegen-proxy:
+    build: .
+    container_name: codegen-ai-proxy
+    ports:
+      # OpenAI API (default port)
+      - "8000:8000"
+      # Anthropic API 
+      - "8001:8001"
+      # Gemini API
+      - "8002:8002"
+      # Web UI
+      - "8080:8080"
+    environment:
+      # Codegen API Configuration
+      - CODEGEN_ORG_ID=${CODEGEN_ORG_ID:-}
+      - CODEGEN_TOKEN=${CODEGEN_TOKEN:-}
+      - CODEGEN_API_KEY=${CODEGEN_API_KEY:-}
+      - CODEGEN_BASE_URL=${CODEGEN_BASE_URL:-https://api.codegen.com}
+      
+      # System Message Configuration
+      - DEFAULT_SYSTEM_MESSAGE=${DEFAULT_SYSTEM_MESSAGE:-You are a helpful AI assistant.}
+      
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_REQUESTS=${LOG_REQUESTS:-true}
+      
+      # Server Configuration
+      - HOST=0.0.0.0
+      - WORKERS=1
+      
+    volumes:
+      # Configuration files (optional - for advanced users)
+      - ./config:/app/config:ro
+      # Logs directory
+      - ./logs:/app/logs
+      # Data directory for system messages
+      - ./data:/app/data
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  default:
+    name: codegen-proxy-network
