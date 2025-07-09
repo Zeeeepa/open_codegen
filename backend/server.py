@@ -22,7 +22,7 @@ from backend.interceptor.ubuntu_dns import UbuntuDNSManager
 dns_manager = None
 dns_enabled_by_server = False
 
-def generate_self_signed_cert(cert_path="server.crt", key_path="server.key"):
+def generate_self_signed_cert(cert_path="backend/ssl/server.crt", key_path="backend/ssl/server.key"):
     """Generate a self-signed certificate for HTTPS interception."""
     try:
         from cryptography import x509
@@ -227,9 +227,9 @@ def main():
     # Auto-generate SSL certificates if needed for transparent mode
     if transparent_mode and bind_privileged:
         if not ssl_cert_path:
-            ssl_cert_path = "server.crt"
+            ssl_cert_path = "backend/ssl/server.crt"
         if not ssl_key_path:
-            ssl_key_path = "server.key"
+            ssl_key_path = "backend/ssl/server.key"
         
         # Generate self-signed certificate if it doesn't exist
         if not (Path(ssl_cert_path).exists() and Path(ssl_key_path).exists()):
