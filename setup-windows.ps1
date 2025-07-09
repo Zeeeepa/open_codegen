@@ -10,7 +10,10 @@
 
 param(
     [Parameter(Mandatory=$false)]
-    [string]$CodegenApiKey = "",
+    [string]$CodegenOrgId = "",
+    
+    [Parameter(Mandatory=$false)]
+    [string]$CodegenToken = "",
     
     [Parameter(Mandatory=$false)]
     [string]$SystemMessage = "You are a helpful AI assistant.",
@@ -77,13 +80,23 @@ if (-not $SkipDockerCheck) {
     }
 }
 
-# Get Codegen API key if not provided
-if ([string]::IsNullOrEmpty($CodegenApiKey)) {
-    Write-Info "Codegen API Key is required"
-    $CodegenApiKey = Read-Host "Please enter your Codegen API Key"
+# Get Codegen credentials if not provided
+if ([string]::IsNullOrEmpty($CodegenOrgId)) {
+    Write-Info "Codegen Organization ID is required"
+    $CodegenOrgId = Read-Host "Please enter your Codegen Organization ID (e.g., 323)"
     
-    if ([string]::IsNullOrEmpty($CodegenApiKey)) {
-        Write-Error "API Key is required to continue"
+    if ([string]::IsNullOrEmpty($CodegenOrgId)) {
+        Write-Error "Organization ID is required to continue"
+        exit 1
+    }
+}
+
+if ([string]::IsNullOrEmpty($CodegenToken)) {
+    Write-Info "Codegen API Token is required"
+    $CodegenToken = Read-Host "Please enter your Codegen API Token (sk-...)"
+    
+    if ([string]::IsNullOrEmpty($CodegenToken)) {
+        Write-Error "API Token is required to continue"
         exit 1
     }
 }
@@ -106,7 +119,8 @@ Write-Success "Using port: $Port"
 # Create .env file
 Write-Info "Creating configuration..."
 $envContent = @"
-CODEGEN_API_KEY=$CodegenApiKey
+CODEGEN_ORG_ID=$CodegenOrgId
+CODEGEN_TOKEN=$CodegenToken
 CODEGEN_BASE_URL=https://api.codegen.com
 DEFAULT_SYSTEM_MESSAGE=$SystemMessage
 LOG_LEVEL=INFO
@@ -126,7 +140,8 @@ services:
     ports:
       - "$Port`:8000"
     environment:
-      - CODEGEN_API_KEY=$CodegenApiKey
+      - CODEGEN_ORG_ID=$CodegenOrgId
+      - CODEGEN_TOKEN=$CodegenToken
       - DEFAULT_SYSTEM_MESSAGE=$SystemMessage
 "@
 

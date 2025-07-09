@@ -15,7 +15,9 @@ services:
       - "8080:8080"
     environment:
       # Codegen API Configuration
-      - CODEGEN_API_KEY=${CODEGEN_API_KEY:-your-codegen-api-key-here}
+      - CODEGEN_ORG_ID=${CODEGEN_ORG_ID:-}
+      - CODEGEN_TOKEN=${CODEGEN_TOKEN:-}
+      - CODEGEN_API_KEY=${CODEGEN_API_KEY:-}
       - CODEGEN_BASE_URL=${CODEGEN_BASE_URL:-https://api.codegen.com}
       
       # System Message Configuration

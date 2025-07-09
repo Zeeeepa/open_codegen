@@ -3,7 +3,9 @@
 
 # Codegen API Configuration
 codegen:
-  api_key: "your-codegen-api-key-here"
+  org_id: "323"
+  token: "sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99"
+  api_key: ""
   base_url: "https://api.codegen.com"
 
 # System Message Configuration
