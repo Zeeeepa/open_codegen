@@ -1,0 +1,21 @@
+# Codegen AI Proxy Configuration
+# This file contains default settings for the proxy
+
+# Codegen API Configuration
+codegen:
+  api_key: "your-codegen-api-key-here"
+  base_url: "https://api.codegen.com"
+
+# System Message Configuration
+system_message: "You are a helpful AI assistant."
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  log_requests: true
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1

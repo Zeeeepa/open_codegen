@@ -1,6 +1,8 @@
-# OpenAI Codegen Adapter - Transparent API Interception
+# 🚀 Codegen AI Proxy
 
-Transform any OpenAI API application to use Codegen SDK **without code changes**!
+**Transparent API Gateway for OpenAI, Anthropic & Gemini → Codegen API**
+
+A lightweight Docker container that intercepts AI API calls and routes them to Codegen API with automatic system message injection. **Zero code changes required** - just point your existing applications to the proxy!
 
 ## 🚀 Quick Start (Ubuntu)
 
