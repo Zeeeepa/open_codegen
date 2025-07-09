@@ -5,6 +5,7 @@ Based on h2ogpt's backend_utils.py message conversion patterns.
 
 from typing import List, Optional
 from backend.adapter.models import Message, ChatRequest, TextRequest
+from backend.adapter.system_message_manager import get_system_message_manager
 
 
 def messages_to_prompt(messages: List[Message]) -> str:
@@ -72,7 +73,7 @@ def extract_user_message(messages: List[Message]) -> str:
 def chat_request_to_prompt(request: ChatRequest) -> str:
     """
     Convert OpenAI chat request to a prompt string for Codegen SDK.
-    Enhanced with better instructions for code generation tasks.
+    Uses stored system message if available, falls back to default instruction.
     
     Args:
         request: ChatRequest object
@@ -82,8 +83,12 @@ def chat_request_to_prompt(request: ChatRequest) -> str:
     """
     prompt_parts = []
     
-    # Enhanced system instruction for better code generation
-    system_instruction = """You are an expert software engineer and coding assistant. When responding to coding questions:
+    # Get stored system message from manager
+    manager = get_system_message_manager()
+    stored_system_message = manager.get_system_message()
+    
+    # Default system instruction for fallback
+    default_system_instruction = """You are an expert software engineer and coding assistant. When responding to coding questions:
 
 1. Provide clear, well-commented code examples
 2. Explain your reasoning and approach
@@ -95,25 +100,38 @@ def chat_request_to_prompt(request: ChatRequest) -> str:
 
 For non-coding questions, provide thorough, accurate, and helpful responses."""
     
-    # Check if there's already a system message
+    # Determine which system message to use
+    system_instruction = stored_system_message if stored_system_message else default_system_instruction
+    
+    # Check if there's already a system message in the request
     has_system_message = any(msg.role == "system" for msg in request.messages)
     
     if not has_system_message:
+        # No system message in request, use our configured one
         prompt_parts.append(f"System: {system_instruction}")
     
     # Process messages
     for message in request.messages:
         if message.role == "system":
-            # Enhance existing system message with coding context
-            enhanced_system = f"{message.content}\n\n{system_instruction}"
-            prompt_parts.append(f"System: {enhanced_system}")
+            # If there's a stored system message, use it instead of the request's system message
+            if stored_system_message:
+                prompt_parts.append(f"System: {stored_system_message}")
+            else:
+                # Enhance existing system message with coding context
+                enhanced_system = f"{message.content}\n\n{default_system_instruction}"
+                prompt_parts.append(f"System: {enhanced_system}")
         elif message.role == "user":
             prompt_parts.append(f"Human: {message.content}")
         elif message.role == "assistant":
             prompt_parts.append(f"Assistant: {message.content}")
     
-    # Add final assistant prompt with enhanced instruction
-    prompt_parts.append("Assistant: I'll help you with that. Let me provide a comprehensive and well-structured response.")
+    # Add final assistant prompt
+    if stored_system_message:
+        # If we have a custom system message, use a simpler prompt
+        prompt_parts.append("Assistant:")
+    else:
+        # Use enhanced instruction for default behavior
+        prompt_parts.append("Assistant: I'll help you with that. Let me provide a comprehensive and well-structured response.")
     
     return "\n\n".join(prompt_parts)
 

@@ -48,6 +48,7 @@ from backend.adapter.gemini_transformer import (
 from backend.adapter.gemini_streaming import (
     create_gemini_streaming_response, collect_gemini_streaming_response
 )
+from backend.adapter.system_message_manager import get_system_message_manager
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -63,6 +64,10 @@ server_config = get_server_config()
 
 # Initialize Codegen client
 codegen_client = CodegenClient(codegen_config)
+
+# Initialize system message manager
+system_message_manager = get_system_message_manager()
+logger.info("System message manager initialized")
 
 # Create FastAPI app
 app = FastAPI(
@@ -707,12 +712,85 @@ async def toggle_service():
         raise HTTPException(status_code=500, detail="Failed to toggle service")
 
 
+# System Message Management Endpoints
+@app.get("/api/system-message")
+async def get_system_message():
+    """Get the current system message configuration."""
+    try:
+        manager = get_system_message_manager()
+        message_info = manager.get_system_message_info()
+        
+        return {
+            "success": True,
+            "data": message_info
+        }
+    except Exception as e:
+        logger.error(f"Error getting system message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get system message")
+
+
+@app.post("/api/system-message")
+async def save_system_message(request: Request):
+    """Save a new system message configuration."""
+    try:
+        body = await request.json()
+        message = body.get("message", "").strip()
+        
+        if not message:
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
+        
+        manager = get_system_message_manager()
+        success = manager.save_system_message(message)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save system message")
+        
+        # Get updated info to return
+        message_info = manager.get_system_message_info()
+        
+        return {
+            "success": True,
+            "message": "System message saved successfully",
+            "data": message_info
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving system message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save system message")
+
+
+@app.delete("/api/system-message")
+async def clear_system_message():
+    """Clear the current system message configuration."""
+    try:
+        manager = get_system_message_manager()
+        success = manager.clear_system_message()
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to clear system message")
+        
+        return {
+            "success": True,
+            "message": "System message cleared successfully",
+            "data": {
+                "message": None,
+                "created_at": None,
+                "character_count": 0,
+                "has_message": False
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error clearing system message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to clear system message")
+
+
 # Middleware to check service status for API endpoints
 @app.middleware("http")
 async def service_status_middleware(request: Request, call_next):
     """Middleware to check if service is enabled for API endpoints."""
-    # Allow access to Web UI, status, toggle, and health endpoints
-    allowed_paths = ["/", "/api/status", "/api/toggle", "/health", "/static"]
+    # Allow access to Web UI, status, toggle, system message, and health endpoints
+    allowed_paths = ["/", "/api/status", "/api/toggle", "/api/system-message", "/health", "/static"]
     
     if any(request.url.path.startswith(path) for path in allowed_paths):
         response = await call_next(request)
