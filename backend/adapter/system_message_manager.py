@@ -210,4 +210,3 @@ def get_system_message_manager() -> SystemMessageManager:
     if _system_message_manager is None:
         _system_message_manager = SystemMessageManager()
     return _system_message_manager
-

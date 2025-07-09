@@ -815,7 +815,7 @@ async def service_status_middleware(request: Request, call_next):
 
 if __name__ == "__main__":
     uvicorn.run(
-        "openai_codegen_adapter.server:app",
+        "backend.adapter.server:app",
         host=server_config.host,
         port=server_config.port,
         log_level=server_config.log_level,
