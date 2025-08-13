@@ -69,6 +69,9 @@ python3 test_transparent_mode.py
 python test.py              # OpenAI API
 python test_anthropic.py    # Anthropic API  
 python test_google.py       # Google Gemini API
+
+# Test Prompt module
+python tests/validate_prompt.py  # Validate the Prompt module
 ```
 
 ### Example: Transparent Usage
@@ -126,6 +129,51 @@ sudo ./uninstall-ubuntu.sh  # Complete removal
 ### Google Gemini Compatible
 - **`/v1/gemini/generateContent`** - Google Gemini content generation
 - **`/v1/gemini/completions`** - Google Gemini completions
+
+## 🤖 System Message Configuration
+
+The adapter now includes a Prompt module that allows you to customize the system message used for all requests. By default, it uses a fast-responding coding agent prompt:
+
+```
+"you are A fast responding coding agent- respond in a single message"
+```
+
+### Customizing System Messages
+
+You can customize the system message through the API:
+
+```bash
+# Get the current system message
+curl http://localhost:8887/api/system-message
+
+# Set a custom system message
+curl -X POST http://localhost:8887/api/system-message \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Your custom system message here"}'
+
+# Clear the system message (resets to default)
+curl -X DELETE http://localhost:8887/api/system-message
+```
+
+### Programmatic Usage
+
+You can also use the Prompt module programmatically:
+
+```python
+from backend.adapter.Prompt import get_prompt_manager
+
+# Get the prompt manager
+prompt_manager = get_prompt_manager()
+
+# Get the current system message
+system_message = prompt_manager.get_system_message()
+
+# Set a custom system message
+prompt_manager.set_system_message("Your custom system message here")
+
+# Reset to the default message
+prompt_manager.reset_to_default()
+```
 
 ## Usage Examples
 
@@ -204,7 +252,9 @@ def main():
 - **`test_anthropic.py`** - Anthropic API compatibility test
 - **`test_google.py`** - Google Gemini API compatibility test
 - **`.env.example`** - Environment configuration template
-- **`openai_codegen_adapter/`** - Core adapter implementation
+- **`backend/adapter/`** - Core adapter implementation
+- **`backend/adapter/Prompt.py`** - System message management
+- **`tests/validate_prompt.py`** - Validation script for the Prompt module
 
 ## How it Works
 
@@ -212,5 +262,7 @@ def main():
 2. Tests use standard clients but point to our local server
 3. Requests are transformed and sent to Codegen API
 4. Responses are transformed back to the appropriate API format
+5. The Prompt module ensures all requests use the fast-responding coding agent system message
 
 That's it! 🚀
+
