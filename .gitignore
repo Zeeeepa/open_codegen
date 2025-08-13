@@ -137,9 +137,12 @@ yarn-error.log*
 # System message storage
 system_message.json
 
-# Test files
+# Test files (except our specific test files)
 test_*.py
 *_test.py
+!tests/test_prompt.py
+!tests/test_prompt_integration.py
+!tests/validate_prompt.py
 
 # IDE files
 .vscode/
@@ -156,3 +159,4 @@ Thumbs.db
 server.log
 backend/server.log
 backend/data/system_messages.json
+

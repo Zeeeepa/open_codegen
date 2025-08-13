@@ -1,0 +1,38 @@
+{
+  "name": "openai-codegen-adapter",
+  "version": "1.0.0",
+  "description": "Transparent API interception for OpenAI to Codegen SDK",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "test": "python -m pytest tests/",
+    "validate": "python tests/validate_prompt.py",
+    "start": "python backend/server.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zeeeepa/open_codegen.git"
+  },
+  "keywords": [
+    "openai",
+    "codegen",
+    "api",
+    "adapter",
+    "interception"
+  ],
+  "author": "Zeeeepa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Zeeeepa/open_codegen/issues"
+  },
+  "homepage": "https://github.com/Zeeeepa/open_codegen#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+
