@@ -11,6 +11,23 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
+class CodegenConfig(BaseModel):
+    """Basic configuration for Codegen SDK connection."""
+    org_id: str
+    token: str
+    base_url: Optional[str] = "https://codegen-sh--rest-api.modal.run"
+    timeout: int = 300
+    
+    @classmethod
+    def from_environment(cls) -> "CodegenConfig":
+        """Create configuration from environment variables."""
+        return cls(
+            org_id=os.environ.get("CODEGEN_ORG_ID", "323"),
+            token=os.environ.get("CODEGEN_API_TOKEN", ""),
+            base_url=os.environ.get("CODEGEN_BASE_URL", "https://codegen-sh--rest-api.modal.run"),
+            timeout=int(os.environ.get("CODEGEN_TIMEOUT", "300"))
+        )
+
 class EnhancedCodegenConfig(BaseModel):
     """Enhanced configuration for Codegen SDK connection."""
     org_id: str
@@ -109,4 +126,3 @@ def get_server_config() -> ServerConfig:
         ssl_key_path=os.environ.get("SSL_KEY_PATH"),
         bind_privileged_ports=os.environ.get("BIND_PRIVILEGED_PORTS", "false").lower() == "true"
     )
-
