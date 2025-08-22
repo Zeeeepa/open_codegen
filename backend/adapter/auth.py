@@ -26,7 +26,7 @@ class CodegenAuth:
     def _load_auth(self):
         """Load authentication from file or environment variables."""
         # Try environment variables first
-        env_token = os.environ.get("CODEGEN_TOKEN")
+        env_token = os.environ.get("CODEGEN_API_TOKEN")  # Updated to use CODEGEN_API_TOKEN
         env_org_id = os.environ.get("CODEGEN_ORG_ID")
         
         # Then try auth file

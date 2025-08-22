@@ -124,59 +124,72 @@ async def list_models():
     return {
         "object": "list",
         "data": [
+            # OpenAI models
             {
-                "id": "gpt-3.5-turbo",
+                "id": "gpt-5",
                 "object": "model",
                 "created": 1677610602,
-                "owned_by": "codegen"
+                "owned_by": "openai"
             },
+            {
+                "id": "gpt-4.1",
+                "object": "model", 
+                "created": 1677610602,
+                "owned_by": "openai"
+            },
+            {
+                "id": "o3",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "openai"
+            },
+            {
+                "id": "o4-mini",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "openai"
+            },
+            
+            # Anthropic models
+            {
+                "id": "claude-sonnet-4",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "anthropic"
+            },
+            {
+                "id": "claude-sonnet-3.7",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "anthropic"
+            },
+            {
+                "id": "claude-sonnet-3.5",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "anthropic"
+            },
+            
+            # Google models
+            {
+                "id": "gemini-2.5",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "google"
+            },
+            
+            # Legacy models for backward compatibility
             {
                 "id": "gpt-4",
                 "object": "model", 
                 "created": 1677610602,
-                "owned_by": "codegen"
+                "owned_by": "openai"
             },
             {
-                "id": "gpt-3.5-turbo-instruct",
+                "id": "gpt-3.5-turbo",
                 "object": "model",
                 "created": 1677610602,
-                "owned_by": "codegen"
-            },
-            {
-                "id": "claude-3-sonnet-20240229",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            {
-                "id": "claude-3-haiku-20240307",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            {
-                "id": "claude-3-opus-20240229",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "anthropic"
-            },
-            {
-                "id": "gemini-1.5-pro",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            },
-            {
-                "id": "gemini-1.5-flash",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
-            },
-            {
-                "id": "gemini-pro",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "google"
+                "owned_by": "openai"
             }
         ]
     }
@@ -831,4 +844,3 @@ async def service_status_middleware(request: Request, call_next):
     
     response = await call_next(request)
     return response
-

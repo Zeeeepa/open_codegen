@@ -13,25 +13,27 @@ class ModelMapper:
     
     DEFAULT_MAPPINGS = {
         # OpenAI models
-        "gpt-3.5-turbo": "codegen-standard",
-        "gpt-4": "codegen-advanced",
-        "gpt-3.5-turbo-instruct": "codegen-standard",
-        "gpt-4-turbo": "codegen-advanced",
-        "gpt-4-vision-preview": "codegen-advanced",
+        "gpt-5": "codegen-premium",
+        "gpt-4.1": "codegen-advanced",
+        "o3": "codegen-standard",
+        "o4-mini": "codegen-standard",
         
         # Anthropic models
-        "claude-3-sonnet-20240229": "codegen-advanced",
-        "claude-3-haiku-20240307": "codegen-standard",
-        "claude-3-opus-20240229": "codegen-premium",
-        "claude-3-sonnet": "codegen-advanced",
-        "claude-3-haiku": "codegen-standard",
-        "claude-3-opus": "codegen-premium",
+        "claude-sonnet-4": "codegen-premium",
+        "claude-sonnet-3.7": "codegen-advanced",
+        "claude-sonnet-3.5": "codegen-standard",
         
         # Gemini models
+        "gemini-2.5": "codegen-advanced",
+        
+        # Legacy models (for backward compatibility)
+        "gpt-4": "codegen-advanced",
+        "gpt-3.5-turbo": "codegen-standard",
+        "claude-3-opus-20240229": "codegen-premium",
+        "claude-3-sonnet-20240229": "codegen-advanced",
+        "claude-3-haiku-20240307": "codegen-standard",
         "gemini-1.5-pro": "codegen-advanced",
-        "gemini-1.5-flash": "codegen-standard",
-        "gemini-pro": "codegen-standard",
-        "gemini-pro-vision": "codegen-advanced"
+        "gemini-pro": "codegen-standard"
     }
     
     def __init__(self, custom_mappings: Optional[Dict[str, str]] = None):

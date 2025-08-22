@@ -58,7 +58,7 @@ class EnhancedCodegenConfig(BaseModel):
         
         return cls(
             org_id=os.environ.get("CODEGEN_ORG_ID", "323"),
-            token=os.environ.get("CODEGEN_TOKEN", ""),
+            token=os.environ.get("CODEGEN_API_TOKEN", ""),  # Updated to use CODEGEN_API_TOKEN
             base_url=os.environ.get("CODEGEN_BASE_URL", "https://codegen-sh--rest-api.modal.run"),
             timeout=int(os.environ.get("CODEGEN_TIMEOUT", "300")),
             model_mapping=model_mapping,
