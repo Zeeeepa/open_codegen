@@ -17,6 +17,16 @@ import ssl
 import ipaddress
 from pathlib import Path
 
+# Set up logging to file
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/tmp/enhanced_server.log'),
+        logging.StreamHandler()
+    ]
+)
+
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -324,4 +334,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
