@@ -176,20 +176,6 @@ async def list_models():
                 "object": "model",
                 "created": 1677610602,
                 "owned_by": "google"
-            },
-            
-            # Legacy models for backward compatibility
-            {
-                "id": "gpt-4",
-                "object": "model", 
-                "created": 1677610602,
-                "owned_by": "openai"
-            },
-            {
-                "id": "gpt-3.5-turbo",
-                "object": "model",
-                "created": 1677610602,
-                "owned_by": "openai"
             }
         ]
     }

@@ -20,7 +20,7 @@ class EnhancedCodegenConfig(BaseModel):
     
     # New parameters
     model_mapping: Dict[str, str] = Field(default_factory=dict)
-    default_model: Optional[str] = "codegen-standard"
+    default_model: Optional[str] = "codegen"
     
     # Authentication settings
     use_auth_file: bool = True
@@ -62,7 +62,7 @@ class EnhancedCodegenConfig(BaseModel):
             base_url=os.environ.get("CODEGEN_BASE_URL", "https://codegen-sh--rest-api.modal.run"),
             timeout=int(os.environ.get("CODEGEN_TIMEOUT", "300")),
             model_mapping=model_mapping,
-            default_model=os.environ.get("CODEGEN_DEFAULT_MODEL", "codegen-standard"),
+            default_model=os.environ.get("CODEGEN_DEFAULT_MODEL", "codegen"),
             use_auth_file=os.environ.get("CODEGEN_USE_AUTH_FILE", "true").lower() == "true",
             transparent_mode=os.environ.get("TRANSPARENT_MODE", "false").lower() == "true",
             intercept_openai=os.environ.get("INTERCEPT_OPENAI", "true").lower() == "true",

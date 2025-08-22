@@ -11,29 +11,24 @@ logger = logging.getLogger(__name__)
 class ModelMapper:
     """Maps provider models to Codegen models."""
     
+    # Default model to use when no mapping is found
+    DEFAULT_MODEL = "codegen"
+    
+    # Default mappings - all map to the single Codegen model
     DEFAULT_MAPPINGS = {
         # OpenAI models
-        "gpt-5": "codegen-premium",
-        "gpt-4.1": "codegen-advanced",
-        "o3": "codegen-standard",
-        "o4-mini": "codegen-standard",
+        "gpt-5": "codegen",
+        "gpt-4.1": "codegen",
+        "o3": "codegen",
+        "o4-mini": "codegen",
         
         # Anthropic models
-        "claude-sonnet-4": "codegen-premium",
-        "claude-sonnet-3.7": "codegen-advanced",
-        "claude-sonnet-3.5": "codegen-standard",
+        "claude-sonnet-4": "codegen",
+        "claude-sonnet-3.7": "codegen",
+        "claude-sonnet-3.5": "codegen",
         
         # Gemini models
-        "gemini-2.5": "codegen-advanced",
-        
-        # Legacy models (for backward compatibility)
-        "gpt-4": "codegen-advanced",
-        "gpt-3.5-turbo": "codegen-standard",
-        "claude-3-opus-20240229": "codegen-premium",
-        "claude-3-sonnet-20240229": "codegen-advanced",
-        "claude-3-haiku-20240307": "codegen-standard",
-        "gemini-1.5-pro": "codegen-advanced",
-        "gemini-pro": "codegen-standard"
+        "gemini-2.5": "codegen"
     }
     
     def __init__(self, custom_mappings: Optional[Dict[str, str]] = None):
@@ -49,14 +44,14 @@ class ModelMapper:
             return model
         
         # Then check default mappings
-        if provider_model in self.DEFAULT_MAPPINGS:
-            model = self.DEFAULT_MAPPINGS[provider_model]
+        if provider_model.lower() in self.DEFAULT_MAPPINGS:
+            model = self.DEFAULT_MAPPINGS[provider_model.lower()]
             logger.info(f"Using default mapping for {provider_model} -> {model}")
             return model
         
         # Default fallback
         logger.warning(f"No mapping found for {provider_model}, using default model")
-        return "codegen-standard"
+        return self.DEFAULT_MODEL
     
     @classmethod
     def from_environment(cls) -> "ModelMapper":
@@ -66,7 +61,7 @@ class ModelMapper:
         
         if mapping_str:
             try:
-                # Format: "gpt-4:codegen-advanced,gpt-3.5-turbo:codegen-standard"
+                # Format: "gpt-4:codegen,gpt-3.5-turbo:codegen"
                 pairs = mapping_str.split(",")
                 for pair in pairs:
                     provider_model, codegen_model = pair.split(":")
