@@ -23,12 +23,14 @@ class EnhancedCodegenClient:
         config: EnhancedCodegenConfig,
         auth: Optional[CodegenAuth] = None,
         model_mapper: Optional[ModelMapper] = None,
-        prompt_template: Optional[PromptTemplate] = None
+        prompt_template: Optional[PromptTemplate] = None,
+        webhook_handler = None
     ):
         self.config = config
         self.auth = auth or CodegenAuth()
         self.model_mapper = model_mapper or ModelMapper(config.model_mapping)
         self.prompt_template = prompt_template or PromptTemplate(config)
+        self.webhook_handler = webhook_handler
         self.agent = None
         self.task_manager = None
         self._initialize_agent()
@@ -51,11 +53,22 @@ class EnhancedCodegenClient:
             if self.config.base_url:
                 kwargs["base_url"] = self.config.base_url
             
+            # Add webhook URL to kwargs if webhook_handler is provided
+            if self.webhook_handler:
+                # Get the server's external URL from environment or use localhost
+                import os
+                server_host = os.environ.get("SERVER_HOST", "localhost")
+                server_port = os.environ.get("SERVER_PORT", "8001")
+                webhook_url = f"http://{server_host}:{server_port}/webhook/codegen"
+                kwargs["webhook_url"] = webhook_url
+                logger.info(f"Using webhook URL: {webhook_url}")
+            
             self.agent = Agent(**kwargs)
             self.task_manager = CodegenTaskManager(
                 self.agent,
                 max_retries=self.config.max_retries,
-                base_delay=self.config.base_delay
+                base_delay=self.config.base_delay,
+                webhook_handler=self.webhook_handler
             )
             
             logger.info(f"Initialized enhanced Codegen client for org_id: {org_id}")
@@ -109,13 +122,14 @@ def create_enhanced_client(
     config: EnhancedCodegenConfig,
     auth: Optional[CodegenAuth] = None,
     model_mapper: Optional[ModelMapper] = None,
-    prompt_template: Optional[PromptTemplate] = None
+    prompt_template: Optional[PromptTemplate] = None,
+    webhook_handler = None
 ) -> EnhancedCodegenClient:
     """Create an enhanced Codegen client."""
     return EnhancedCodegenClient(
         config=config,
         auth=auth,
         model_mapper=model_mapper,
-        prompt_template=prompt_template
+        prompt_template=prompt_template,
+        webhook_handler=webhook_handler
     )
-

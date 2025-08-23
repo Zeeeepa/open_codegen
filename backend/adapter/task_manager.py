@@ -17,11 +17,12 @@ logger = logging.getLogger(__name__)
 class CodegenTaskManager:
     """Manages Codegen tasks with proper polling and error handling."""
     
-    def __init__(self, agent: Agent, max_retries: int = 60, base_delay: int = 2):
+    def __init__(self, agent: Agent, max_retries: int = 60, base_delay: int = 2, webhook_handler = None):
         self.agent = agent
         self.max_retries = max_retries
         self.base_delay = base_delay
-        logger.info(f"Initialized CodegenTaskManager with max_retries={max_retries}, base_delay={base_delay}")
+        self.webhook_handler = webhook_handler
+        logger.info(f"Initialized CodegenTaskManager with max_retries={max_retries}, base_delay={base_delay}, webhook_handler={'enabled' if webhook_handler else 'disabled'}")
     
     async def run_task(
         self,
@@ -53,16 +54,49 @@ class CodegenTaskManager:
         # Run the task
         try:
             task = self.agent.run(prompt)
-            logger.info(f"Created task with ID: {task.id}")
+            task_id = task.id
+            logger.info(f"Created task with ID: {task_id}")
+            
+            # Register task with webhook handler if available
+            event = None
+            if self.webhook_handler:
+                logger.info(f"Registering task {task_id} with webhook handler")
+                event = self.webhook_handler.register_task(task_id)
             
             if stream:
-                logger.info(f"Streaming response for task {task.id}")
-                async for chunk in self._stream_response(task, timeout):
+                logger.info(f"Streaming response for task {task_id}")
+                async for chunk in self._stream_response(task, timeout, event):
                     yield chunk
             else:
-                logger.info(f"Waiting for completion of task {task.id}")
-                result = await self._poll_until_complete(task, timeout)
-                yield result
+                logger.info(f"Waiting for completion of task {task_id}")
+                
+                # If webhook handler is available, wait for webhook callback
+                if self.webhook_handler and event:
+                    logger.info(f"Using webhook for task {task_id}")
+                    
+                    # Wait for webhook callback with timeout
+                    success = await self.webhook_handler.wait_for_task(task_id, timeout)
+                    
+                    if success:
+                        # Get result from webhook handler
+                        result = self.webhook_handler.get_task_result(task_id)
+                        if result:
+                            logger.info(f"Got result from webhook for task {task_id}")
+                            yield result
+                        else:
+                            # Fallback to polling if webhook didn't provide result
+                            logger.warning(f"Webhook didn't provide result for task {task_id}, falling back to polling")
+                            result = await self._poll_until_complete(task, timeout)
+                            yield result
+                    else:
+                        # Fallback to polling if webhook timed out
+                        logger.warning(f"Webhook timed out for task {task_id}, falling back to polling")
+                        result = await self._poll_until_complete(task, timeout)
+                        yield result
+                else:
+                    # Use traditional polling if webhook handler is not available
+                    result = await self._poll_until_complete(task, timeout)
+                    yield result
                 
         except Exception as e:
             logger.error(f"Error running task: {e}")
@@ -135,11 +169,12 @@ class CodegenTaskManager:
         logger.error(f"Task {task.id} polling exceeded maximum retries ({self.max_retries})")
         raise RuntimeError(f"Task polling exceeded maximum retries ({self.max_retries})")
     
-    async def _stream_response(self, task, timeout: int) -> AsyncGenerator[str, None]:
+    async def _stream_response(self, task, timeout: int, event=None) -> AsyncGenerator[str, None]:
         """Stream response by polling for partial results."""
         start_time = time.time()
         last_content = ""
         retry_count = 0
+        task_id = task.id
         
         # Initial delay to allow task to start
         await asyncio.sleep(self.base_delay)
@@ -151,8 +186,19 @@ class CodegenTaskManager:
             # Check timeout
             elapsed_time = time.time() - start_time
             if elapsed_time > timeout:
-                logger.error(f"Task {task.id} streaming exceeded timeout of {timeout}s")
+                logger.error(f"Task {task_id} streaming exceeded timeout of {timeout}s")
                 raise TimeoutError(f"Task streaming exceeded timeout of {timeout}s")
+            
+            # Check if webhook has received a completion event
+            if self.webhook_handler and event and event.is_set():
+                logger.info(f"Webhook received completion for task {task_id}")
+                result = self.webhook_handler.get_task_result(task_id)
+                if result and result != last_content:
+                    new_content = result[len(last_content):]
+                    if new_content:
+                        logger.debug(f"Yielding final chunk from webhook: {len(new_content)} chars")
+                        yield new_content
+                break
             
             try:
                 task.refresh()
@@ -170,7 +216,7 @@ class CodegenTaskManager:
                     
                 elif status == "FAILED":
                     error_msg = getattr(task, 'error', 'Task failed with unknown error')
-                    logger.error(f"Task {task.id} failed during streaming: {error_msg}")
+                    logger.error(f"Task {task_id} failed during streaming: {error_msg}")
                     raise RuntimeError(f"Codegen task failed: {error_msg}")
                     
                 elif status in ["ACTIVE", "RUNNING", "PENDING"]:
@@ -220,4 +266,3 @@ class CodegenTaskManager:
         if retry_count >= self.max_retries:
             logger.error(f"Task {task.id} streaming exceeded maximum retries ({self.max_retries})")
             raise RuntimeError(f"Task streaming exceeded maximum retries ({self.max_retries})")
-

@@ -62,12 +62,16 @@ model_mapper = get_model_mapper()
 prompt_template = create_prompt_template(codegen_config)
 system_message_manager = get_system_message_manager()
 
+# Initialize webhook handler
+webhook_handler = WebhookHandler()
+
 # Initialize enhanced client
 enhanced_client = create_enhanced_client(
     config=codegen_config,
     auth=auth,
     model_mapper=model_mapper,
-    prompt_template=prompt_template
+    prompt_template=prompt_template,
+    webhook_handler=webhook_handler
 )
 
 # Create FastAPI app
@@ -808,8 +812,8 @@ async def clear_system_message():
 @app.middleware("http")
 async def service_status_middleware(request: Request, call_next):
     """Middleware to check if service is enabled for API endpoints."""
-    # Allow access to Web UI, status, toggle, system message, and health endpoints
-    allowed_paths = ["/", "/api/status", "/api/toggle", "/api/system-message", "/health", "/static"]
+    # Allow access to Web UI, status, toggle, system message, webhook, and health endpoints
+    allowed_paths = ["/", "/api/status", "/api/toggle", "/api/system-message", "/health", "/static", "/webhook/codegen"]
     
     if any(request.url.path.startswith(path) for path in allowed_paths):
         response = await call_next(request)
@@ -830,3 +834,18 @@ async def service_status_middleware(request: Request, call_next):
     
     response = await call_next(request)
     return response
+
+# Webhook endpoint for Codegen API callbacks
+@app.post("/webhook/codegen")
+async def codegen_webhook(request: Request):
+    """
+    Webhook endpoint for Codegen API callbacks.
+    This endpoint receives task completion notifications from the Codegen API.
+    """
+    logger.info("Received webhook callback from Codegen API")
+    
+    # Process the webhook using the webhook handler
+    result = await webhook_handler.handle_webhook(request)
+    
+    # Return a response to the Codegen API
+    return result
