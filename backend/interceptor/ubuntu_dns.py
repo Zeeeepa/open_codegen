@@ -1,285 +1,212 @@
 """
-Ubuntu DNS Management for OpenAI API Interception
-Handles /etc/hosts modification and systemd-resolved configuration.
+DNS interception manager for Ubuntu-based systems.
+Handles hosts file modification for transparent interception.
 """
 
 import os
-import shutil
+import socket
 import subprocess
 import logging
 from pathlib import Path
-from typing import List, Optional
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 class UbuntuDNSManager:
-    """Manages DNS interception for Ubuntu systems."""
+    """Manages DNS interception on Ubuntu-based systems."""
     
     HOSTS_FILE = "/etc/hosts"
-    HOSTS_BACKUP = "/etc/hosts.openai-interceptor.backup"
-    INTERCEPTOR_MARKER = "# OpenAI/Anthropic Interceptor - DO NOT EDIT MANUALLY"
+    HOSTS_BACKUP = "/etc/hosts.codegen.bak"
+    
+    # Domains to intercept
+    DOMAINS = [
+        "api.openai.com",
+        "api.anthropic.com",
+        "generativelanguage.googleapis.com"
+    ]
     
     def __init__(self):
-        self.domains_to_intercept = [
-            "api.openai.com",
-            "openai.com",
-            "*.openai.com",
-            "api.anthropic.com",
-            "anthropic.com",
-            "*.anthropic.com"
-        ]
-        self.redirect_ip = "127.0.0.1"
+        """Initialize the DNS manager."""
+        self.hosts_file = Path(self.HOSTS_FILE)
+        self.hosts_backup = Path(self.HOSTS_BACKUP)
     
     def is_root(self) -> bool:
-        """Check if running with root privileges."""
+        """Check if running as root."""
         return os.geteuid() == 0
     
-    def backup_hosts_file(self) -> bool:
-        """Create a backup of the current hosts file."""
+    def backup_hosts(self) -> bool:
+        """Backup the hosts file."""
         try:
-            if not Path(self.HOSTS_BACKUP).exists():
-                shutil.copy2(self.HOSTS_FILE, self.HOSTS_BACKUP)
-                logger.info(f"✅ Created hosts file backup: {self.HOSTS_BACKUP}")
-                return True
-            else:
-                logger.info("ℹ️ Hosts file backup already exists")
-                return True
-        except Exception as e:
-            logger.error(f"❌ Failed to backup hosts file: {e}")
-            return False
-    
-    def restore_hosts_file(self) -> bool:
-        """Restore the original hosts file from backup."""
-        try:
-            if Path(self.HOSTS_BACKUP).exists():
-                shutil.copy2(self.HOSTS_BACKUP, self.HOSTS_FILE)
-                os.remove(self.HOSTS_BACKUP)
-                logger.info("✅ Restored original hosts file")
-                return True
-            else:
-                logger.warning("⚠️ No backup file found, removing interceptor entries manually")
-                return self.remove_interceptor_entries()
-        except Exception as e:
-            logger.error(f"❌ Failed to restore hosts file: {e}")
-            return False
-    
-    def read_hosts_file(self) -> List[str]:
-        """Read the current hosts file content."""
-        try:
-            with open(self.HOSTS_FILE, 'r') as f:
-                return f.readlines()
-        except Exception as e:
-            logger.error(f"❌ Failed to read hosts file: {e}")
-            return []
-    
-    def write_hosts_file(self, lines: List[str]) -> bool:
-        """Write content to the hosts file."""
-        try:
-            with open(self.HOSTS_FILE, 'w') as f:
-                f.writelines(lines)
-            logger.info("✅ Updated hosts file")
+            if not self.hosts_backup.exists():
+                subprocess.run(["cp", self.HOSTS_FILE, self.HOSTS_BACKUP], check=True)
+                logger.info(f"Backed up hosts file to {self.HOSTS_BACKUP}")
             return True
         except Exception as e:
-            logger.error(f"❌ Failed to write hosts file: {e}")
+            logger.error(f"Failed to backup hosts file: {e}")
             return False
     
-    def has_interceptor_entries(self) -> bool:
-        """Check if interceptor entries already exist in hosts file."""
-        lines = self.read_hosts_file()
-        return any(self.INTERCEPTOR_MARKER in line for line in lines)
-    
-    def remove_interceptor_entries(self) -> bool:
-        """Remove existing interceptor entries from hosts file."""
-        lines = self.read_hosts_file()
-        if not lines:
-            return False
-        
-        # Remove lines between our markers
-        filtered_lines = []
-        skip_section = False
-        
-        for line in lines:
-            if self.INTERCEPTOR_MARKER in line:
-                if "START" in line:
-                    skip_section = True
-                elif "END" in line:
-                    skip_section = False
-                continue
-            
-            if not skip_section:
-                filtered_lines.append(line)
-        
-        return self.write_hosts_file(filtered_lines)
-    
-    def add_interceptor_entries(self) -> bool:
-        """Add interceptor entries to hosts file."""
-        if not self.is_root():
-            logger.error("❌ Root privileges required to modify hosts file")
-            return False
-        
-        # Backup first
-        if not self.backup_hosts_file():
-            return False
-        
-        # Remove existing entries if any
-        if self.has_interceptor_entries():
-            logger.info("🔄 Removing existing interceptor entries")
-            self.remove_interceptor_entries()
-        
-        lines = self.read_hosts_file()
-        if not lines:
-            return False
-        
-        # Add our entries
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        interceptor_entries = [
-            f"\n{self.INTERCEPTOR_MARKER} START - Added {timestamp}\n",
-            f"{self.redirect_ip}\tapi.openai.com\n",
-            f"{self.redirect_ip}\topenai.com\n",
-            f"{self.redirect_ip}\twww.openai.com\n",
-            f"{self.INTERCEPTOR_MARKER} END\n"
-        ]
-        
-        lines.extend(interceptor_entries)
-        
-        if self.write_hosts_file(lines):
-            logger.info("✅ Added OpenAI API interception entries to hosts file")
-            self.flush_dns_cache()
-            return True
-        
-        return False
-    
-    def flush_dns_cache(self) -> bool:
-        """Flush DNS cache on Ubuntu."""
+    def restore_hosts(self) -> bool:
+        """Restore the hosts file from backup."""
         try:
-            # Check if systemd-resolved is active
-            result = subprocess.run(
-                ["systemctl", "is-active", "systemd-resolved"],
-                capture_output=True,
-                text=True
-            )
-            
-            if result.returncode == 0:
-                # Try modern resolvectl command first (Ubuntu 20.04+)
-                try:
-                    subprocess.run(["resolvectl", "flush-caches"], check=True)
-                    logger.info("✅ Flushed DNS cache using resolvectl")
-                    return True
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    # Fallback to deprecated systemd-resolve (Ubuntu 18.04-19.10)
-                    try:
-                        subprocess.run(["systemd-resolve", "--flush-caches"], check=True)
-                        logger.info("✅ Flushed DNS cache using systemd-resolve")
-                        return True
-                    except (subprocess.CalledProcessError, FileNotFoundError):
-                        logger.warning("⚠️ Both resolvectl and systemd-resolve failed")
-            else:
-                # Fallback for older systems without systemd-resolved
-                subprocess.run(["service", "networking", "restart"], check=True)
-                logger.info("✅ Restarted networking service")
-            
-            return True
-        except subprocess.CalledProcessError as e:
-            logger.warning(f"⚠️ Failed to flush DNS cache: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"❌ Error flushing DNS cache: {e}")
-            return False
-    
-    def test_dns_resolution(self) -> bool:
-        """Test if DNS interception is working."""
-        try:
-            import socket
-            ip = socket.gethostbyname("api.openai.com")
-            if ip == self.redirect_ip:
-                logger.info("✅ DNS interception is working correctly")
+            if self.hosts_backup.exists():
+                subprocess.run(["cp", self.HOSTS_BACKUP, self.HOSTS_FILE], check=True)
+                logger.info(f"Restored hosts file from {self.HOSTS_BACKUP}")
                 return True
             else:
-                logger.warning(f"⚠️ DNS interception not working. api.openai.com resolves to {ip}")
+                logger.warning("No hosts backup file found")
                 return False
         except Exception as e:
-            logger.error(f"❌ Failed to test DNS resolution: {e}")
+            logger.error(f"Failed to restore hosts file: {e}")
+            return False
+    
+    def add_interception_entries(self) -> bool:
+        """Add interception entries to hosts file."""
+        try:
+            # Read current hosts file
+            with open(self.HOSTS_FILE, "r") as f:
+                hosts_content = f.read()
+            
+            # Check if already intercepted
+            if "# CODEGEN DNS INTERCEPTION" in hosts_content:
+                logger.info("Interception entries already exist in hosts file")
+                return True
+            
+            # Add interception entries
+            with open(self.HOSTS_FILE, "a") as f:
+                f.write("\n# CODEGEN DNS INTERCEPTION - DO NOT MODIFY\n")
+                for domain in self.DOMAINS:
+                    f.write(f"127.0.0.1 {domain}\n")
+                f.write("# END CODEGEN DNS INTERCEPTION\n")
+            
+            logger.info(f"Added interception entries to {self.HOSTS_FILE}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add interception entries: {e}")
+            return False
+    
+    def remove_interception_entries(self) -> bool:
+        """Remove interception entries from hosts file."""
+        try:
+            # Read current hosts file
+            with open(self.HOSTS_FILE, "r") as f:
+                hosts_content = f.readlines()
+            
+            # Remove interception entries
+            in_section = False
+            new_content = []
+            for line in hosts_content:
+                if "# CODEGEN DNS INTERCEPTION" in line:
+                    in_section = True
+                    continue
+                if "# END CODEGEN DNS INTERCEPTION" in line:
+                    in_section = False
+                    continue
+                if not in_section:
+                    new_content.append(line)
+            
+            # Write new hosts file
+            with open(self.HOSTS_FILE, "w") as f:
+                f.writelines(new_content)
+            
+            logger.info(f"Removed interception entries from {self.HOSTS_FILE}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to remove interception entries: {e}")
             return False
     
     def enable_interception(self) -> bool:
         """Enable DNS interception."""
-        logger.info("🚀 Enabling OpenAI API DNS interception...")
-        
         if not self.is_root():
-            logger.error("❌ Root privileges required. Run with sudo.")
+            logger.error("Root privileges required for DNS interception")
             return False
         
-        success = self.add_interceptor_entries()
-        if success:
-            logger.info("✅ DNS interception enabled successfully")
-            # Test the configuration
-            if self.test_dns_resolution():
-                logger.info("🎉 OpenAI API calls will now be intercepted!")
-            else:
-                logger.warning("⚠️ DNS interception enabled but test failed")
+        # Backup hosts file
+        if not self.backup_hosts():
+            return False
         
-        return success
+        # Add interception entries
+        if not self.add_interception_entries():
+            return False
+        
+        # Flush DNS cache
+        self.flush_dns_cache()
+        
+        logger.info("DNS interception enabled successfully")
+        return True
     
     def disable_interception(self) -> bool:
         """Disable DNS interception."""
-        logger.info("🔄 Disabling OpenAI API DNS interception...")
-        
         if not self.is_root():
-            logger.error("❌ Root privileges required. Run with sudo.")
+            logger.error("Root privileges required for DNS interception")
             return False
         
-        success = self.restore_hosts_file()
-        if success:
-            self.flush_dns_cache()
-            logger.info("✅ DNS interception disabled successfully")
+        # Remove interception entries
+        if not self.remove_interception_entries():
+            return False
         
-        return success
+        # Flush DNS cache
+        self.flush_dns_cache()
+        
+        logger.info("DNS interception disabled successfully")
+        return True
+    
+    def flush_dns_cache(self) -> bool:
+        """Flush DNS cache."""
+        try:
+            # Try different methods for different systems
+            # Ubuntu/Debian
+            subprocess.run(["systemd-resolve", "--flush-caches"], check=False)
+            # Ubuntu older versions
+            subprocess.run(["service", "systemd-resolved", "restart"], check=False)
+            # General Linux
+            subprocess.run(["nscd", "-I", "hosts"], check=False)
+            
+            logger.info("Flushed DNS cache")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to flush DNS cache: {e}")
+            return False
     
     def status(self) -> dict:
-        """Get current interception status."""
-        return {
-            "enabled": self.has_interceptor_entries(),
-            "backup_exists": Path(self.HOSTS_BACKUP).exists(),
-            "dns_test_passed": self.test_dns_resolution() if self.has_interceptor_entries() else False,
-            "root_access": self.is_root()
-        }
-
-
-def main():
-    """CLI interface for DNS management."""
-    import sys
-    import argparse
+        """Get DNS interception status."""
+        try:
+            # Check if hosts file contains interception entries
+            with open(self.HOSTS_FILE, "r") as f:
+                hosts_content = f.read()
+            
+            enabled = "# CODEGEN DNS INTERCEPTION" in hosts_content
+            
+            # Check if backup exists
+            backup_exists = self.hosts_backup.exists()
+            
+            return {
+                "enabled": enabled,
+                "backup_exists": backup_exists,
+                "hosts_file": str(self.hosts_file),
+                "hosts_backup": str(self.hosts_backup),
+                "domains": self.DOMAINS
+            }
+        except Exception as e:
+            logger.error(f"Failed to get DNS interception status: {e}")
+            return {
+                "enabled": False,
+                "backup_exists": False,
+                "error": str(e)
+            }
     
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s | %(levelname)s | %(message)s'
-    )
-    
-    parser = argparse.ArgumentParser(description="Ubuntu DNS Manager for OpenAI API Interception")
-    parser.add_argument("action", choices=["enable", "disable", "status", "test"], 
-                       help="Action to perform")
-    
-    args = parser.parse_args()
-    dns_manager = UbuntuDNSManager()
-    
-    if args.action == "enable":
-        success = dns_manager.enable_interception()
-        sys.exit(0 if success else 1)
-    elif args.action == "disable":
-        success = dns_manager.disable_interception()
-        sys.exit(0 if success else 1)
-    elif args.action == "status":
-        status = dns_manager.status()
-        print(f"DNS Interception Status:")
-        print(f"  Enabled: {status['enabled']}")
-        print(f"  Backup exists: {status['backup_exists']}")
-        print(f"  DNS test passed: {status['dns_test_passed']}")
-        print(f"  Root access: {status['root_access']}")
-    elif args.action == "test":
-        success = dns_manager.test_dns_resolution()
-        sys.exit(0 if success else 1)
+    def test_dns_resolution(self) -> bool:
+        """Test if DNS interception is working."""
+        try:
+            # Try to resolve one of the domains
+            ip = socket.gethostbyname("api.openai.com")
+            
+            # Check if it resolves to localhost
+            if ip == "127.0.0.1":
+                logger.info("DNS interception is working correctly")
+                return True
+            else:
+                logger.warning(f"DNS interception is not working: api.openai.com resolves to {ip}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to test DNS resolution: {e}")
+            return False
 
-
-if __name__ == "__main__":
-    main()
