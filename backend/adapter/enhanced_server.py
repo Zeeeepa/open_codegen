@@ -43,6 +43,7 @@ from backend.adapter.gemini_streaming import (
     create_gemini_streaming_response, collect_gemini_streaming_response
 )
 from backend.adapter.system_message_manager import get_system_message_manager
+from backend.adapter.webhook_handler import WebhookHandler
 
 # Enhanced logging configuration
 logging.basicConfig(

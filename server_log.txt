@@ -1,0 +1,66 @@
+ℹ️ DNS interception already active
+2025-08-23 03:08:08,939 - backend.interceptor.ubuntu_dns - INFO - DNS interception is working correctly
+🚀 Starting Enhanced OpenAI Codegen Adapter Server
+==================================================
+🔄 Mode: TRANSPARENT INTERCEPTION
+🌐 Intercepting: api.openai.com -> 0.0.0.0
+📍 HTTP Server: http://0.0.0.0:80 (standard port)
+🔐 HTTPS Server: https://0.0.0.0:443 (standard port)
+✅ Using standard ports 80/443 - True transparent interception!
+🎯 OpenAI clients work with ZERO code changes!
+🎯 Applications using OpenAI API will automatically use Codegen!
+==================================================
+💡 Press Ctrl+C to stop the server and cleanup DNS interception
+==================================================
+🌐 Starting HTTP server on port 80...
+🔐 Starting HTTPS server on port 443...
+2025-08-23 03:08:10,585 - backend.adapter.config - INFO - Loaded enhanced Codegen configuration - org_id: 323, model: codegen
+2025-08-23 03:08:10,586 - backend.adapter.auth - INFO - Auth file not found at /root/.config/codegen-sh/auth.json
+2025-08-23 03:08:10,586 - backend.adapter.auth - INFO - Loaded authentication - org_id: 323, token: not set
+2025-08-23 03:08:10,586 - backend.adapter.model_mapper - INFO - Initialized ModelMapper with 0 custom mappings
+2025-08-23 03:08:10,586 - backend.adapter.system_message_manager - INFO - System message file not found at /root/.config/codegen-adapter/system_message.json
+2025-08-23 03:08:10,586 - backend.adapter.webhook_handler - INFO - Initialized WebhookHandler
+2025-08-23 03:08:10,586 - backend.adapter.enhanced_client - INFO - Using webhook URL: http://localhost:8001/webhook/codegen
+2025-08-23 03:08:10,587 - backend.adapter.task_manager - INFO - Initialized CodegenTaskManager with max_retries=20, base_delay=2, webhook_handler=enabled
+2025-08-23 03:08:10,587 - backend.adapter.enhanced_client - INFO - Initialized enhanced Codegen client for org_id: 323
+INFO:     Started server process [6450]
+INFO:     Started server process [6450]
+INFO:     Waiting for application startup.
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:80 (Press CTRL+C to quit)
+INFO:     Uvicorn running on https://0.0.0.0:443 (Press CTRL+C to quit)
+🎉 Both HTTP and HTTPS servers started successfully!
+✅ True transparent interception enabled - OpenAI clients work with zero code changes!
+2025-08-23 03:08:45,685 - backend.adapter.enhanced_server - INFO - 🚀 DIRECT REQUEST START | Endpoint: /v1/chat/completions
+2025-08-23 03:08:45,685 - backend.adapter.enhanced_server - INFO -    📊 Request Data: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'user', 'content': 'Hello, how are you?', 'name': None}], 'temperature': 0.7, 'max_tokens': None, 'top_p': 1.0, 'frequency_penalty': 0.0, 'presence_penalty': 0.0, 'stream': False, 'stop': None, 'user': None}
+2025-08-23 03:08:45,685 - backend.adapter.enhanced_server - INFO -    🕐 Timestamp: 2025-08-23T03:08:45.685971
+2025-08-23 03:08:45,686 - backend.adapter.model_mapper - WARNING - No mapping found for gpt-3.5-turbo, using default model
+2025-08-23 03:08:45,686 - backend.adapter.enhanced_server - INFO - Using Codegen model: codegen
+2025-08-23 03:08:45,686 - backend.adapter.enhanced_server - DEBUG - 🔄 Converted prompt: System: You are an expert software engineer and coding assistant. When responding to coding questions:
+
+1. Provide clear, well-commented code examples
+2. Explain your reasoning and approach
+3. Conside...
+2025-08-23 03:08:45,686 - backend.adapter.enhanced_server - INFO - 📦 Initiating non-streaming response...
+2025-08-23 03:08:45,686 - backend.adapter.enhanced_streaming - INFO - 🔄 Starting response collection from Codegen...
+2025-08-23 03:08:45,686 - backend.adapter.enhanced_streaming - INFO -    📝 Prompt length: 630 characters
+2025-08-23 03:08:45,686 - backend.adapter.enhanced_streaming - INFO -    🤖 Using Codegen model: codegen
+2025-08-23 03:08:45,686 - backend.adapter.task_manager - INFO - Using model: codegen
+2025-08-23 03:08:45,687 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): codegen-sh--rest-api.modal.run:443
+2025-08-23 03:08:46,101 - urllib3.connectionpool - DEBUG - https://codegen-sh--rest-api.modal.run:443 "POST /v1/organizations/323/agent/run HTTP/1.1" 401 41
+2025-08-23 03:08:46,110 - backend.adapter.task_manager - ERROR - Error running task: (401)
+Reason: Unauthorized
+HTTP response headers: HTTPHeaderDict({'Alt-Svc': 'h3=":443"; ma=2592000', 'Content-Length': '41', 'Content-Type': 'application/json', 'Date': 'Sat, 23 Aug 2025 03:08:45 GMT', 'Modal-Function-Call-Id': 'fc-01K3AECSGGSEK8MQVB2KVFTN9S', 'Vary': 'accept-encoding', 'X-Request-Id': 'modal_task_ta-01K3A03X47S7BASQP7HH0M06CY'})
+HTTP response body: {"detail":"Invalid or expired API token"}
+
+2025-08-23 03:08:46,111 - backend.adapter.enhanced_streaming - ERROR - ❌ Error collecting streaming response after 0.42s: (401)
+Reason: Unauthorized
+HTTP response headers: HTTPHeaderDict({'Alt-Svc': 'h3=":443"; ma=2592000', 'Content-Length': '41', 'Content-Type': 'application/json', 'Date': 'Sat, 23 Aug 2025 03:08:45 GMT', 'Modal-Function-Call-Id': 'fc-01K3AECSGGSEK8MQVB2KVFTN9S', 'Vary': 'accept-encoding', 'X-Request-Id': 'modal_task_ta-01K3A03X47S7BASQP7HH0M06CY'})
+HTTP response body: {"detail":"Invalid or expired API token"}
+
+2025-08-23 03:08:46,111 - backend.adapter.enhanced_server - INFO - 🔢 Token estimation - Prompt: 157, Completion: 104
+2025-08-23 03:08:46,111 - backend.adapter.enhanced_server - INFO - 📤 OpenAI response generated in 0.43s
+2025-08-23 03:08:46,111 - backend.adapter.enhanced_server - INFO - ✅ Chat completion successful in 0.43s
+INFO:     127.0.0.1:62074 - "POST /v1/chat/completions HTTP/1.1" 200 OK
