@@ -7,3 +7,7 @@ codegen>=0.1.0
 codegen-api-client>=0.1.0
 cryptography>=40.0.0
 
+# Multi-AI Provider System Dependencies
+aiohttp>=3.8.0
+playwright>=1.40.0
+asyncio-throttle>=1.0.2
