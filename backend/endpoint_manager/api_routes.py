@@ -17,6 +17,8 @@ from backend.database.models import (
 )
 from backend.endpoint_manager.endpoint_service import EndpointService
 from backend.endpoint_manager.ai_assistant import AIEndpointAssistant
+from backend.endpoint_manager.default_configs import DefaultEndpointConfigs, RoutingConfigManager
+from backend.middleware.openai_proxy import ProxyConfig
 
 logger = logging.getLogger(__name__)
 
@@ -469,6 +471,186 @@ async def get_provider_types():
         ],
         "auth_types": [auth_type.value for auth_type in AuthType]
     }
+
+
+# Routing Configuration Models
+class RoutingConfigRequest(BaseModel):
+    default_route: str = Field(..., description="Default routing target (codegen_api or zai_webui)")
+    zai_webui_enabled: bool = Field(True, description="Enable Z.AI Web UI routing")
+    load_balancing: str = Field("round_robin", description="Load balancing strategy")
+    fallback_enabled: bool = Field(True, description="Enable fallback routing")
+
+class RoutingConfigResponse(BaseModel):
+    default_route: str
+    zai_webui_enabled: bool
+    load_balancing: str
+    fallback_enabled: bool
+    auto_scaling: Dict[str, Any]
+    health_check: Dict[str, Any]
+
+class DefaultEndpointResponse(BaseModel):
+    id: str
+    name: str
+    model_name: str
+    description: str
+    provider_type: str
+    provider_name: str
+    config_data: Dict[str, Any]
+    status: str
+    is_enabled: bool
+
+
+# Routing Configuration Endpoints
+@router.get("/routing/config", response_model=RoutingConfigResponse)
+async def get_routing_config():
+    """Get current routing configuration"""
+    try:
+        config = RoutingConfigManager.get_default_routing_config()
+        return RoutingConfigResponse(**config)
+    
+    except Exception as e:
+        logger.error(f"Error getting routing config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/routing/config")
+async def update_routing_config(
+    config: RoutingConfigRequest,
+    user_id: str = Depends(get_current_user)
+):
+    """Update routing configuration"""
+    try:
+        # Update the routing configuration
+        config_dict = config.dict()
+        ProxyConfig.update_routing_config(config_dict)
+        
+        return {
+            "message": "Routing configuration updated successfully",
+            "config": config_dict
+        }
+    
+    except Exception as e:
+        logger.error(f"Error updating routing config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/routing/toggle-zai-webui")
+async def toggle_zai_webui(
+    enabled: bool = Query(..., description="Enable or disable Z.AI Web UI routing"),
+    user_id: str = Depends(get_current_user)
+):
+    """Toggle Z.AI Web UI routing on/off"""
+    try:
+        ProxyConfig.toggle_zai_webui(enabled)
+        
+        return {
+            "message": f"Z.AI Web UI routing {'enabled' if enabled else 'disabled'}",
+            "zai_webui_enabled": enabled
+        }
+    
+    except Exception as e:
+        logger.error(f"Error toggling Z.AI Web UI: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/defaults/endpoints", response_model=List[DefaultEndpointResponse])
+async def get_default_endpoints(
+    codegen_org_id: Optional[str] = Query(None, description="Codegen organization ID"),
+    codegen_token: Optional[str] = Query(None, description="Codegen authentication token")
+):
+    """Get default endpoint configurations"""
+    try:
+        default_configs = DefaultEndpointConfigs.get_all_default_configs(
+            codegen_org_id=codegen_org_id,
+            codegen_token=codegen_token
+        )
+        
+        return [
+            DefaultEndpointResponse(
+                id=config.id,
+                name=config.name,
+                model_name=config.model_name,
+                description=config.description,
+                provider_type=config.provider_type,
+                provider_name=config.provider_name,
+                config_data=config.config_data,
+                status=config.status,
+                is_enabled=config.is_enabled
+            )
+            for config in default_configs
+        ]
+    
+    except Exception as e:
+        logger.error(f"Error getting default endpoints: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/templates/providers")
+async def get_provider_templates():
+    """Get provider configuration templates"""
+    try:
+        templates = DefaultEndpointConfigs.get_provider_templates()
+        return {
+            "templates": templates,
+            "count": len(templates)
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting provider templates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/endpoints/from-template")
+async def create_endpoint_from_template(
+    template_name: str = Query(..., description="Template name to use"),
+    name: str = Query(..., description="Custom name for the endpoint"),
+    config_overrides: Optional[Dict[str, Any]] = None,
+    user_id: str = Depends(get_current_user)
+):
+    """Create an endpoint from a template"""
+    try:
+        # Create endpoint from template
+        endpoint_config = DefaultEndpointConfigs.create_endpoint_from_template(
+            template_name=template_name,
+            user_id=user_id,
+            name=name,
+            config_overrides=config_overrides or {}
+        )
+        
+        # Save to database
+        db = get_database_manager()
+        db.create_endpoint_config(endpoint_config)
+        
+        return {
+            "message": "Endpoint created from template successfully",
+            "endpoint": {
+                "id": endpoint_config.id,
+                "name": endpoint_config.name,
+                "template_used": template_name,
+                "provider_type": endpoint_config.provider_type
+            }
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating endpoint from template: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/routing/rules/examples")
+async def get_example_routing_rules():
+    """Get example routing rules for different scenarios"""
+    try:
+        examples = RoutingConfigManager.get_example_routing_rules()
+        return {
+            "examples": examples,
+            "count": len(examples)
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting example routing rules: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/health")
