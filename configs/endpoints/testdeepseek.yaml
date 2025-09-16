@@ -1,0 +1,11 @@
+URL: https://chat.deepseek.com
+authemail: test@example.com
+authpassword: password123
+createuniquefingerprintsandboxdeploymentsnapshot: 'yes'
+description: DeepSeek Web Chat Interface
+enabled: true
+maxautoscaleparallel: '3'
+name: TestDeepSeek
+priority: 1
+savecookiesforfutureuse: 'yes'
+useproxy: 'no'
