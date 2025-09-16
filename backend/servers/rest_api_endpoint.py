@@ -150,14 +150,34 @@ class RestApiEndpoint(BaseEndpoint):
             async with self.session.post(url, json=payload) as response:
                 if response.status == 200:
                     data = await response.json()
-                    return self._extract_response_content(data)
+                    content = self._extract_response_content(data)
+                    
+                    # Update metrics
+                    self.metrics.total_requests += 1
+                    self.metrics.successful_requests += 1
+                    self.metrics.last_request_time = time.time()
+                    
+                    return content
                 else:
                     error_text = await response.text()
-                    raise Exception(f"API request failed with status {response.status}: {error_text}")
+                    
+                    # Update metrics for failed requests
+                    self.metrics.total_requests += 1
+                    self.metrics.failed_requests += 1
+                    self.metrics.last_request_time = time.time()
+                    
+                    # Return error message instead of raising exception
+                    return f"API Error {response.status}: {error_text[:200]}..."
                     
         except Exception as e:
             logger.error(f"Failed to send message to {self.name}: {e}")
-            raise
+            
+            # Update metrics for failed requests
+            self.metrics.total_requests += 1
+            self.metrics.failed_requests += 1
+            self.metrics.last_request_time = time.time()
+            
+            return f"Connection Error: {str(e)}"
     
     async def stream_message(self, message: str, **kwargs) -> AsyncGenerator[str, None]:
         """Stream message response from REST API"""
