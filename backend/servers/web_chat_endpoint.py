@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class WebChatEndpoint(BaseEndpoint):
     """Web chat endpoint using browser automation"""
     
-    def __init__(self, name: str, config: Dict[str, Any]):
-        super().__init__(name, config)
+    def __init__(self, name: str, config: Dict[str, Any], priority: int = 50):
+        super().__init__(name, config, priority)
         
         # Web chat specific configuration
         self.login_url = config.get('login_url', self.url)

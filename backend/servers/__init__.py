@@ -15,18 +15,18 @@ class EndpointFactory:
     """Factory for creating endpoint instances"""
     
     @staticmethod
-    def create_endpoint(name: str, config: Dict[str, Any]) -> Optional[BaseEndpoint]:
+    def create_endpoint(name: str, config: Dict[str, Any], priority: int = 50) -> Optional[BaseEndpoint]:
         """Create an endpoint instance based on configuration"""
         try:
             endpoint_type = config.get('provider_type', config.get('type', 'rest_api'))
             
             if endpoint_type == 'web_chat':
-                return WebChatEndpoint(name, config)
+                return WebChatEndpoint(name, config, priority)
             elif endpoint_type == 'rest_api':
-                return RestApiEndpoint(name, config)
+                return RestApiEndpoint(name, config, priority)
             elif endpoint_type == 'api_token':
                 # API token is essentially a REST API endpoint
-                return RestApiEndpoint(name, config)
+                return RestApiEndpoint(name, config, priority)
             else:
                 logger.error(f"Unknown endpoint type: {endpoint_type}")
                 return None

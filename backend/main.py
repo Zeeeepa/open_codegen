@@ -16,6 +16,9 @@ from .endpoint_manager import get_endpoint_manager
 from .api.endpoints import router as endpoints_router
 from .api.chat import router as chat_router
 from .api.config import router as config_router
+from .middleware.request_interceptor import UniversalRequestInterceptor
+from .config.default_endpoints import DefaultEndpointsConfig
+from typing import Optional
 
 # Configure logging
 logging.basicConfig(
@@ -38,6 +41,11 @@ async def lifespan(app: FastAPI):
         endpoint_manager = get_endpoint_manager()
         await endpoint_manager.start()
         logger.info("Endpoint Manager started")
+        
+        # Initialize default endpoints
+        default_config = DefaultEndpointsConfig()
+        results = await default_config.initialize_default_endpoints(endpoint_manager)
+        logger.info(f"Default endpoints initialized: {results}")
         
         yield
         
@@ -67,6 +75,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add Universal Request Interceptor middleware
+endpoint_manager = get_endpoint_manager()
+app.add_middleware(UniversalRequestInterceptor, endpoint_manager=endpoint_manager)
 
 # Include API routers
 app.include_router(config_router)

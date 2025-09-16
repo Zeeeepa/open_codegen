@@ -103,9 +103,10 @@ class EndpointMetrics:
 class BaseEndpoint(ABC):
     """Abstract base class for all endpoint types"""
     
-    def __init__(self, name: str, config: Dict[str, Any]):
+    def __init__(self, name: str, config: Dict[str, Any], priority: int = 50):
         self.name = name
         self.config = config
+        self.priority = priority  # Higher numbers = higher priority
         self.status = EndpointStatus.STOPPED
         self.health = EndpointHealth.UNKNOWN
         self.metrics = EndpointMetrics()

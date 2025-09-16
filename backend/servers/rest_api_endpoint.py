@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class RestApiEndpoint(BaseEndpoint):
     """REST API endpoint for various AI services"""
     
-    def __init__(self, name: str, config: Dict[str, Any]):
-        super().__init__(name, config)
+    def __init__(self, name: str, config: Dict[str, Any], priority: int = 50):
+        super().__init__(name, config, priority)
         
         # API specific configuration
         self.api_key = config.get('api_key', '')
