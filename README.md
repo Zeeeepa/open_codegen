@@ -1,205 +1,326 @@
-# Enhanced OpenAI Codegen Adapter
+# OpenAI Codegen Adapter with Web UI
 
-A proxy server that intercepts API calls to OpenAI, Anthropic, and Google Gemini and routes them to the Codegen API. This allows applications to use the Codegen API without modifying their code.
+A comprehensive OpenAI API interception and routing system with a modern web interface, supporting multiple AI providers including OpenAI, Anthropic, Google Gemini, Z.ai, and Codegen.
 
-## Features
+## 🚀 Features
 
-- **Transparent Interception**: Intercepts API calls to OpenAI, Anthropic, and Google Gemini via DNS redirection
-- **Model Selection**: Maps provider models to Codegen models
-- **Prompt Templates**: Adds prefix and suffix to prompts for consistent behavior
-- **Authentication**: Uses standard Codegen auth file and environment variables
-- **Streaming Support**: Provides streaming responses for all providers
-- **Web UI**: Includes a web interface for service control and configuration
+### Core Functionality
+- **OpenAI API Interception**: Transparently intercepts OpenAI API calls and routes them to any provider
+- **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Z.ai GLM-4.5, and Codegen
+- **Streaming Support**: Real-time streaming responses for all providers
+- **Web UI**: Modern React-based interface for management and chat
 
-## Installation
+### Web Interface
+- **AI Chat Interface**: Multi-provider chat with conversation history
+- **Endpoint Manager**: Create, test, and manage custom API endpoints
+- **Website Analyzer**: Discover API endpoints from websites automatically
+- **Configuration Manager**: Easy setup and management of API keys and settings
+- **Dashboard**: System monitoring and performance metrics
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/open_codegen.git
-cd open_codegen
-```
+### Advanced Features
+- **AI-Assisted Endpoint Generation**: Natural language to API endpoint conversion
+- **Website API Discovery**: Automatic detection of API endpoints from web pages
+- **Client Endpoint Creation**: Generate endpoints for any website to work with any AI provider
+- **Windows Service Mode**: Run as a Windows service with automatic startup
+- **DNS Interception**: Transparent API call interception without code changes
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## 📦 Installation
 
-3. Set up environment variables:
-```bash
-# Required
-export CODEGEN_ORG_ID="your_org_id"  # Default: 323
-export CODEGEN_TOKEN="your_token"
+### Windows (Recommended)
 
-# Optional
-export CODEGEN_BASE_URL="https://codegen-sh--rest-api.modal.run"  # Default
-export CODEGEN_DEFAULT_MODEL="codegen-standard"  # Default
-export CODEGEN_MODEL_MAPPING="gpt-4:codegen-advanced,claude-3-opus:codegen-premium"
-export TRANSPARENT_MODE="true"  # Default: true
-```
+1. **Download the installer script**:
+   ```powershell
+   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/your-repo/open_codegen/main/deploy/windows/install.ps1" -OutFile "install.ps1"
+   ```
 
-## Usage
+2. **Run as Administrator**:
+   ```powershell
+   PowerShell -ExecutionPolicy Bypass -File install.ps1
+   ```
 
-### Running the Server
+3. **For service mode**:
+   ```powershell
+   PowerShell -ExecutionPolicy Bypass -File install.ps1 -ServiceMode
+   ```
 
-#### Transparent Mode (Default)
+### Manual Installation
 
-In transparent mode, the server intercepts API calls to OpenAI, Anthropic, and Google Gemini via DNS redirection. This requires root privileges to modify the hosts file.
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-repo/open_codegen.git
+   cd open_codegen
+   ```
 
-```bash
-sudo python backend/enhanced_server.py
-```
+2. **Install Python dependencies**:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
 
-#### Direct Mode
+3. **Install and build frontend**:
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   cd ..
+   ```
 
-In direct mode, applications need to explicitly set the base URL to the server.
+4. **Configure environment**:
+   ```bash
+   cp backend/.env.example backend/.env
+   # Edit .env with your API keys
+   ```
 
-```bash
-export TRANSPARENT_MODE="false"
-python backend/enhanced_server.py
-```
+5. **Start the server**:
+   ```bash
+   python -m backend.enhanced_server
+   ```
 
-### Testing the Implementation
-
-Run the test script to verify the implementation:
-
-```bash
-# Test all features
-python test_enhanced_implementation.py --test-all
-
-# Test specific features
-python test_enhanced_implementation.py --test-openai --test-template
-```
-
-### Using with Applications
-
-#### OpenAI
-
-```python
-from openai import OpenAI
-
-# Transparent mode - no changes needed
-client = OpenAI(api_key="your-key")
-
-# Direct mode
-client = OpenAI(api_key="your-key", base_url="http://localhost:8001/v1")
-
-response = client.chat.completions.create(
-    model="gpt-4",  # Will be mapped to codegen-advanced
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-```
-
-#### Anthropic
-
-```python
-from anthropic import Anthropic
-
-# Transparent mode - no changes needed
-client = Anthropic(api_key="your-key")
-
-# Direct mode
-client = Anthropic(api_key="your-key", base_url="http://localhost:8001")
-
-response = client.messages.create(
-    model="claude-3-sonnet-20240229",  # Will be mapped to codegen-advanced
-    max_tokens=100,
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-```
-
-#### Google Gemini
-
-```python
-import google.generativeai as genai
-
-# Transparent mode - no changes needed
-genai.configure(api_key="your-key")
-
-# Direct mode
-# Set GOOGLE_API_BASE to your server URL in environment variables
-os.environ["GOOGLE_API_BASE"] = "http://localhost:8001"
-genai.configure(api_key="your-key")
-
-model = genai.GenerativeModel("gemini-pro")  # Will be mapped to codegen-standard
-response = model.generate_content("Hello!")
-```
-
-## Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CODEGEN_ORG_ID` | Organization ID for Codegen API | `323` |
-| `CODEGEN_TOKEN` | Authentication token for Codegen API | - |
-| `CODEGEN_BASE_URL` | Base URL for Codegen API | `https://codegen-sh--rest-api.modal.run` |
-| `CODEGEN_TIMEOUT` | Timeout for API requests in seconds | `300` |
-| `CODEGEN_MODEL_MAPPING` | Custom model mapping (format: `model1:codegen1,model2:codegen2`) | - |
-| `CODEGEN_DEFAULT_MODEL` | Default Codegen model to use | `codegen-standard` |
-| `CODEGEN_USE_AUTH_FILE` | Whether to use auth file for credentials | `true` |
-| `TRANSPARENT_MODE` | Whether to use transparent DNS interception | `true` |
-| `INTERCEPT_OPENAI` | Whether to intercept OpenAI API calls | `true` |
-| `INTERCEPT_ANTHROPIC` | Whether to intercept Anthropic API calls | `true` |
-| `INTERCEPT_GEMINI` | Whether to intercept Gemini API calls | `true` |
-| `CODEGEN_MAX_RETRIES` | Maximum number of retries for API requests | `20` |
-| `CODEGEN_BASE_DELAY` | Base delay for exponential backoff in seconds | `2` |
-| `CODEGEN_PROMPT_TEMPLATE_ENABLED` | Whether to enable prompt templates | `false` |
-| `CODEGEN_PROMPT_TEMPLATE_PREFIX` | Prefix to add to all prompts | - |
-| `CODEGEN_PROMPT_TEMPLATE_SUFFIX` | Suffix to add to all prompts | - |
+Create a `.env` file in the backend directory:
 
-### Model Mapping
+```env
+# Core Configuration
+CODEGEN_API_KEY=your_codegen_api_key_here
+CODEGEN_BASE_URL=https://api.codegen.com
+SERVER_PORT=8000
 
-The default model mapping is:
+# Provider API Keys
+OPENAI_API_KEY=sk-your_openai_key
+ANTHROPIC_API_KEY=sk-ant-your_anthropic_key
+GEMINI_API_KEY=your_gemini_key
+ZAI_API_KEY=your_zai_key  # Optional
 
-```
-OpenAI:
-- gpt-3.5-turbo -> codegen-standard
-- gpt-4 -> codegen-advanced
-- gpt-3.5-turbo-instruct -> codegen-standard
+# Server Settings
+LOG_LEVEL=INFO
+ENABLE_WEB_UI=true
+ENABLE_CORS=true
+ENABLE_STREAMING=true
 
-Anthropic:
-- claude-3-sonnet-20240229 -> codegen-advanced
-- claude-3-haiku-20240307 -> codegen-standard
-- claude-3-opus-20240229 -> codegen-premium
-
-Gemini:
-- gemini-1.5-pro -> codegen-advanced
-- gemini-1.5-flash -> codegen-standard
-- gemini-pro -> codegen-standard
+# Advanced Settings
+DNS_INTERCEPTION=false
+TRANSPARENT_MODE=false
 ```
 
-You can customize this mapping using the `CODEGEN_MODEL_MAPPING` environment variable:
+### Web UI Configuration
+
+Access the web interface at `http://localhost:8000` and configure:
+
+1. **API Keys**: Add your provider API keys
+2. **Default Provider**: Choose your preferred AI provider
+3. **Model Settings**: Configure temperature, max tokens, etc.
+4. **Server Settings**: Port, logging, CORS settings
+
+## 🎯 Usage
+
+### Web Interface
+
+1. **Chat Interface**: 
+   - Select any AI provider (OpenAI, Anthropic, Gemini, Z.ai, Codegen)
+   - Start chatting with real-time streaming responses
+   - View conversation history and export chats
+
+2. **Endpoint Manager**:
+   - Create custom API endpoints
+   - Test endpoints with different providers
+   - Use AI to generate endpoints from natural language
+
+3. **Website Manager**:
+   - Analyze websites to discover API endpoints
+   - Create client endpoints for any website
+   - Route website APIs through any AI provider
+
+### API Interception
+
+The system can intercept OpenAI API calls transparently:
+
+```python
+import openai
+
+# Your existing OpenAI code works unchanged
+client = openai.OpenAI(api_key="your-key")
+response = client.chat.completions.create(
+    model="gpt-4",  # Will be routed to your configured provider
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
+
+### Direct API Usage
+
+```python
+import requests
+
+# Chat with any provider
+response = requests.post("http://localhost:8000/api/chat", json={
+    "message": "Hello, world!",
+    "provider": "anthropic",  # or "openai", "gemini", "zai", "codegen"
+    "model": "claude-3-sonnet",
+    "stream": True
+})
+```
+
+## 🏗️ Architecture
+
+### Backend Components
+
+- **Enhanced Server**: Main FastAPI server with interception capabilities
+- **Provider Integrations**: Modular provider implementations
+- **Chat Handler**: Multi-provider chat routing and streaming
+- **Endpoint Manager**: Dynamic endpoint creation and testing
+- **Web Scraper**: Website analysis and API discovery
+- **API Manager**: Web UI backend API
+
+### Frontend Components
+
+- **React App**: Modern Material-UI interface
+- **Chat Interface**: Real-time chat with multiple providers
+- **Management Panels**: Endpoint, website, and configuration management
+- **Dashboard**: System monitoring and analytics
+
+### Provider Support
+
+| Provider | Chat | Streaming | Models | Status |
+|----------|------|-----------|---------|--------|
+| OpenAI | ✅ | ✅ | GPT-4, GPT-3.5 | Full |
+| Anthropic | ✅ | ✅ | Claude-3 Opus/Sonnet | Full |
+| Google Gemini | ✅ | ✅ | Gemini Pro/Vision | Full |
+| Z.ai | ✅ | ✅ | GLM-4.5/4.5V | Full |
+| Codegen | ✅ | ✅ | All Models | Full |
+
+## 🔧 Development
+
+### Backend Development
 
 ```bash
-export CODEGEN_MODEL_MAPPING="gpt-4:codegen-advanced,claude-3-opus:codegen-premium"
+# Install development dependencies
+pip install -r backend/requirements.txt
+
+# Run in development mode
+python -m backend.enhanced_server --reload
+
+# Run tests
+pytest backend/tests/
 ```
 
-### Prompt Templates
-
-You can add a prefix and suffix to all prompts using the following environment variables:
+### Frontend Development
 
 ```bash
-export CODEGEN_PROMPT_TEMPLATE_ENABLED="true"
-export CODEGEN_PROMPT_TEMPLATE_PREFIX="You are a helpful assistant named 'abc'. Always identify yourself as 'abc' when asked about your name or identity."
-export CODEGEN_PROMPT_TEMPLATE_SUFFIX="Remember to be concise and helpful in your responses."
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Build for production
+npm run build
 ```
 
-## Web UI
+### Adding New Providers
 
-The server includes a web interface for service control and configuration. Access it at:
+1. Create a new provider class in `backend/providers/`
+2. Implement the required methods (chat_completion, streaming, etc.)
+3. Add provider to the chat handler routing
+4. Update the frontend provider list
 
+## 🚀 Deployment
+
+### Windows Service
+
+The installer can configure the application as a Windows service:
+
+```powershell
+# Install as service
+PowerShell -ExecutionPolicy Bypass -File install.ps1 -ServiceMode
+
+# Start service
+net start "OpenAI-Codegen-Adapter"
+
+# Stop service
+net stop "OpenAI-Codegen-Adapter"
 ```
-http://localhost:8001/
+
+### Docker (Coming Soon)
+
+```bash
+# Build and run with Docker
+docker build -t openai-codegen-adapter .
+docker run -p 8000:8000 openai-codegen-adapter
 ```
 
-The web UI allows you to:
+## 📊 Monitoring
 
-- Toggle the service on/off
-- View service status
-- Configure system messages
-- Check health status
+### Dashboard Features
 
-## License
+- **Request Statistics**: Total requests, success rates, response times
+- **Provider Status**: Health checks for all configured providers
+- **Performance Metrics**: Response time trends and system health
+- **Activity Logs**: Recent API calls and system events
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Logging
+
+Logs are stored in:
+- **Windows**: `%LOCALAPPDATA%\OpenAI-Codegen-Adapter\logs\`
+- **Linux/Mac**: `./logs/`
+
+Log levels: DEBUG, INFO, WARNING, ERROR
+
+## 🔒 Security
+
+### API Key Management
+
+- API keys are stored securely in environment variables
+- Web UI masks sensitive information
+- Configuration export excludes sensitive data
+
+### Network Security
+
+- HTTPS support with self-signed certificates
+- CORS configuration for web UI security
+- Firewall rules automatically configured on Windows
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+### Common Issues
+
+**Q: The web interface doesn't load**
+A: Check that the server is running on the correct port and CORS is enabled.
+
+**Q: API calls are not being intercepted**
+A: Ensure DNS interception is enabled and you're running as Administrator on Windows.
+
+**Q: Provider authentication fails**
+A: Verify your API keys are correctly set in the configuration.
+
+### Getting Help
+
+- 📖 [Documentation](https://github.com/your-repo/open_codegen/wiki)
+- 🐛 [Issue Tracker](https://github.com/your-repo/open_codegen/issues)
+- 💬 [Discussions](https://github.com/your-repo/open_codegen/discussions)
+
+## 🙏 Acknowledgments
+
+- [FastAPI](https://fastapi.tiangolo.com/) for the excellent web framework
+- [React](https://reactjs.org/) and [Material-UI](https://mui.com/) for the frontend
+- [Codegen](https://codegen.com/) for the core AI capabilities
+- All the AI providers for their amazing APIs
+
+---
+
+**Made with ❤️ for the AI development community**
 
