@@ -13,6 +13,7 @@ from dataclasses import dataclass, asdict
 from .database import get_database_manager
 from .models.providers import EndpointProvider, EndpointInstance, ProviderType
 from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+from .servers import EndpointFactory, BaseEndpoint
 from .adapters.base_adapter import BaseAdapter, AdapterResponse
 from .adapters.rest_api_adapter import RestApiAdapter
 from .adapters.web_chat_adapter import WebChatAdapter
@@ -47,6 +48,7 @@ class EndpointManager:
     def __init__(self):
         self.db_manager = get_database_manager()
         self.active_adapters: Dict[str, BaseAdapter] = {}
+        self.active_endpoints: Dict[str, BaseEndpoint] = {}
         self.endpoint_metrics: Dict[str, EndpointMetrics] = {}
         self.is_running = False
         
@@ -430,6 +432,161 @@ class EndpointManager:
                 best_endpoint = name
         
         return best_endpoint
+    
+    # New server-based methods
+    async def add_endpoint_server(self, config: Dict[str, Any]) -> bool:
+        """Add new endpoint using server architecture"""
+        try:
+            name = config.get('name')
+            if not name:
+                logger.error("Endpoint name is required")
+                return False
+            
+            if name in self.active_endpoints:
+                logger.error(f"Endpoint {name} already exists")
+                return False
+            
+            # Validate configuration
+            is_valid, error_msg = EndpointFactory.validate_config(config)
+            if not is_valid:
+                logger.error(f"Invalid configuration for {name}: {error_msg}")
+                return False
+            
+            # Create endpoint
+            endpoint = EndpointFactory.create_endpoint(name, config)
+            if not endpoint:
+                logger.error(f"Failed to create endpoint {name}")
+                return False
+            
+            # Start endpoint
+            if await endpoint.start():
+                self.active_endpoints[name] = endpoint
+                logger.info(f"Added and started endpoint: {name}")
+                return True
+            else:
+                logger.error(f"Failed to start endpoint {name}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Failed to add endpoint: {e}")
+            return False
+    
+    async def remove_endpoint_server(self, name: str) -> bool:
+        """Remove endpoint using server architecture"""
+        try:
+            if name not in self.active_endpoints:
+                logger.error(f"Endpoint {name} not found")
+                return False
+            
+            endpoint = self.active_endpoints[name]
+            await endpoint.stop()
+            del self.active_endpoints[name]
+            
+            logger.info(f"Removed endpoint: {name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to remove endpoint {name}: {e}")
+            return False
+    
+    async def start_endpoint_server(self, name: str) -> bool:
+        """Start endpoint using server architecture"""
+        try:
+            if name not in self.active_endpoints:
+                logger.error(f"Endpoint {name} not found")
+                return False
+            
+            endpoint = self.active_endpoints[name]
+            return await endpoint.start()
+            
+        except Exception as e:
+            logger.error(f"Failed to start endpoint {name}: {e}")
+            return False
+    
+    async def stop_endpoint_server(self, name: str) -> bool:
+        """Stop endpoint using server architecture"""
+        try:
+            if name not in self.active_endpoints:
+                logger.error(f"Endpoint {name} not found")
+                return False
+            
+            endpoint = self.active_endpoints[name]
+            return await endpoint.stop()
+            
+        except Exception as e:
+            logger.error(f"Failed to stop endpoint {name}: {e}")
+            return False
+    
+    async def test_endpoint_server(self, name: str, message: str = "Hello, this is a test") -> Optional[str]:
+        """Test endpoint using server architecture"""
+        try:
+            if name not in self.active_endpoints:
+                logger.error(f"Endpoint {name} not found")
+                return None
+            
+            endpoint = self.active_endpoints[name]
+            if not endpoint.is_running():
+                logger.error(f"Endpoint {name} is not running")
+                return None
+            
+            return await endpoint._send_message_with_metrics(message)
+            
+        except Exception as e:
+            logger.error(f"Failed to test endpoint {name}: {e}")
+            return None
+    
+    def get_active_endpoints_server(self) -> List[Dict[str, Any]]:
+        """Get active endpoints using server architecture"""
+        endpoints = []
+        
+        for name, endpoint in self.active_endpoints.items():
+            endpoints.append(endpoint.get_info())
+        
+        return endpoints
+    
+    def get_endpoint_server(self, name: str) -> Optional[Dict[str, Any]]:
+        """Get specific endpoint info using server architecture"""
+        if name in self.active_endpoints:
+            return self.active_endpoints[name].get_info()
+        return None
+    
+    async def health_check_endpoint_server(self, name: str) -> Dict[str, Any]:
+        """Health check endpoint using server architecture"""
+        try:
+            if name not in self.active_endpoints:
+                return {"healthy": False, "error": "Endpoint not found"}
+            
+            endpoint = self.active_endpoints[name]
+            is_healthy = await endpoint._perform_health_check()
+            
+            return {
+                "healthy": is_healthy,
+                "status": endpoint.status.value,
+                "health": endpoint.health.value,
+                "metrics": endpoint.metrics.to_dict()
+            }
+            
+        except Exception as e:
+            return {"healthy": False, "error": str(e)}
+    
+    def get_endpoint_metrics_server(self, name: str) -> Optional[Dict[str, Any]]:
+        """Get endpoint metrics using server architecture"""
+        if name in self.active_endpoints:
+            return self.active_endpoints[name].metrics.to_dict()
+        return None
+    
+    async def reset_endpoint_metrics_server(self, name: str) -> bool:
+        """Reset endpoint metrics using server architecture"""
+        try:
+            if name not in self.active_endpoints:
+                return False
+            
+            self.active_endpoints[name].reset_metrics()
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to reset metrics for {name}: {e}")
+            return False
 
 # Global endpoint manager instance
 endpoint_manager = EndpointManager()

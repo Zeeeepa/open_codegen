@@ -46,7 +46,7 @@ async def list_endpoints():
     """List all active endpoints (trading portfolio view)"""
     try:
         manager = get_endpoint_manager()
-        endpoints = manager.get_active_endpoints()
+        endpoints = manager.get_active_endpoints_server()
         return endpoints
     except Exception as e:
         logger.error(f"Failed to list endpoints: {e}")
@@ -70,8 +70,8 @@ async def create_endpoint(request: EndpointCreateRequest, background_tasks: Back
         # Convert to dict for manager
         config = request.dict()
         
-        # Add endpoint in background
-        success = await manager.add_endpoint(config)
+        # Add endpoint using new server architecture
+        success = await manager.add_endpoint_server(config)
         
         if success:
             return {"status": "success", "message": f"Endpoint {request.name} created successfully"}
@@ -89,7 +89,7 @@ async def delete_endpoint(endpoint_name: str):
     """Delete endpoint (close trading position)"""
     try:
         manager = get_endpoint_manager()
-        success = await manager.remove_endpoint(endpoint_name)
+        success = await manager.remove_endpoint_server(endpoint_name)
         
         if success:
             return {"status": "success", "message": f"Endpoint {endpoint_name} deleted successfully"}
@@ -107,7 +107,7 @@ async def start_endpoint(endpoint_name: str):
     """Start endpoint (open trading position)"""
     try:
         manager = get_endpoint_manager()
-        success = await manager.start_endpoint(endpoint_name)
+        success = await manager.start_endpoint_server(endpoint_name)
         
         if success:
             return {"status": "success", "message": f"Endpoint {endpoint_name} started successfully"}
@@ -125,7 +125,7 @@ async def stop_endpoint(endpoint_name: str):
     """Stop endpoint (close trading position)"""
     try:
         manager = get_endpoint_manager()
-        success = await manager.stop_endpoint(endpoint_name)
+        success = await manager.stop_endpoint_server(endpoint_name)
         
         if success:
             return {"status": "success", "message": f"Endpoint {endpoint_name} stopped successfully"}
@@ -143,7 +143,7 @@ async def get_endpoint_metrics(endpoint_name: str):
     """Get endpoint performance metrics"""
     try:
         manager = get_endpoint_manager()
-        metrics = manager.get_endpoint_metrics(endpoint_name)
+        metrics = manager.get_endpoint_metrics_server(endpoint_name)
         
         if metrics:
             return metrics
@@ -161,7 +161,7 @@ async def check_endpoint_health(endpoint_name: str):
     """Check endpoint health status"""
     try:
         manager = get_endpoint_manager()
-        health = await manager.health_check_endpoint(endpoint_name)
+        health = await manager.health_check_endpoint_server(endpoint_name)
         return health
         
     except Exception as e:
@@ -174,25 +174,14 @@ async def test_endpoint(endpoint_name: str, request: MessageRequest):
     try:
         manager = get_endpoint_manager()
         
-        response = await manager.send_message(
-            endpoint_name,
-            request.message,
-            model=request.model,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens,
-            session_id=request.session_id
-        )
+        response = await manager.test_endpoint_server(endpoint_name, request.message)
         
         if response:
             return {
                 "status": "success",
                 "response": {
-                    "id": response.id,
-                    "content": response.content,
-                    "model": response.model,
-                    "provider": response.provider,
-                    "timestamp": response.timestamp,
-                    "usage": response.usage
+                    "content": response,
+                    "endpoint": endpoint_name
                 }
             }
         else:

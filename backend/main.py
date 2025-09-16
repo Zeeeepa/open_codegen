@@ -15,6 +15,7 @@ from .database import init_database, get_database_manager
 from .endpoint_manager import get_endpoint_manager
 from .api.endpoints import router as endpoints_router
 from .api.chat import router as chat_router
+from .api.config import router as config_router
 
 # Configure logging
 logging.basicConfig(
@@ -68,17 +69,23 @@ app.add_middleware(
 )
 
 # Include API routers
+app.include_router(config_router)
 app.include_router(endpoints_router)
 app.include_router(chat_router)
 
 # Serve static files (for web UI)
-if os.path.exists("frontend/dist"):
+if os.path.exists("frontend/static"):
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+elif os.path.exists("frontend/dist"):
     app.mount("/static", StaticFiles(directory="frontend/dist"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Root endpoint - serve web UI or API info"""
-    if os.path.exists("frontend/dist/index.html"):
+    if os.path.exists("frontend/index.html"):
+        with open("frontend/index.html", "r") as f:
+            return HTMLResponse(content=f.read())
+    elif os.path.exists("frontend/dist/index.html"):
         with open("frontend/dist/index.html", "r") as f:
             return HTMLResponse(content=f.read())
     else:
