@@ -5,7 +5,7 @@ Enhanced with Anthropic Claude API compatibility.
 """
 
 from typing import List, Optional, Dict, Any, Union, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 import time
 import uuid
 
@@ -232,3 +232,67 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
+
+
+# Z.ai API Models
+class ZaiMessage(BaseModel):
+    """Z.ai message format."""
+    role: Literal["user", "assistant", "system"]
+    content: str
+
+
+class ZaiChatRequest(BaseModel):
+    """Z.ai chat completion request format."""
+    model: str = "glm-4.5"
+    messages: List[ZaiMessage]
+    temperature: Optional[float] = Field(default=0.7, ge=0.0, le=1.0)
+    max_tokens: Optional[int] = Field(default=None, ge=1)
+    stream: Optional[bool] = False
+    
+    @validator('model')
+    def validate_model(cls, v):
+        """Validate Z.ai model names."""
+        allowed_models = ["glm-4.5", "glm-4.5v"]
+        if v not in allowed_models:
+            raise ValueError(f"Model must be one of {allowed_models}")
+        return v
+
+
+class ZaiChoice(BaseModel):
+    """Z.ai response choice format."""
+    index: int
+    message: ZaiMessage
+    finish_reason: Optional[str] = None
+
+
+class ZaiUsage(BaseModel):
+    """Z.ai usage statistics."""
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+
+class ZaiChatResponse(BaseModel):
+    """Z.ai chat completion response format."""
+    id: str
+    object: str = "chat.completion"
+    created: int
+    model: str
+    choices: List[ZaiChoice]
+    usage: ZaiUsage
+
+
+class ZaiStreamChoice(BaseModel):
+    """Z.ai streaming response choice format."""
+    index: int
+    delta: Dict[str, Any]
+    finish_reason: Optional[str] = None
+
+
+class ZaiStreamResponse(BaseModel):
+    """Z.ai streaming response format."""
+    id: str
+    object: str = "chat.completion.chunk"
+    created: int
+    model: str
+    choices: List[ZaiStreamChoice]
