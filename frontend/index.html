@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Endpoint Orchestrator - Management Dashboard</title>
+    <link rel="stylesheet" href="static/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <i class="fas fa-robot"></i>
+                    <h1>AI Endpoint Orchestrator</h1>
+                    <span class="version">v2.0.0</span>
+                </div>
+                <div class="header-controls">
+                    <div class="connection-status" id="connectionStatus">
+                        <i class="fas fa-circle"></i>
+                        <span>Connected</span>
+                    </div>
+                    <div class="global-stats" id="globalStats">
+                        <div class="stat-item">
+                            <span class="stat-label">Endpoints</span>
+                            <span class="stat-value" id="totalEndpoints">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Active</span>
+                            <span class="stat-value" id="activeEndpoints">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Requests</span>
+                            <span class="stat-value" id="totalRequests">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="dashboard-nav">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </button>
+                <button class="nav-tab" data-tab="endpoints">
+                    <i class="fas fa-plug"></i>
+                    Endpoints
+                </button>
+                <button class="nav-tab" data-tab="yaml-editor">
+                    <i class="fas fa-code"></i>
+                    YAML Editor
+                </button>
+                <button class="nav-tab" data-tab="chat-interface">
+                    <i class="fas fa-comments"></i>
+                    Chat Interface
+                </button>
+                <button class="nav-tab" data-tab="monitoring">
+                    <i class="fas fa-chart-line"></i>
+                    Monitoring
+                </button>
+                <button class="nav-tab" data-tab="templates">
+                    <i class="fas fa-layer-group"></i>
+                    Templates
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="dashboard-main">
+            <!-- Dashboard Tab -->
+            <div class="tab-content active" id="dashboard-tab">
+                <div class="dashboard-grid">
+                    <!-- Quick Stats -->
+                    <div class="dashboard-card stats-card">
+                        <h3><i class="fas fa-chart-bar"></i> System Overview</h3>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-number" id="dashTotalEndpoints">0</div>
+                                <div class="stat-label">Total Endpoints</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="dashRunningEndpoints">0</div>
+                                <div class="stat-label">Running</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="dashHealthyEndpoints">0</div>
+                                <div class="stat-label">Healthy</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="dashTotalRequests">0</div>
+                                <div class="stat-label">Total Requests</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="dashboard-card activity-card">
+                        <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                        <div class="activity-list" id="activityList">
+                            <div class="activity-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>System initialized</span>
+                                <time>Just now</time>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="dashboard-card actions-card">
+                        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        <div class="action-buttons">
+                            <button class="action-btn primary" onclick="showCreateEndpointModal()">
+                                <i class="fas fa-plus"></i>
+                                Create Endpoint
+                            </button>
+                            <button class="action-btn secondary" onclick="switchTab('yaml-editor')">
+                                <i class="fas fa-code"></i>
+                                YAML Editor
+                            </button>
+                            <button class="action-btn secondary" onclick="switchTab('chat-interface')">
+                                <i class="fas fa-comments"></i>
+                                Test Chat
+                            </button>
+                            <button class="action-btn secondary" onclick="refreshDashboard()">
+                                <i class="fas fa-sync-alt"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Endpoint Status -->
+                    <div class="dashboard-card endpoints-overview">
+                        <h3><i class="fas fa-server"></i> Endpoint Status</h3>
+                        <div class="endpoints-list" id="endpointsOverview">
+                            <div class="empty-state">
+                                <i class="fas fa-plug"></i>
+                                <p>No endpoints configured</p>
+                                <button class="btn-link" onclick="showCreateEndpointModal()">Create your first endpoint</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Endpoints Tab -->
+            <div class="tab-content" id="endpoints-tab">
+                <div class="endpoints-header">
+                    <h2>Endpoint Management</h2>
+                    <div class="endpoints-controls">
+                        <button class="btn primary" onclick="showCreateEndpointModal()">
+                            <i class="fas fa-plus"></i>
+                            Create Endpoint
+                        </button>
+                        <button class="btn secondary" onclick="refreshEndpoints()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="endpoints-grid" id="endpointsGrid">
+                    <!-- Endpoints will be loaded here -->
+                </div>
+            </div>
+
+            <!-- YAML Editor Tab -->
+            <div class="tab-content" id="yaml-editor-tab">
+                <div class="yaml-editor-container">
+                    <div class="editor-header">
+                        <h2>YAML Configuration Editor</h2>
+                        <div class="editor-controls">
+                            <select id="templateSelect" onchange="loadTemplate()">
+                                <option value="">Select Template</option>
+                                <option value="zai">Z.AI Web Chat</option>
+                                <option value="mistral">Mistral AI</option>
+                                <option value="deepseek">DeepSeek</option>
+                                <option value="claude">Claude</option>
+                                <option value="openai">OpenAI API</option>
+                                <option value="generic">Generic Web Chat</option>
+                            </select>
+                            <button class="btn secondary" onclick="validateYAML()">
+                                <i class="fas fa-check"></i>
+                                Validate
+                            </button>
+                            <button class="btn primary" onclick="saveYAMLConfig()">
+                                <i class="fas fa-save"></i>
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-content">
+                        <div class="editor-panel">
+                            <textarea id="yamlEditor" placeholder="Enter your YAML configuration here..."></textarea>
+                        </div>
+                        <div class="validation-panel">
+                            <h3>Validation Results</h3>
+                            <div id="validationResults" class="validation-results">
+                                <div class="validation-message info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Ready for validation
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Interface Tab -->
+            <div class="tab-content" id="chat-interface-tab">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <h2>Endpoint Testing Interface</h2>
+                        <div class="chat-controls">
+                            <select id="chatEndpointSelect">
+                                <option value="">Select Endpoint</option>
+                            </select>
+                            <button class="btn secondary" onclick="clearChat()">
+                                <i class="fas fa-trash"></i>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chat-content">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-message system">
+                                <div class="message-content">
+                                    <i class="fas fa-robot"></i>
+                                    <span>Select an endpoint to start testing</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-input-container">
+                            <div class="chat-input">
+                                <textarea id="chatInput" placeholder="Type your message here..." rows="3"></textarea>
+                                <button id="sendButton" onclick="sendChatMessage()" disabled>
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monitoring Tab -->
+            <div class="tab-content" id="monitoring-tab">
+                <div class="monitoring-container">
+                    <h2>Real-time Monitoring</h2>
+                    <div class="monitoring-grid">
+                        <div class="monitoring-card">
+                            <h3>System Metrics</h3>
+                            <div id="systemMetrics">
+                                <!-- Metrics will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="monitoring-card">
+                            <h3>Endpoint Performance</h3>
+                            <div id="endpointMetrics">
+                                <!-- Performance metrics will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="monitoring-card">
+                            <h3>Request Logs</h3>
+                            <div id="requestLogs">
+                                <!-- Request logs will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Templates Tab -->
+            <div class="tab-content" id="templates-tab">
+                <div class="templates-container">
+                    <h2>Configuration Templates</h2>
+                    <div class="templates-grid" id="templatesGrid">
+                        <!-- Templates will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create Endpoint Modal -->
+    <div class="modal" id="createEndpointModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Endpoint</h3>
+                <button class="modal-close" onclick="closeModal('createEndpointModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createEndpointForm">
+                    <div class="form-group">
+                        <label for="endpointName">Endpoint Name</label>
+                        <input type="text" id="endpointName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endpointType">Type</label>
+                        <select id="endpointType" required>
+                            <option value="">Select Type</option>
+                            <option value="web_chat">Web Chat Interface</option>
+                            <option value="rest_api">REST API</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="endpointProvider">Provider</label>
+                        <select id="endpointProvider" required>
+                            <option value="">Select Provider</option>
+                            <option value="zai">Z.AI</option>
+                            <option value="mistral">Mistral AI</option>
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="claude">Claude</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="generic">Generic</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="endpointUrl">URL</label>
+                        <input type="url" id="endpointUrl" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endpointAuth">Authentication</label>
+                        <div class="auth-fields">
+                            <input type="email" id="authEmail" placeholder="Email (for web chat)">
+                            <input type="password" id="authPassword" placeholder="Password (for web chat)">
+                            <input type="text" id="apiKey" placeholder="API Key (for REST API)">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxParallel">Max Parallel Instances</label>
+                        <input type="number" id="maxParallel" value="5" min="1" max="50">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('createEndpointModal')">Cancel</button>
+                <button class="btn primary" onclick="createEndpoint()">Create Endpoint</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+    <script src="static/js/dashboard.js"></script>
+    <script src="static/js/yaml-editor.js"></script>
+    <script src="static/js/chat-interface.js"></script>
+    <script src="static/js/monitoring.js"></script>
+</body>
+</html>

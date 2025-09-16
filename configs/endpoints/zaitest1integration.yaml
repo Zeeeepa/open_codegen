@@ -1,0 +1,11 @@
+name: Zaitest1integration
+URL: https://chat.z.ai
+authemail: 'emailforlogin'
+authpassword: 'passwordlogin'
+maxautoscaleparallel: '20'
+savecookiesforfutureuse: 'yes'
+createuniquefingerprintsandboxdeploymentsnapshot: 'yes'
+useproxy: 'no'
+description: "Z.AI test integration endpoint with autoscaling support"
+enabled: true
+priority: 1

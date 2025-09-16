@@ -1,0 +1,11 @@
+name: testdeepseek1
+URL: https://chat.deepseek.com
+authemail: 'emailforlogin'
+authpassword: 'passwordlogin'
+maxautoscaleparallel: '20'
+savecookiesforfutureuse: 'yes'
+createuniquefingerprintsandboxdeploymentsnapshot: 'yes'
+useproxy: 'no'
+description: "DeepSeek AI test integration endpoint with high autoscaling"
+enabled: true
+priority: 3

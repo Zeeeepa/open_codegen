@@ -1,0 +1,11 @@
+name: testmistral1
+URL: https://chat.mistral.ai
+authemail: 'emailforlogin'
+authpassword: 'passwordlogin'
+maxautoscaleparallel: '3'
+savecookiesforfutureuse: 'yes'
+createuniquefingerprintsandboxdeploymentsnapshot: 'yes'
+useproxy: 'no'
+description: "Mistral AI test integration endpoint"
+enabled: true
+priority: 2

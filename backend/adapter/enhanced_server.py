@@ -91,6 +91,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add OpenAI Proxy Middleware for API interception and routing
+try:
+    from backend.middleware.openai_proxy import OpenAIProxyMiddleware
+    proxy_middleware = OpenAIProxyMiddleware()
+    app.middleware("http")(proxy_middleware)
+    logger.info("✅ OpenAI Proxy Middleware enabled - API calls will be routed to configured endpoints")
+except ImportError as e:
+    logger.warning(f"⚠️ OpenAI Proxy Middleware not available: {e}")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize OpenAI Proxy Middleware: {e}")
+
 # Add static files for Web UI
 try:
     app.mount("/static", StaticFiles(directory="src"), name="static")
@@ -850,3 +861,13 @@ async def codegen_webhook(request: Request):
     
     # Return a response to the Codegen API
     return result
+
+# Include Endpoint Management API routes
+try:
+    from backend.endpoint_manager.api_routes import router as endpoint_router
+    app.include_router(endpoint_router, prefix="/api/endpoints", tags=["endpoints"])
+    logger.info("✅ Endpoint Management API routes enabled at /api/endpoints")
+except ImportError as e:
+    logger.warning(f"⚠️ Endpoint Management API routes not available: {e}")
+except Exception as e:
+    logger.error(f"❌ Failed to include Endpoint Management API routes: {e}")

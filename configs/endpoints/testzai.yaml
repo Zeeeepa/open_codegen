@@ -1,0 +1,11 @@
+URL: https://chat.z.ai
+authemail: test@example.com
+authpassword: password123
+createuniquefingerprintsandboxdeploymentsnapshot: 'yes'
+description: Z.AI Web Chat Interface
+enabled: true
+maxautoscaleparallel: '5'
+name: TestZAI
+priority: 1
+savecookiesforfutureuse: 'yes'
+useproxy: 'no'
