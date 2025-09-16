@@ -1,14 +1,15 @@
 # Enhanced OpenAI Codegen Adapter
 
-A proxy server that intercepts API calls to OpenAI, Anthropic, and Google Gemini and routes them to the Codegen API. This allows applications to use the Codegen API without modifying their code.
+A proxy server that intercepts API calls to OpenAI, Anthropic, Google Gemini, and Z.ai and routes them to the Codegen API. This allows applications to use the Codegen API without modifying their code.
 
 ## Features
 
-- **Transparent Interception**: Intercepts API calls to OpenAI, Anthropic, and Google Gemini via DNS redirection
+- **Transparent Interception**: Intercepts API calls to OpenAI, Anthropic, Google Gemini, and Z.ai via DNS redirection
 - **Model Selection**: Maps provider models to Codegen models
+- **Z.ai Integration**: Full support for Z.ai GLM-4.5 and GLM-4.5V models with OpenAI API compatibility
 - **Prompt Templates**: Adds prefix and suffix to prompts for consistent behavior
 - **Authentication**: Uses standard Codegen auth file and environment variables
-- **Streaming Support**: Provides streaming responses for all providers
+- **Streaming Support**: Provides streaming responses for all providers including Z.ai
 - **Web UI**: Includes a web interface for service control and configuration
 
 ## Installation
@@ -124,6 +125,36 @@ model = genai.GenerativeModel("gemini-pro")  # Will be mapped to codegen-standar
 response = model.generate_content("Hello!")
 ```
 
+#### Z.ai
+
+```python
+import openai
+
+# Transparent mode - no changes needed to existing OpenAI code
+client = openai.OpenAI(api_key="your-key")
+
+# Direct mode
+client = openai.OpenAI(api_key="your-key", base_url="http://localhost:8001/v1")
+
+response = client.chat.completions.create(
+    model="gpt-4",  # Will be mapped to glm-4.5
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+# Vision model support
+response = client.chat.completions.create(
+    model="gpt-4o",  # Will be mapped to glm-4.5v
+    messages=[{"role": "user", "content": "Describe this image"}]
+)
+```
+
+**Supported Z.ai Model Mappings:**
+- `gpt-3.5-turbo` → `glm-4.5`
+- `gpt-4` → `glm-4.5`
+- `gpt-4-turbo` → `glm-4.5`
+- `gpt-4o` → `glm-4.5v` (vision model)
+- `gpt-4-vision-preview` → `glm-4.5v`
+
 ## Configuration
 
 ### Environment Variables
@@ -141,6 +172,9 @@ response = model.generate_content("Hello!")
 | `INTERCEPT_OPENAI` | Whether to intercept OpenAI API calls | `true` |
 | `INTERCEPT_ANTHROPIC` | Whether to intercept Anthropic API calls | `true` |
 | `INTERCEPT_GEMINI` | Whether to intercept Gemini API calls | `true` |
+| `INTERCEPT_ZAI` | Whether to intercept Z.ai API calls | `true` |
+| `ZAI_BASE_URL` | Base URL for Z.ai API | `https://z.ai/api/v1` |
+| `ZAI_TIMEOUT` | Timeout for Z.ai API requests in seconds | `60` |
 | `CODEGEN_MAX_RETRIES` | Maximum number of retries for API requests | `20` |
 | `CODEGEN_BASE_DELAY` | Base delay for exponential backoff in seconds | `2` |
 | `CODEGEN_PROMPT_TEMPLATE_ENABLED` | Whether to enable prompt templates | `false` |
@@ -202,4 +236,3 @@ The web UI allows you to:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

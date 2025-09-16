@@ -48,6 +48,19 @@ class EnhancedCodegenConfig(BaseModel):
     intercept_openai: bool = True
     intercept_anthropic: bool = True
     intercept_gemini: bool = True
+    intercept_zai: bool = True
+    
+    # Z.ai specific settings
+    zai_base_url: str = "https://z.ai/api/v1"
+    zai_timeout: int = 60
+    zai_model_mapping: Dict[str, str] = Field(default_factory=lambda: {
+        "gpt-3.5-turbo": "glm-4.5",
+        "gpt-4": "glm-4.5",
+        "gpt-4-turbo": "glm-4.5",
+        "gpt-4o": "glm-4.5v",
+        "gpt-4-vision-preview": "glm-4.5v",
+        "gpt-4-turbo-preview": "glm-4.5"
+    })
     
     # API settings
     max_retries: int = 20
@@ -85,6 +98,9 @@ class EnhancedCodegenConfig(BaseModel):
             intercept_openai=os.environ.get("INTERCEPT_OPENAI", "true").lower() == "true",
             intercept_anthropic=os.environ.get("INTERCEPT_ANTHROPIC", "true").lower() == "true",
             intercept_gemini=os.environ.get("INTERCEPT_GEMINI", "true").lower() == "true",
+            intercept_zai=os.environ.get("INTERCEPT_ZAI", "true").lower() == "true",
+            zai_base_url=os.environ.get("ZAI_BASE_URL", "https://z.ai/api/v1"),
+            zai_timeout=int(os.environ.get("ZAI_TIMEOUT", "60")),
             max_retries=int(os.environ.get("CODEGEN_MAX_RETRIES", "20")),
             base_delay=int(os.environ.get("CODEGEN_BASE_DELAY", "2")),
             prompt_template_enabled=os.environ.get("CODEGEN_PROMPT_TEMPLATE_ENABLED", "false").lower() == "true",
