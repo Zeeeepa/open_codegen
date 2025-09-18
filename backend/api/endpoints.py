@@ -71,7 +71,12 @@ async def create_endpoint(request: EndpointCreateRequest, background_tasks: Back
         config = request.dict()
         
         # Add endpoint using new server architecture
-        success = await manager.add_endpoint_server(config)
+        success = await manager.add_endpoint_server(
+            name=request.name,
+            provider_type=request.provider_type,
+            config=config,
+            priority=50  # Default priority
+        )
         
         if success:
             return {"status": "success", "message": f"Endpoint {request.name} created successfully"}
