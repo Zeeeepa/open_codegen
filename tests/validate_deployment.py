@@ -5,7 +5,6 @@ Automatically tests all three endpoints to validate deployment
 """
 
 import requests
-import json
 import sys
 import time
 

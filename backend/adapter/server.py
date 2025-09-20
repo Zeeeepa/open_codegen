@@ -15,13 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-import os
 from pathlib import Path
 
 from backend.adapter.models import (
-    ChatRequest, TextRequest, ChatResponse, TextResponse,
-    ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
-    TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, TokenCountRequest, TokenCountResponse, GeminiRequest
 )
 from backend.adapter.config import get_codegen_config, get_server_config
 from backend.adapter.codegen_client import CodegenClient
@@ -31,7 +28,7 @@ from backend.adapter.request_transformer import (
 )
 from backend.adapter.response_transformer import (
     create_chat_response, create_text_response,
-    estimate_tokens, clean_content
+    estimate_tokens
 )
 from backend.adapter.streaming import create_streaming_response, collect_streaming_response
 from backend.adapter.anthropic_transformer import (

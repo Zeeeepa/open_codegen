@@ -7,10 +7,8 @@ import json
 import asyncio
 import logging
 import uuid
-from typing import AsyncGenerator
 from fastapi.responses import StreamingResponse
 from backend.adapter.codegen_client import CodegenClient
-from backend.adapter.anthropic_transformer import create_anthropic_stream_event
 from backend.adapter.response_transformer import estimate_tokens
 
 logger = logging.getLogger(__name__)
@@ -56,7 +54,7 @@ async def collect_anthropic_streaming_response(
             else:
                 logger.warning(f"⚠️ Received empty/None chunk {chunk_count}")
             
-        logger.info(f"✅ Response collection completed")
+        logger.info("✅ Response collection completed")
         logger.info(f"   📊 Total chunks: {chunk_count}")
         logger.info(f"   📏 Final content length: {len(full_content)} characters")
         
@@ -118,7 +116,6 @@ async def handle_anthropic_streaming(codegen_client: CodegenClient, prompt: str,
         yield f"event: ping\ndata: {json.dumps({'type': 'ping'})}\n\n"
         
         accumulated_text = ""  # Track accumulated text content
-        input_tokens = estimate_tokens(prompt)
         output_tokens = 0
         
         # Process each chunk from Codegen

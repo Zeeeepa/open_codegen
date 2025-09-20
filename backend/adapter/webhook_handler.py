@@ -4,7 +4,6 @@ Webhook handler for Codegen API callbacks.
 
 import logging
 import asyncio
-import time
 from datetime import datetime
 from typing import Dict, Any, Optional, Callable
 from fastapi import Request

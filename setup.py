@@ -3,7 +3,6 @@
 Setup script for Universal AI Endpoint Management System
 """
 
-import os
 import sys
 import subprocess
 import shutil
@@ -97,11 +96,12 @@ def test_installation():
     print("\n🧪 Testing installation...")
     
     # Test imports
+    import importlib.util
     try:
-        import fastapi
-        import sqlalchemy
-        import playwright
-        import aiohttp
+        dependencies = ['fastapi', 'sqlalchemy', 'playwright', 'aiohttp']
+        for dep in dependencies:
+            if importlib.util.find_spec(dep) is None:
+                raise ImportError(f"Module '{dep}' not found")
         print("✓ All core dependencies can be imported")
     except ImportError as e:
         print(f"Error: Failed to import dependency: {e}")

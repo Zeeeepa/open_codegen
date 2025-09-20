@@ -5,15 +5,13 @@ Trading bot-style management for AI endpoints
 
 import asyncio
 import logging
-import json
-from typing import Dict, Any, Optional, List, Type
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, asdict
 
 from .database import get_database_manager
-from .models.providers import EndpointProvider, EndpointInstance, ProviderType
-from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
-from .servers import EndpointFactory, BaseEndpoint
+from .models.providers import EndpointProvider, ProviderType
+from .servers import BaseEndpoint
 from .adapters.base_adapter import BaseAdapter, AdapterResponse
 from .adapters.rest_api_adapter import RestApiAdapter
 from .adapters.web_chat_adapter import WebChatAdapter
@@ -80,7 +78,7 @@ class EndpointManager:
         try:
             with self.db_manager.get_session() as session:
                 providers = session.query(EndpointProvider).filter(
-                    EndpointProvider.is_default == True
+                    EndpointProvider.is_default
                 ).all()
                 
                 for provider in providers:

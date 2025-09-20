@@ -4,13 +4,11 @@ Adds support for model selection and prompt templates.
 """
 
 import asyncio
-import json
 import logging
 import time
 from typing import AsyncGenerator, Optional
 from fastapi.responses import StreamingResponse
 
-from backend.adapter.models import ChatResponseStream
 from backend.adapter.response_transformer import (
     create_chat_stream_chunk, format_sse_chunk, format_sse_done,
     clean_content, estimate_tokens

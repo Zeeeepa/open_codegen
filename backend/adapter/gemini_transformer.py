@@ -3,7 +3,7 @@ Request and response transformers for Google Gemini API compatibility.
 Converts between Gemini API format and Codegen SDK.
 """
 
-from typing import List, Dict, Any
+from typing import Dict, Any
 from backend.adapter.models import (
     GeminiRequest, GeminiResponse, GeminiContent, GeminiPart, 
     GeminiCandidate, GeminiUsageMetadata

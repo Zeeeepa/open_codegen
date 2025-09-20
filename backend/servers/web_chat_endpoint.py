@@ -6,9 +6,7 @@ Handles web-based chat interfaces using browser automation
 import asyncio
 import logging
 from typing import Dict, Any, Optional, AsyncGenerator
-import json
 import time
-from urllib.parse import urlparse
 
 from playwright.async_api import async_playwright, Browser, BrowserContext, Page
 from .base_endpoint import BaseEndpoint, EndpointStatus, EndpointHealth

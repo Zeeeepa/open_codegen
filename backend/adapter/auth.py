@@ -7,7 +7,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 from codegen.agents import Agent
 
@@ -60,7 +60,7 @@ class CodegenAuth:
             return False
             
         try:
-            agent = Agent(org_id=self.org_id, token=self.token)
+            Agent(org_id=self.org_id, token=self.token)
             # Just initializing the agent is enough to validate credentials
             logger.info(f"Successfully validated credentials for org_id: {self.org_id}")
             return True

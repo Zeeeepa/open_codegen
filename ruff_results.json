@@ -1,0 +1,4950 @@
+[
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 10
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.AsyncGenerator`"
+    },
+    "location": {
+      "column": 20,
+      "row": 10
+    },
+    "message": "`typing.AsyncGenerator` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 80,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 14
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.anthropic_transformer.create_anthropic_stream_event`"
+    },
+    "location": {
+      "column": 51,
+      "row": 13
+    },
+    "message": "`backend.adapter.anthropic_transformer.create_anthropic_stream_event` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 55,
+      "row": 59
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"✅ Response collection completed\"",
+          "end_location": {
+            "column": 55,
+            "row": 59
+          },
+          "location": {
+            "column": 21,
+            "row": 59
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 21,
+      "row": 59
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 59,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 21,
+      "row": 121
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_streaming.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 24,
+            "row": 121
+          },
+          "location": {
+            "column": 9,
+            "row": 121
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `input_tokens`"
+    },
+    "location": {
+      "column": 9,
+      "row": 121
+    },
+    "message": "Local variable `input_tokens` is assigned to but never used",
+    "noqa_row": 121,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 24,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any",
+          "end_location": {
+            "column": 42,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 20,
+      "row": 7
+    },
+    "message": "`typing.List` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 42,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any",
+          "end_location": {
+            "column": 42,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 37,
+      "row": 7
+    },
+    "message": "`typing.Union` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 74,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    AnthropicRequest, AnthropicResponse, AnthropicUsage, ContentBlockText\n)",
+          "end_location": {
+            "column": 2,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 58,
+      "row": 9
+    },
+    "message": "`backend.adapter.models.AnthropicMessage` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 42,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    AnthropicRequest, AnthropicResponse, AnthropicUsage, ContentBlockText\n)",
+          "end_location": {
+            "column": 2,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 23,
+      "row": 10
+    },
+    "message": "`backend.adapter.models.ContentBlockToolUse` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 61,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    AnthropicRequest, AnthropicResponse, AnthropicUsage, ContentBlockText\n)",
+          "end_location": {
+            "column": 2,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 44,
+      "row": 10
+    },
+    "message": "`backend.adapter.models.TokenCountRequest` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 81,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    AnthropicRequest, AnthropicResponse, AnthropicUsage, ContentBlockText\n)",
+          "end_location": {
+            "column": 2,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 63,
+      "row": 10
+    },
+    "message": "`backend.adapter.models.TokenCountResponse` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 27,
+      "row": 41
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 41
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 41,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 23,
+      "row": 46
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 46
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 46,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 55
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 55
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 55,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 11,
+      "row": 61
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/anthropic_transformer.py",
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 61
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 61,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/auth.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict",
+          "end_location": {
+            "column": 34,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 10
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 26,
+      "row": 10
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 18,
+      "row": 63
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/auth.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 21,
+            "row": 63
+          },
+          "location": {
+            "column": 13,
+            "row": 63
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `agent`"
+    },
+    "location": {
+      "column": 13,
+      "row": 63
+    },
+    "message": "Local variable `agent` is assigned to but never used",
+    "noqa_row": 63,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/codegen_client.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import AsyncGenerator",
+          "end_location": {
+            "column": 44,
+            "row": 9
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 20,
+      "row": 9
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/codegen_client_old.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `time`"
+    },
+    "location": {
+      "column": 8,
+      "row": 7
+    },
+    "message": "`time` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/codegen_client_old.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import AsyncGenerator",
+          "end_location": {
+            "column": 44,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 20,
+      "row": 8
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 55,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/codegen_client_old.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 10
+          }
+        }
+      ],
+      "message": "Remove unused import: `codegen_api_client.exceptions.ApiException`"
+    },
+    "location": {
+      "column": 43,
+      "row": 10
+    },
+    "message": "`codegen_api_client.exceptions.ApiException` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 43,
+      "row": 15
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 31,
+      "row": 15
+    },
+    "message": "`backend.adapter.models.ChatResponse` imported but unused",
+    "noqa_row": 15,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 57,
+      "row": 15
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 45,
+      "row": 15
+    },
+    "message": "`backend.adapter.models.TextResponse` imported but unused",
+    "noqa_row": 15,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 68,
+      "row": 16
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 51,
+      "row": 16
+    },
+    "message": "`backend.adapter.models.AnthropicResponse` imported but unused",
+    "noqa_row": 16,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 22,
+      "row": 17
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 5,
+      "row": 17
+    },
+    "message": "`backend.adapter.models.TokenCountRequest` imported but unused",
+    "noqa_row": 17,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 42,
+      "row": 17
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 24,
+      "row": 17
+    },
+    "message": "`backend.adapter.models.TokenCountResponse` imported but unused",
+    "noqa_row": 17,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 73,
+      "row": 17
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 59,
+      "row": 17
+    },
+    "message": "`backend.adapter.models.GeminiResponse` imported but unused",
+    "noqa_row": 17,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 35,
+      "row": 32
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.response_transformer import (\n    create_chat_response, create_text_response,\n    estimate_tokens\n)",
+          "end_location": {
+            "column": 2,
+            "row": 33
+          },
+          "location": {
+            "column": 1,
+            "row": 30
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.response_transformer.clean_content`"
+    },
+    "location": {
+      "column": 22,
+      "row": 32
+    },
+    "message": "`backend.adapter.response_transformer.clean_content` imported but unused",
+    "noqa_row": 32,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 78,
+      "row": 39
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.anthropic_streaming import (\n    create_anthropic_streaming_response\n)",
+          "end_location": {
+            "column": 2,
+            "row": 40
+          },
+          "location": {
+            "column": 1,
+            "row": 38
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.anthropic_streaming.collect_anthropic_streaming_response`"
+    },
+    "location": {
+      "column": 42,
+      "row": 39
+    },
+    "message": "`backend.adapter.anthropic_streaming.collect_anthropic_streaming_response` imported but unused",
+    "noqa_row": 39,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 72,
+      "row": 43
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.gemini_streaming import (\n    create_gemini_streaming_response\n)",
+          "end_location": {
+            "column": 2,
+            "row": 44
+          },
+          "location": {
+            "column": 1,
+            "row": 42
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.gemini_streaming.collect_gemini_streaming_response`"
+    },
+    "location": {
+      "column": 39,
+      "row": 43
+    },
+    "message": "`backend.adapter.gemini_streaming.collect_gemini_streaming_response` imported but unused",
+    "noqa_row": 43,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 7
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 54,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 14
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.models.ChatResponseStream`"
+    },
+    "location": {
+      "column": 36,
+      "row": 13
+    },
+    "message": "`backend.adapter.models.ChatResponseStream` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 31,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Tuple",
+          "end_location": {
+            "column": 46,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 27,
+      "row": 7
+    },
+    "message": "`typing.Dict` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 41,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Tuple",
+          "end_location": {
+            "column": 46,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 33,
+      "row": 7
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 46,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Tuple",
+          "end_location": {
+            "column": 46,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 43,
+      "row": 7
+    },
+    "message": "`typing.Any` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 30,
+      "row": 14
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.request_transformer import (\n    chat_request_to_prompt, text_request_to_prompt\n)",
+          "end_location": {
+            "column": 2,
+            "row": 15
+          },
+          "location": {
+            "column": 1,
+            "row": 12
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.request_transformer.extract_generation_params`"
+    },
+    "location": {
+      "column": 5,
+      "row": 14
+    },
+    "message": "`backend.adapter.request_transformer.extract_generation_params` imported but unused",
+    "noqa_row": 14,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 69,
+      "row": 17
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.anthropic_transformer import (\n    anthropic_request_to_prompt\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 16
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.anthropic_transformer.extract_anthropic_generation_params`"
+    },
+    "location": {
+      "column": 34,
+      "row": 17
+    },
+    "message": "`backend.adapter.anthropic_transformer.extract_anthropic_generation_params` imported but unused",
+    "noqa_row": 17,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 63,
+      "row": 20
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/enhanced_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.gemini_transformer import (\n    gemini_request_to_prompt\n)",
+          "end_location": {
+            "column": 2,
+            "row": 21
+          },
+          "location": {
+            "column": 1,
+            "row": 19
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.gemini_transformer.extract_gemini_generation_params`"
+    },
+    "location": {
+      "column": 31,
+      "row": 20
+    },
+    "message": "`backend.adapter.gemini_transformer.extract_gemini_generation_params` imported but unused",
+    "noqa_row": 20,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/gemini_streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.AsyncGenerator`"
+    },
+    "location": {
+      "column": 20,
+      "row": 9
+    },
+    "message": "`typing.AsyncGenerator` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 55,
+      "row": 48
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/gemini_streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"✅ Response collection completed\"",
+          "end_location": {
+            "column": 55,
+            "row": 48
+          },
+          "location": {
+            "column": 21,
+            "row": 48
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 21,
+      "row": 48
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 48,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 24,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/gemini_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any",
+          "end_location": {
+            "column": 35,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.List`"
+    },
+    "location": {
+      "column": 20,
+      "row": 6
+    },
+    "message": "`typing.List` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 57,
+      "row": 30
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"🌐 Server starting at: http://localhost:8001\"",
+          "end_location": {
+            "column": 57,
+            "row": 30
+          },
+          "location": {
+            "column": 11,
+            "row": 30
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 11,
+      "row": 30
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 30,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/request_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import List",
+          "end_location": {
+            "column": 34,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 26,
+      "row": 6
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/response_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `time`"
+    },
+    "location": {
+      "column": 8,
+      "row": 6
+    },
+    "message": "`time` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/response_transformer.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `uuid`"
+    },
+    "location": {
+      "column": 8,
+      "row": 7
+    },
+    "message": "`uuid` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 10,
+      "row": 18
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 19
+          },
+          "location": {
+            "column": 1,
+            "row": 18
+          }
+        }
+      ],
+      "message": "Remove unused import: `os`"
+    },
+    "location": {
+      "column": 8,
+      "row": 18
+    },
+    "message": "`os` imported but unused",
+    "noqa_row": 18,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 43,
+      "row": 22
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, TokenCountRequest, TokenCountResponse, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 25
+          },
+          "location": {
+            "column": 1,
+            "row": 21
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 31,
+      "row": 22
+    },
+    "message": "`backend.adapter.models.ChatResponse` imported but unused",
+    "noqa_row": 22,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 57,
+      "row": 22
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, TokenCountRequest, TokenCountResponse, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 25
+          },
+          "location": {
+            "column": 1,
+            "row": 21
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 45,
+      "row": 22
+    },
+    "message": "`backend.adapter.models.TextResponse` imported but unused",
+    "noqa_row": 22,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 68,
+      "row": 23
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, TokenCountRequest, TokenCountResponse, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 25
+          },
+          "location": {
+            "column": 1,
+            "row": 21
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 51,
+      "row": 23
+    },
+    "message": "`backend.adapter.models.AnthropicResponse` imported but unused",
+    "noqa_row": 23,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 73,
+      "row": 24
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.models import (\n    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, TokenCountRequest, TokenCountResponse, GeminiRequest\n)",
+          "end_location": {
+            "column": 2,
+            "row": 25
+          },
+          "location": {
+            "column": 1,
+            "row": 21
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 59,
+      "row": 24
+    },
+    "message": "`backend.adapter.models.GeminiResponse` imported but unused",
+    "noqa_row": 24,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 35,
+      "row": 34
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from backend.adapter.response_transformer import (\n    create_chat_response, create_text_response,\n    estimate_tokens\n)",
+          "end_location": {
+            "column": 2,
+            "row": 35
+          },
+          "location": {
+            "column": 1,
+            "row": 32
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.response_transformer.clean_content`"
+    },
+    "location": {
+      "column": 22,
+      "row": 34
+    },
+    "message": "`backend.adapter.response_transformer.clean_content` imported but unused",
+    "noqa_row": 34,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 9
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 8
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 54,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 14
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.adapter.models.ChatResponseStream`"
+    },
+    "location": {
+      "column": 36,
+      "row": 13
+    },
+    "message": "`backend.adapter.models.ChatResponseStream` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 10,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/system_message_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 9
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import: `os`"
+    },
+    "location": {
+      "column": 8,
+      "row": 8
+    },
+    "message": "`os` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/usage_example.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 9
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 26,
+      "row": 16
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/usage_example.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 16
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 16,
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapter/webhook_handler.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `time`"
+    },
+    "location": {
+      "column": 8,
+      "row": 7
+    },
+    "message": "`time` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 15,
+      "row": 5
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/base_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 5
+          }
+        }
+      ],
+      "message": "Remove unused import: `asyncio`"
+    },
+    "location": {
+      "column": 8,
+      "row": 5
+    },
+    "message": "`asyncio` imported but unused",
+    "noqa_row": 5,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 15,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/rest_api_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `asyncio`"
+    },
+    "location": {
+      "column": 8,
+      "row": 6
+    },
+    "message": "`asyncio` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/rest_api_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any, AsyncGenerator",
+          "end_location": {
+            "column": 55,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 10
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 31,
+      "row": 10
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 7
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 14,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 10
+          }
+        }
+      ],
+      "message": "Remove unused import: `string`"
+    },
+    "location": {
+      "column": 8,
+      "row": 10
+    },
+    "message": "`string` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any, AsyncGenerator",
+          "end_location": {
+            "column": 61,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 31,
+      "row": 11
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 61,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any, AsyncGenerator",
+          "end_location": {
+            "column": 61,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 57,
+      "row": 11
+    },
+    "message": "`typing.List` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 59,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from playwright.async_api import async_playwright",
+          "end_location": {
+            "column": 81,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 52,
+      "row": 13
+    },
+    "message": "`playwright.async_api.Browser` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 75,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from playwright.async_api import async_playwright",
+          "end_location": {
+            "column": 81,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 61,
+      "row": 13
+    },
+    "message": "`playwright.async_api.BrowserContext` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 81,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from playwright.async_api import async_playwright",
+          "end_location": {
+            "column": 81,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 77,
+      "row": 13
+    },
+    "message": "`playwright.async_api.Page` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 23,
+      "row": 295
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 295
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 295,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 23,
+      "row": 427
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 427
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 427,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 25,
+      "row": 435
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 28,
+            "row": 435
+          },
+          "location": {
+            "column": 13,
+            "row": 435
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `page_content`"
+    },
+    "location": {
+      "column": 13,
+      "row": 435
+    },
+    "message": "Local variable `page_content` is assigned to but never used",
+    "noqa_row": 435,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 438
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/web_chat_adapter.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 438
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 438,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/adapters/zai_sdk_adapter.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any, AsyncGenerator, List",
+          "end_location": {
+            "column": 61,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 31,
+      "row": 8
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 54,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/api/chat.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from fastapi import APIRouter, HTTPException",
+          "end_location": {
+            "column": 54,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `fastapi.Request`"
+    },
+    "location": {
+      "column": 47,
+      "row": 6
+    },
+    "message": "`fastapi.Request` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 25,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/api/config.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 12
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import: `pathlib.Path`"
+    },
+    "location": {
+      "column": 21,
+      "row": 11
+    },
+    "message": "`pathlib.Path` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 17
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/api/config.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from ..config.yaml_parser import (\n    AIAssistedYAMLValidator, \n    YAMLConfigManager, \n    YAMLConfig\n)",
+          "end_location": {
+            "column": 2,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import: `..config.yaml_parser.WebInterfaceAbstraction`"
+    },
+    "location": {
+      "column": 5,
+      "row": 17
+    },
+    "message": "`..config.yaml_parser.WebInterfaceAbstraction` imported but unused",
+    "noqa_row": 17,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 442
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/api/config.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 442
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 442,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 15,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/config/default_endpoints.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `asyncio`"
+    },
+    "location": {
+      "column": 8,
+      "row": 7
+    },
+    "message": "`asyncio` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/database.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Optional, List",
+          "end_location": {
+            "column": 45,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 30,
+      "row": 8
+    },
+    "message": "`typing.Dict` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/database.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Optional, List",
+          "end_location": {
+            "column": 45,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 36,
+      "row": 8
+    },
+    "message": "`typing.Any` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 47,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/database.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from sqlalchemy import create_engine",
+          "end_location": {
+            "column": 47,
+            "row": 9
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `sqlalchemy.MetaData`"
+    },
+    "location": {
+      "column": 39,
+      "row": 9
+    },
+    "message": "`sqlalchemy.MetaData` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 49,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/database.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from sqlalchemy.orm import sessionmaker",
+          "end_location": {
+            "column": 49,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 10
+          }
+        }
+      ],
+      "message": "Remove unused import: `sqlalchemy.orm.Session`"
+    },
+    "location": {
+      "column": 42,
+      "row": 10
+    },
+    "message": "`sqlalchemy.orm.Session` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 62,
+      "row": 16
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/database.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from .models.endpoints import Endpoint, EndpointStatus",
+          "end_location": {
+            "column": 95,
+            "row": 16
+          },
+          "location": {
+            "column": 1,
+            "row": 16
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 41,
+      "row": 16
+    },
+    "message": "`.models.endpoints.EndpointConfiguration` imported but unused",
+    "noqa_row": 16,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 79,
+      "row": 16
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/database.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from .models.endpoints import Endpoint, EndpointStatus",
+          "end_location": {
+            "column": 95,
+            "row": 16
+          },
+          "location": {
+            "column": 1,
+            "row": 16
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 64,
+      "row": 16
+    },
+    "message": "`.models.endpoints.EndpointSession` imported but unused",
+    "noqa_row": 16,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E712",
+    "end_location": {
+      "column": 52,
+      "row": 87
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/database.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "EndpointProvider.is_default",
+          "end_location": {
+            "column": 52,
+            "row": 87
+          },
+          "location": {
+            "column": 17,
+            "row": 87
+          }
+        }
+      ],
+      "message": "Replace with `EndpointProvider.is_default`"
+    },
+    "location": {
+      "column": 17,
+      "row": 87
+    },
+    "message": "Avoid equality comparisons to `True`; use `EndpointProvider.is_default:` for truth checks",
+    "noqa_row": 87,
+    "url": "https://docs.astral.sh/ruff/rules/true-false-comparison"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 15,
+      "row": 5
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 5
+          }
+        }
+      ],
+      "message": "Remove unused import: `asyncio`"
+    },
+    "location": {
+      "column": 8,
+      "row": 5
+    },
+    "message": "`asyncio` imported but unused",
+    "noqa_row": 5,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 30,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Optional, Any",
+          "end_location": {
+            "column": 45,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.List`"
+    },
+    "location": {
+      "column": 26,
+      "row": 6
+    },
+    "message": "`typing.List` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 15,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `aiohttp`"
+    },
+    "location": {
+      "column": 8,
+      "row": 7
+    },
+    "message": "`aiohttp` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 10,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `re`"
+    },
+    "location": {
+      "column": 8,
+      "row": 9
+    },
+    "message": "`re` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 149
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 149
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 149,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 27,
+      "row": 265
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 265
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 265,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 24,
+      "row": 346
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 347
+          },
+          "location": {
+            "column": 1,
+            "row": 346
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `login_paths`"
+    },
+    "location": {
+      "column": 13,
+      "row": 346
+    },
+    "message": "Local variable `login_paths` is assigned to but never used",
+    "noqa_row": 346,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 365
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/discovery/service_registry.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 365
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 365,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 9
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 8
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 51,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any, Optional, List",
+          "end_location": {
+            "column": 51,
+            "row": 9
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Type`"
+    },
+    "location": {
+      "column": 47,
+      "row": 9
+    },
+    "message": "`typing.Type` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 65,
+      "row": 14
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from .models.providers import EndpointProvider, ProviderType",
+          "end_location": {
+            "column": 79,
+            "row": 14
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import: `.models.providers.EndpointInstance`"
+    },
+    "location": {
+      "column": 49,
+      "row": 14
+    },
+    "message": "`.models.providers.EndpointInstance` imported but unused",
+    "noqa_row": 14,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 15
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 16
+          },
+          "location": {
+            "column": 1,
+            "row": 15
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 31,
+      "row": 15
+    },
+    "message": "`.models.endpoints.Endpoint` imported but unused",
+    "noqa_row": 15,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 62,
+      "row": 15
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 16
+          },
+          "location": {
+            "column": 1,
+            "row": 15
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 41,
+      "row": 15
+    },
+    "message": "`.models.endpoints.EndpointConfiguration` imported but unused",
+    "noqa_row": 15,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 79,
+      "row": 15
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 16
+          },
+          "location": {
+            "column": 1,
+            "row": 15
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 64,
+      "row": 15
+    },
+    "message": "`.models.endpoints.EndpointSession` imported but unused",
+    "noqa_row": 15,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 95,
+      "row": 15
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 16
+          },
+          "location": {
+            "column": 1,
+            "row": 15
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 81,
+      "row": 15
+    },
+    "message": "`.models.endpoints.EndpointStatus` imported but unused",
+    "noqa_row": 15,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 37,
+      "row": 16
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from .servers import BaseEndpoint",
+          "end_location": {
+            "column": 51,
+            "row": 16
+          },
+          "location": {
+            "column": 1,
+            "row": 16
+          }
+        }
+      ],
+      "message": "Remove unused import: `.servers.EndpointFactory`"
+    },
+    "location": {
+      "column": 22,
+      "row": 16
+    },
+    "message": "`.servers.EndpointFactory` imported but unused",
+    "noqa_row": 16,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E712",
+    "end_location": {
+      "column": 56,
+      "row": 83
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/endpoint_manager.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "EndpointProvider.is_default",
+          "end_location": {
+            "column": 56,
+            "row": 83
+          },
+          "location": {
+            "column": 21,
+            "row": 83
+          }
+        }
+      ],
+      "message": "Replace with `EndpointProvider.is_default`"
+    },
+    "location": {
+      "column": 21,
+      "row": 83
+    },
+    "message": "Avoid equality comparisons to `True`; use `EndpointProvider.is_default:` for truth checks",
+    "noqa_row": 83,
+    "url": "https://docs.astral.sh/ruff/rules/true-false-comparison"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 11,
+      "row": 16
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/enhanced_server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 17
+          },
+          "location": {
+            "column": 1,
+            "row": 16
+          }
+        }
+      ],
+      "message": "Remove unused import: `ssl`"
+    },
+    "location": {
+      "column": 8,
+      "row": 16
+    },
+    "message": "`ssl` imported but unused",
+    "noqa_row": 16,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 60,
+      "row": 33
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/enhanced_server.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 33
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 33,
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 30,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/interceptor/ubuntu_ssl.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 12
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 22,
+      "row": 11
+    },
+    "message": "`datetime.datetime` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 41,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/interceptor/ubuntu_ssl.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 12
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 32,
+      "row": 11
+    },
+    "message": "`datetime.timedelta` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 58,
+      "row": 14
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from .database import init_database",
+          "end_location": {
+            "column": 58,
+            "row": 14
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import: `.database.get_database_manager`"
+    },
+    "location": {
+      "column": 38,
+      "row": 14
+    },
+    "message": "`.database.get_database_manager` imported but unused",
+    "noqa_row": 14,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 21
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 22
+          },
+          "location": {
+            "column": 1,
+            "row": 21
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 20,
+      "row": 21
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 21,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 7
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/base.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any",
+          "end_location": {
+            "column": 39,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 20,
+      "row": 7
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 38,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/base.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from sqlalchemy import Column, DateTime, Boolean, JSON",
+          "end_location": {
+            "column": 69,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 32,
+      "row": 8
+    },
+    "message": "`sqlalchemy.String` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 63,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/base.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from sqlalchemy import Column, DateTime, Boolean, JSON",
+          "end_location": {
+            "column": 69,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 59,
+      "row": 8
+    },
+    "message": "`sqlalchemy.Text` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/endpoints.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 20,
+      "row": 6
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/endpoints.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 30,
+      "row": 6
+    },
+    "message": "`typing.Dict` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/endpoints.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 36,
+      "row": 6
+    },
+    "message": "`typing.Any` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 45,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/endpoints.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 41,
+      "row": 6
+    },
+    "message": "`typing.List` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/providers.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 20,
+      "row": 6
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/providers.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 30,
+      "row": 6
+    },
+    "message": "`typing.Dict` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/models/providers.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 36,
+      "row": 6
+    },
+    "message": "`typing.Any` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 15,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/routing/priority_router.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `asyncio`"
+    },
+    "location": {
+      "column": 8,
+      "row": 6
+    },
+    "message": "`asyncio` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 47,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/routing/url_matcher.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, List, Optional",
+          "end_location": {
+            "column": 47,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Tuple`"
+    },
+    "location": {
+      "column": 42,
+      "row": 6
+    },
+    "message": "`typing.Tuple` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 208
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/routing/url_matcher.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 208
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 208,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 11,
+      "row": 16
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/server.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 17
+          },
+          "location": {
+            "column": 1,
+            "row": 16
+          }
+        }
+      ],
+      "message": "Remove unused import: `ssl`"
+    },
+    "location": {
+      "column": 8,
+      "row": 16
+    },
+    "message": "`ssl` imported but unused",
+    "noqa_row": 16,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 30,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/base_endpoint.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 12
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import: `datetime.datetime`"
+    },
+    "location": {
+      "column": 22,
+      "row": 11
+    },
+    "message": "`datetime.datetime` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 9
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 12
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import: `urllib.parse.urlparse`"
+    },
+    "location": {
+      "column": 26,
+      "row": 11
+    },
+    "message": "`urllib.parse.urlparse` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 23,
+      "row": 261
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 261
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 261,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 23,
+      "row": 275
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 275
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 275,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 23,
+      "row": 289
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 289
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 289,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 309
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 309
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 309,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 27,
+      "row": 354
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 354
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 354,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 19,
+      "row": 407
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/servers/web_chat_endpoint.py",
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 407
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 407,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 52,
+      "row": 5
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/zai_sdk/client.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from .core import AuthManager, HTTPClient",
+          "end_location": {
+            "column": 52,
+            "row": 5
+          },
+          "location": {
+            "column": 1,
+            "row": 5
+          }
+        }
+      ],
+      "message": "Remove unused import: `.core.ZAIError`"
+    },
+    "location": {
+      "column": 44,
+      "row": 5
+    },
+    "message": "`.core.ZAIError` imported but unused",
+    "noqa_row": 5,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 23,
+      "row": 145
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/zai_sdk/core/http_client.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 145
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 145,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 52,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/zai_sdk/models.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Any, Dict, List, Optional",
+          "end_location": {
+            "column": 52,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Union`"
+    },
+    "location": {
+      "column": 47,
+      "row": 6
+    },
+    "message": "`typing.Union` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 3
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/backend/zai_sdk/operations/streaming.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 4
+          },
+          "location": {
+            "column": 1,
+            "row": 3
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 3
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 3,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 25,
+      "row": 10
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/deploy.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 11
+          },
+          "location": {
+            "column": 1,
+            "row": 10
+          }
+        }
+      ],
+      "message": "Remove unused import: `pathlib.Path`"
+    },
+    "location": {
+      "column": 21,
+      "row": 10
+    },
+    "message": "`pathlib.Path` imported but unused",
+    "noqa_row": 10,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 22,
+      "row": 89
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/final_analysis_report.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 25,
+            "row": 89
+          },
+          "location": {
+            "column": 13,
+            "row": 89
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `endpoints`"
+    },
+    "location": {
+      "column": 13,
+      "row": 89
+    },
+    "message": "Local variable `endpoints` is assigned to but never used",
+    "noqa_row": 89,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 299
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/final_analysis_report.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 299
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 299,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 314
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/final_analysis_report.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 314
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 314,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 325
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/final_analysis_report.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 325
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 325,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 78,
+      "row": 437
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/final_analysis_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"\\n📄 Detailed report saved to: comprehensive_analysis_report.json\"",
+          "end_location": {
+            "column": 78,
+            "row": 437
+          },
+          "location": {
+            "column": 11,
+            "row": 437
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 11,
+      "row": 437
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 437,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 10,
+      "row": 6
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/setup.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `os`"
+    },
+    "location": {
+      "column": 8,
+      "row": 6
+    },
+    "message": "`os` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 23,
+      "row": 101
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/setup.py",
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 101
+    },
+    "message": "`fastapi` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 101,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 26,
+      "row": 102
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/setup.py",
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 102
+    },
+    "message": "`sqlalchemy` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 102,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 26,
+      "row": 103
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/setup.py",
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 103
+    },
+    "message": "`playwright` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 103,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 23,
+      "row": 104
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/setup.py",
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 104
+    },
+    "message": "`aiohttp` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 104,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/tests/quick_validation.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `time`"
+    },
+    "location": {
+      "column": 8,
+      "row": 9
+    },
+    "message": "`time` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 8
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/tests/validate_deployment.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 9
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 8
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 8,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 35,
+      "row": 18
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Dict, Any",
+          "end_location": {
+            "column": 35,
+            "row": 18
+          },
+          "location": {
+            "column": 1,
+            "row": 18
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.List`"
+    },
+    "location": {
+      "column": 31,
+      "row": 18
+    },
+    "message": "`typing.List` imported but unused",
+    "noqa_row": 18,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 39,
+      "row": 320
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"\\n📋 DETAILED RESULTS:\"",
+          "end_location": {
+            "column": 39,
+            "row": 320
+          },
+          "location": {
+            "column": 15,
+            "row": 320
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 320
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 320,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 40,
+      "row": 348
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"\\n🔍 KEY UI HIGHLIGHTS:\"",
+          "end_location": {
+            "column": 40,
+            "row": 348
+          },
+          "location": {
+            "column": 15,
+            "row": 348
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 348
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 348,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 62,
+      "row": 349
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"  • Trading bot-style dashboard with metrics\"",
+          "end_location": {
+            "column": 62,
+            "row": 349
+          },
+          "location": {
+            "column": 15,
+            "row": 349
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 349
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 349,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 82,
+      "row": 350
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)\"",
+          "end_location": {
+            "column": 82,
+            "row": 350
+          },
+          "location": {
+            "column": 15,
+            "row": 350
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 350
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 350,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 53,
+      "row": 351
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"  • Interactive endpoint management\"",
+          "end_location": {
+            "column": 53,
+            "row": 351
+          },
+          "location": {
+            "column": 15,
+            "row": 351
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 351
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 351,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 66,
+      "row": 352
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"  • YAML configuration editor with AI validation\"",
+          "end_location": {
+            "column": 66,
+            "row": 352
+          },
+          "location": {
+            "column": 15,
+            "row": 352
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 352
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 352,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 54,
+      "row": 353
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"  • Real-time chat testing interface\"",
+          "end_location": {
+            "column": 54,
+            "row": 353
+          },
+          "location": {
+            "column": 15,
+            "row": 353
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 353
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 353,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 56,
+      "row": 354
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"  • Performance monitoring and metrics\"",
+          "end_location": {
+            "column": 56,
+            "row": 354
+          },
+          "location": {
+            "column": 15,
+            "row": 354
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 354
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 354,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 66,
+      "row": 355
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/ui_validation_report.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"  • Complete API documentation (Swagger + ReDoc)\"",
+          "end_location": {
+            "column": 66,
+            "row": 355
+          },
+          "location": {
+            "column": 15,
+            "row": 355
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 15,
+      "row": 355
+    },
+    "message": "f-string without any placeholders",
+    "noqa_row": 355,
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 9
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 10
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Remove unused import: `json`"
+    },
+    "location": {
+      "column": 8,
+      "row": 9
+    },
+    "message": "`json` imported but unused",
+    "noqa_row": 9,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 10,
+      "row": 11
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 12
+          },
+          "location": {
+            "column": 1,
+            "row": 11
+          }
+        }
+      ],
+      "message": "Remove unused import: `os`"
+    },
+    "location": {
+      "column": 8,
+      "row": 11
+    },
+    "message": "`os` imported but unused",
+    "noqa_row": 11,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 12
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 12
+          }
+        }
+      ],
+      "message": "Remove unused import: `time`"
+    },
+    "location": {
+      "column": 8,
+      "row": 12
+    },
+    "message": "`time` imported but unused",
+    "noqa_row": 12,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 24,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Optional",
+          "end_location": {
+            "column": 39,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 20,
+      "row": 13
+    },
+    "message": "`typing.Dict` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 29,
+      "row": 13
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from typing import Optional",
+          "end_location": {
+            "column": 39,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 26,
+      "row": 13
+    },
+    "message": "`typing.Any` imported but unused",
+    "noqa_row": 13,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 30,
+      "row": 14
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 15
+          },
+          "location": {
+            "column": 1,
+            "row": 14
+          }
+        }
+      ],
+      "message": "Remove unused import: `datetime.datetime`"
+    },
+    "location": {
+      "column": 22,
+      "row": 14
+    },
+    "message": "`datetime.datetime` imported but unused",
+    "noqa_row": 14,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 18,
+      "row": 282
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 21,
+            "row": 282
+          },
+          "location": {
+            "column": 9,
+            "row": 282
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `endpoints`"
+    },
+    "location": {
+      "column": 9,
+      "row": 282
+    },
+    "message": "Local variable `endpoints` is assigned to but never used",
+    "noqa_row": 282,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 344
+    },
+    "filename": "/tmp/Zeeeepa/open_codegen/validate_real_system.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 344
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 344,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  }
+]

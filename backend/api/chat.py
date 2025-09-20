@@ -3,7 +3,7 @@ Chat API endpoints for the Universal AI Endpoint Management System
 OpenAI-compatible API that routes to managed endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional, Union, AsyncGenerator

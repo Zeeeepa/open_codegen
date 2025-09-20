@@ -27,7 +27,7 @@ def main():
         sys.exit(1)
     
     print(f"✅ Credentials configured for org: {org_id}")
-    print(f"🌐 Server starting at: http://localhost:8001")
+    print("🌐 Server starting at: http://localhost:8001")
     
     # Start the server
     uvicorn.run(
