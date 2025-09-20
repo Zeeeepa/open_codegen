@@ -86,7 +86,7 @@ class ComprehensiveAnalyzer:
             # Test core endpoints
             health = requests.get(f"{BASE_URL}/health").json()
             status = requests.get(f"{BASE_URL}/status").json()
-            endpoints = requests.get(f"{BASE_URL}/api/endpoints/").json()
+            requests.get(f"{BASE_URL}/api/endpoints/").json()  # Test endpoint but don't store unused result
             models = requests.get(f"{BASE_URL}/v1/models").json()
             
             analysis = {
@@ -434,7 +434,7 @@ def main():
     with open("comprehensive_analysis_report.json", "w") as f:
         json.dump(report, f, indent=2)
     
-    print(f"\n📄 Detailed report saved to: comprehensive_analysis_report.json")
+    print("\n📄 Detailed report saved to: comprehensive_analysis_report.json")
     print("\n✅ CONCLUSION: PR #78 successfully implements the Universal AI Endpoint Management System")
     print("🎊 All required functionality is present and working correctly!")
     

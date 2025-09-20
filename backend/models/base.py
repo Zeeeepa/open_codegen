@@ -4,14 +4,20 @@ Base model classes for the Universal AI Endpoint Management System
 
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any
-from sqlalchemy import Column, String, DateTime, Boolean, Text, JSON
+from typing import Dict, Any, TYPE_CHECKING
+from sqlalchemy import Column, DateTime, Boolean, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
 Base = declarative_base()
 
-class BaseModel(Base):
+if TYPE_CHECKING:
+    from sqlalchemy.ext.declarative import DeclarativeMeta
+    BaseType = DeclarativeMeta
+else:
+    BaseType = Base
+
+class BaseModel(BaseType):  # type: ignore[misc]
     """Base model with common fields for all database models"""
     __abstract__ = True
     

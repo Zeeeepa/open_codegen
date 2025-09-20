@@ -5,15 +5,15 @@ Integrates with Khoj database architecture
 
 import os
 import logging
-from typing import Optional, Dict, Any, List
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker, Session
+from typing import Optional, List
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from contextlib import contextmanager
 
 from .models.base import Base
 from .models.providers import EndpointProvider, EndpointInstance, ProviderType
-from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+from .models.endpoints import Endpoint, EndpointStatus
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class DatabaseManager:
         with self.get_session() as session:
             # Check if default providers already exist
             existing_providers = session.query(EndpointProvider).filter(
-                EndpointProvider.is_default == True
+                EndpointProvider.is_default
             ).all()
             
             if existing_providers:

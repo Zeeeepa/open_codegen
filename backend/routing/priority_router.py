@@ -3,7 +3,6 @@ Priority-Based Router - Routes requests based on endpoint priorities with intell
 """
 import logging
 from typing import Optional, Dict, Any, List
-import asyncio
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)

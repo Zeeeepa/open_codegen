@@ -11,14 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
-from .database import init_database, get_database_manager
+from .database import init_database
 from .endpoint_manager import get_endpoint_manager
 from .api.endpoints import router as endpoints_router
 from .api.chat import router as chat_router
 from .api.config import router as config_router
 from .middleware.request_interceptor import UniversalRequestInterceptor
 from .config.default_endpoints import DefaultEndpointsConfig
-from typing import Optional
 
 # Configure logging
 logging.basicConfig(

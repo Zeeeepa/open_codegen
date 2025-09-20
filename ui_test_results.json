@@ -1,0 +1,85 @@
+{
+  "total_tests": 11,
+  "passed": 9,
+  "failed": 2,
+  "success_rate": 81.81818181818183,
+  "details": [
+    {
+      "test": "Page Load",
+      "status": "PASS",
+      "details": "Title: Universal AI Endpoint Manager",
+      "error": "",
+      "timestamp": "2025-09-20 12:14:33"
+    },
+    {
+      "test": "Header Components",
+      "status": "PASS",
+      "details": "Title:  AI Endpoint Manager, Status: \n            \n            Connected\n        , Settings Btn: True",
+      "error": "",
+      "timestamp": "2025-09-20 12:14:33"
+    },
+    {
+      "test": "Sidebar Navigation",
+      "status": "PASS",
+      "details": "Tested 6 tabs: dashboard: Dashboard, endpoints: Endpoints, yaml-editor: YAML Editor, chat-interface: Test Chat, monitoring: Monitoring, templates: Templates",
+      "error": "",
+      "timestamp": "2025-09-20 12:14:37"
+    },
+    {
+      "test": "Dashboard Stats",
+      "status": "PASS",
+      "details": "Found 4 stats: Active Endpoints: 0, Avg Response Time: 0ms, Success Rate: 0%, Total Requests: 0",
+      "error": "",
+      "timestamp": "2025-09-20 12:14:37"
+    },
+    {
+      "test": "Endpoints Management",
+      "status": "PASS",
+      "details": "Modal opened with 9 form elements",
+      "error": "",
+      "timestamp": "2025-09-20 12:14:38"
+    },
+    {
+      "test": "YAML Editor",
+      "status": "FAIL",
+      "details": "",
+      "error": "ElementHandle.fill: Timeout 30000ms exceeded.\nCall log:\n    - fill(\"name: TestEndpoint\nURL: https://example.com\")\n  - attempting fill action\n    2 \u00d7 waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n      - waiting 100ms\n    59 \u00d7 waiting for element to be visible, enabled and editable\n       - element is not visible\n     - retrying fill action\n       - waiting 500ms\n",
+      "timestamp": "2025-09-20 12:15:09"
+    },
+    {
+      "test": "Chat Interface",
+      "status": "PASS",
+      "details": "Components found: Messages Area, Input Field, Send Button, Endpoint Selector",
+      "error": "",
+      "timestamp": "2025-09-20 12:15:10"
+    },
+    {
+      "test": "Monitoring Dashboard",
+      "status": "PASS",
+      "details": "Components found: Performance Chart, Health List, CPU Meter, Memory Meter, Log Viewer, Refresh Button",
+      "error": "",
+      "timestamp": "2025-09-20 12:15:12"
+    },
+    {
+      "test": "Templates Section",
+      "status": "PASS",
+      "details": "Components found: Create Template Button, Templates Grid",
+      "error": "",
+      "timestamp": "2025-09-20 12:15:12"
+    },
+    {
+      "test": "API Endpoints",
+      "status": "PASS",
+      "details": "Tests: Health endpoint working, Providers endpoint working",
+      "error": "",
+      "timestamp": "2025-09-20 12:15:12"
+    },
+    {
+      "test": "Responsive Design",
+      "status": "FAIL",
+      "details": "",
+      "error": "Page.set_viewport_size() got an unexpected keyword argument 'width'",
+      "timestamp": "2025-09-20 12:15:12"
+    }
+  ]
+}

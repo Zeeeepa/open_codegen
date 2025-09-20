@@ -4,13 +4,11 @@ Handles browser automation for web-based AI chat interfaces like Z.ai, DeepSeek,
 """
 
 import asyncio
-import json
 import logging
 import random
-import string
-from typing import Dict, Any, Optional, AsyncGenerator, List
+from typing import Dict, Any, AsyncGenerator
 from datetime import datetime
-from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+from playwright.async_api import async_playwright
 
 from .base_adapter import BaseAdapter, AdapterResponse, AdapterError
 
@@ -292,7 +290,7 @@ class WebChatAdapter(BaseAdapter):
                     await self.page.wait_for_selector(selector, timeout=5000)
                     logger.info(f"Chat interface ready with selector: {selector}")
                     return
-                except:
+                except Exception:
                     continue
             
             logger.warning("No chat interface found, proceeding anyway")
@@ -424,7 +422,7 @@ class WebChatAdapter(BaseAdapter):
                         
                         if text_content and text_content.strip():
                             return text_content.strip()
-                except:
+                except Exception:
                     continue
             
             await asyncio.sleep(0.5)
@@ -432,10 +430,10 @@ class WebChatAdapter(BaseAdapter):
         # Fallback: try to get any new text content
         try:
             # Get all text content and try to extract the response
-            page_content = await self.page.text_content('body')
+            await self.page.text_content('body')
             # This is a simplified approach - in practice, you'd need more sophisticated parsing
             return "Response captured from web interface"
-        except:
+        except Exception:
             raise AdapterError("No response received within timeout", "RESPONSE_TIMEOUT")
     
     async def health_check(self) -> Dict[str, Any]:

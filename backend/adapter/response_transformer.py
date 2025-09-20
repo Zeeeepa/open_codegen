@@ -3,8 +3,6 @@ Response transformation utilities to convert Codegen responses to OpenAI format.
 Based on h2ogpt's backend.py response formatting patterns.
 """
 
-import time
-import uuid
 from typing import Optional
 from backend.adapter.models import (
     ChatResponse, ChatResponseStream, TextResponse,

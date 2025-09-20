@@ -6,7 +6,6 @@ Tests the key components that we can verify quickly
 
 import requests
 import sys
-import time
 
 def test_server_health():
     """Test if server is responding."""

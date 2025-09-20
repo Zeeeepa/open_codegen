@@ -15,7 +15,7 @@ Comprehensive validation of the Universal AI Endpoint Management System Web UI:
 import requests
 import time
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 BASE_URL = "http://localhost:8000"
 
@@ -317,7 +317,7 @@ class UIValidator:
         print(f"📊 Overall Success Rate: {overall_success_rate:.1f}%")
         
         # Detailed breakdown
-        print(f"\n📋 DETAILED RESULTS:")
+        print("\n📋 DETAILED RESULTS:")
         categories = {}
         for result in self.results:
             category = result['test'].split(':')[0] if ':' in result['test'] else result['test']
@@ -345,14 +345,14 @@ class UIValidator:
             status = "POOR"
             print("\n❌ UI STATUS: POOR - Significant UI issues detected")
         
-        print(f"\n🔍 KEY UI HIGHLIGHTS:")
-        print(f"  • Trading bot-style dashboard with metrics")
-        print(f"  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)")
-        print(f"  • Interactive endpoint management")
-        print(f"  • YAML configuration editor with AI validation")
-        print(f"  • Real-time chat testing interface")
-        print(f"  • Performance monitoring and metrics")
-        print(f"  • Complete API documentation (Swagger + ReDoc)")
+        print("\n🔍 KEY UI HIGHLIGHTS:")
+        print("  • Trading bot-style dashboard with metrics")
+        print("  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)")
+        print("  • Interactive endpoint management")
+        print("  • YAML configuration editor with AI validation")
+        print("  • Real-time chat testing interface")
+        print("  • Performance monitoring and metrics")
+        print("  • Complete API documentation (Swagger + ReDoc)")
         
         return {
             "status": status,

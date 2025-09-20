@@ -2,7 +2,7 @@
 
 from typing import Dict, Generator, List, Optional
 
-from .core import AuthManager, HTTPClient, ZAIError
+from .core import AuthManager, HTTPClient
 from .models import ChatCompletionResponse, ChatResponse, MCPFeature, Model, StreamingChunk
 from .operations import ChatOperations, ModelOperations
 

@@ -6,7 +6,6 @@ Provides streaming responses compatible with Gemini's API format.
 import json
 import asyncio
 import logging
-from typing import AsyncGenerator
 from fastapi.responses import StreamingResponse
 from backend.adapter.codegen_client import CodegenClient
 from backend.adapter.gemini_transformer import create_gemini_stream_chunk
@@ -45,7 +44,7 @@ async def collect_gemini_streaming_response(
             
             full_content += chunk
             
-        logger.info(f"✅ Response collection completed")
+        logger.info("✅ Response collection completed")
         logger.info(f"   📊 Total chunks: {chunk_count}")
         logger.info(f"   📏 Final content length: {len(full_content)} characters")
         logger.info(f"   🔢 Estimated tokens: {estimate_tokens(full_content)}")

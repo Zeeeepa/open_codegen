@@ -3,7 +3,7 @@ Request transformation utilities to convert OpenAI API requests to Codegen forma
 Based on h2ogpt's backend_utils.py message conversion patterns.
 """
 
-from typing import List, Optional
+from typing import List
 from backend.adapter.models import Message, ChatRequest, TextRequest
 from backend.adapter.system_message_manager import get_system_message_manager
 
