@@ -15,6 +15,7 @@ class ProviderType(enum.Enum):
     REST_API = "rest_api"
     WEB_CHAT = "web_chat"
     API_TOKEN = "api_token"  # Updated from hybrid as requested
+    ZAI_SDK = "zai_sdk"  # Z.ai Python SDK integration
 
 class EndpointProvider(BaseModel):
     """Provider configuration for different AI services"""

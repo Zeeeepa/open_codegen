@@ -27,6 +27,9 @@ class EndpointFactory:
             elif endpoint_type == 'api_token':
                 # API token is essentially a REST API endpoint
                 return RestApiEndpoint(name, config, priority)
+            elif endpoint_type == 'zai_sdk':
+                # Z.ai SDK is handled like a REST API endpoint for now
+                return RestApiEndpoint(name, config, priority)
             else:
                 logger.error(f"Unknown endpoint type: {endpoint_type}")
                 return None
@@ -38,7 +41,7 @@ class EndpointFactory:
     @staticmethod
     def get_supported_types() -> list:
         """Get list of supported endpoint types"""
-        return ['web_chat', 'rest_api', 'api_token']
+        return ['web_chat', 'rest_api', 'api_token', 'zai_sdk']
     
     @staticmethod
     def validate_config(config: Dict[str, Any]) -> tuple[bool, str]:
@@ -64,6 +67,11 @@ class EndpointFactory:
             elif endpoint_type in ['rest_api', 'api_token']:
                 if 'base_url' not in config:
                     return False, "REST API endpoints require base_url"
+            
+            elif endpoint_type == 'zai_sdk':
+                # Z.ai SDK requires base_url for validation but it's handled automatically
+                if 'base_url' not in config:
+                    return False, "Z.ai SDK endpoints require base_url"
             
             return True, "Configuration is valid"
             

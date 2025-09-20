@@ -17,6 +17,7 @@ from .servers import EndpointFactory, BaseEndpoint
 from .adapters.base_adapter import BaseAdapter, AdapterResponse
 from .adapters.rest_api_adapter import RestApiAdapter
 from .adapters.web_chat_adapter import WebChatAdapter
+from .adapters.zai_sdk_adapter import ZaiSdkAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,8 @@ class EndpointManager:
                 adapter = RestApiAdapter(config)
             elif provider_type == ProviderType.WEB_CHAT:
                 adapter = WebChatAdapter(config)
+            elif provider_type == ProviderType.ZAI_SDK:
+                adapter = ZaiSdkAdapter(config)
             else:
                 logger.error(f"Unknown provider type: {provider_type}")
                 return None
