@@ -13,7 +13,6 @@ import atexit
 import logging
 import threading
 import time
-import ssl
 import ipaddress
 from pathlib import Path
 

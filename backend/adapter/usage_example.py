@@ -6,7 +6,6 @@ This demonstrates how to use the adapter with standard OpenAI client libraries.
 
 import openai
 import asyncio
-import json
 
 # Configure OpenAI client to use our adapter
 openai.api_base = "http://localhost:8001/v1"

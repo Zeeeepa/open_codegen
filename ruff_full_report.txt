@@ -1,0 +1,1877 @@
+F401 [*] `typing.AsyncGenerator` imported but unused
+  --> backend/adapter/anthropic_streaming.py:10:20
+   |
+ 8 | import logging
+ 9 | import uuid
+10 | from typing import AsyncGenerator
+   |                    ^^^^^^^^^^^^^^
+11 | from fastapi.responses import StreamingResponse
+12 | from backend.adapter.codegen_client import CodegenClient
+   |
+help: Remove unused import: `typing.AsyncGenerator`
+
+F401 [*] `backend.adapter.anthropic_transformer.create_anthropic_stream_event` imported but unused
+  --> backend/adapter/anthropic_streaming.py:13:51
+   |
+11 | from fastapi.responses import StreamingResponse
+12 | from backend.adapter.codegen_client import CodegenClient
+13 | from backend.adapter.anthropic_transformer import create_anthropic_stream_event
+   |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from backend.adapter.response_transformer import estimate_tokens
+   |
+help: Remove unused import: `backend.adapter.anthropic_transformer.create_anthropic_stream_event`
+
+F541 [*] f-string without any placeholders
+  --> backend/adapter/anthropic_streaming.py:59:21
+   |
+57 |                 logger.warning(f"⚠️ Received empty/None chunk {chunk_count}")
+58 |             
+59 |         logger.info(f"✅ Response collection completed")
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+60 |         logger.info(f"   📊 Total chunks: {chunk_count}")
+61 |         logger.info(f"   📏 Final content length: {len(full_content)} characters")
+   |
+help: Remove extraneous `f` prefix
+
+F841 Local variable `input_tokens` is assigned to but never used
+   --> backend/adapter/anthropic_streaming.py:121:9
+    |
+120 |         accumulated_text = ""  # Track accumulated text content
+121 |         input_tokens = estimate_tokens(prompt)
+    |         ^^^^^^^^^^^^
+122 |         output_tokens = 0
+    |
+help: Remove assignment to unused variable `input_tokens`
+
+F401 [*] `typing.List` imported but unused
+ --> backend/adapter/anthropic_transformer.py:7:20
+  |
+5 | """
+6 |
+7 | from typing import List, Dict, Any, Union
+  |                    ^^^^
+8 | from backend.adapter.models import (
+9 |     AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
+  |
+help: Remove unused import
+
+F401 [*] `typing.Union` imported but unused
+ --> backend/adapter/anthropic_transformer.py:7:37
+  |
+5 | """
+6 |
+7 | from typing import List, Dict, Any, Union
+  |                                     ^^^^^
+8 | from backend.adapter.models import (
+9 |     AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
+  |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.AnthropicMessage` imported but unused
+  --> backend/adapter/anthropic_transformer.py:9:58
+   |
+ 7 | from typing import List, Dict, Any, Union
+ 8 | from backend.adapter.models import (
+ 9 |     AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
+   |                                                          ^^^^^^^^^^^^^^^^
+10 |     ContentBlockText, ContentBlockToolUse, TokenCountRequest, TokenCountResponse
+11 | )
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.ContentBlockToolUse` imported but unused
+  --> backend/adapter/anthropic_transformer.py:10:23
+   |
+ 8 | from backend.adapter.models import (
+ 9 |     AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
+10 |     ContentBlockText, ContentBlockToolUse, TokenCountRequest, TokenCountResponse
+   |                       ^^^^^^^^^^^^^^^^^^^
+11 | )
+12 | from backend.adapter.response_transformer import estimate_tokens, clean_content
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.TokenCountRequest` imported but unused
+  --> backend/adapter/anthropic_transformer.py:10:44
+   |
+ 8 | from backend.adapter.models import (
+ 9 |     AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
+10 |     ContentBlockText, ContentBlockToolUse, TokenCountRequest, TokenCountResponse
+   |                                            ^^^^^^^^^^^^^^^^^
+11 | )
+12 | from backend.adapter.response_transformer import estimate_tokens, clean_content
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.TokenCountResponse` imported but unused
+  --> backend/adapter/anthropic_transformer.py:10:63
+   |
+ 8 | from backend.adapter.models import (
+ 9 |     AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
+10 |     ContentBlockText, ContentBlockToolUse, TokenCountRequest, TokenCountResponse
+   |                                                               ^^^^^^^^^^^^^^^^^^
+11 | )
+12 | from backend.adapter.response_transformer import estimate_tokens, clean_content
+   |
+help: Remove unused import
+
+E722 Do not use bare `except`
+  --> backend/adapter/anthropic_transformer.py:41:21
+   |
+39 |                     try:
+40 |                         result += json.dumps(item) + "\n"
+41 |                     except:
+   |                     ^^^^^^
+42 |                         result += str(item) + "\n"
+43 |             else:
+   |
+
+E722 Do not use bare `except`
+  --> backend/adapter/anthropic_transformer.py:46:17
+   |
+44 |                 try:
+45 |                     result += str(item) + "\n"
+46 |                 except:
+   |                 ^^^^^^
+47 |                     result += "Unparseable content\n"
+48 |         return result.strip()
+   |
+
+E722 Do not use bare `except`
+  --> backend/adapter/anthropic_transformer.py:55:9
+   |
+53 |         try:
+54 |             return json.dumps(content)
+55 |         except:
+   |         ^^^^^^
+56 |             return str(content)
+   |
+
+E722 Do not use bare `except`
+  --> backend/adapter/anthropic_transformer.py:61:5
+   |
+59 |     try:
+60 |         return str(content)
+61 |     except:
+   |     ^^^^^^
+62 |         return "Unparseable content"
+   |
+
+F401 [*] `typing.Optional` imported but unused
+  --> backend/adapter/auth.py:10:26
+   |
+ 8 | import os
+ 9 | from pathlib import Path
+10 | from typing import Dict, Optional
+   |                          ^^^^^^^^
+11 |
+12 | from codegen.agents import Agent
+   |
+help: Remove unused import: `typing.Optional`
+
+F841 Local variable `agent` is assigned to but never used
+  --> backend/adapter/auth.py:63:13
+   |
+62 |         try:
+63 |             agent = Agent(org_id=self.org_id, token=self.token)
+   |             ^^^^^
+64 |             # Just initializing the agent is enough to validate credentials
+65 |             logger.info(f"Successfully validated credentials for org_id: {self.org_id}")
+   |
+help: Remove assignment to unused variable `agent`
+
+F401 [*] `typing.Optional` imported but unused
+  --> backend/adapter/codegen_client.py:9:20
+   |
+ 7 | import logging
+ 8 | import time
+ 9 | from typing import Optional, AsyncGenerator
+   |                    ^^^^^^^^
+10 | from codegen.agents import Agent
+11 | from codegen_api_client.exceptions import ApiException
+   |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `time` imported but unused
+ --> backend/adapter/codegen_client_old.py:7:8
+  |
+5 | import asyncio
+6 | import logging
+7 | import time
+  |        ^^^^
+8 | from typing import Optional, AsyncGenerator
+9 | from codegen.agents import Agent
+  |
+help: Remove unused import: `time`
+
+F401 [*] `typing.Optional` imported but unused
+  --> backend/adapter/codegen_client_old.py:8:20
+   |
+ 6 | import logging
+ 7 | import time
+ 8 | from typing import Optional, AsyncGenerator
+   |                    ^^^^^^^^
+ 9 | from codegen.agents import Agent
+10 | from codegen_api_client.exceptions import ApiException
+   |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `codegen_api_client.exceptions.ApiException` imported but unused
+  --> backend/adapter/codegen_client_old.py:10:43
+   |
+ 8 | from typing import Optional, AsyncGenerator
+ 9 | from codegen.agents import Agent
+10 | from codegen_api_client.exceptions import ApiException
+   |                                           ^^^^^^^^^^^^
+11 | from backend.adapter.config import CodegenConfig
+   |
+help: Remove unused import: `codegen_api_client.exceptions.ApiException`
+
+F401 [*] `backend.adapter.models.ChatResponse` imported but unused
+  --> backend/adapter/enhanced_server.py:15:31
+   |
+14 | from backend.adapter.models import (
+15 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+   |                               ^^^^^^^^^^^^
+16 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+17 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.TextResponse` imported but unused
+  --> backend/adapter/enhanced_server.py:15:45
+   |
+14 | from backend.adapter.models import (
+15 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+   |                                             ^^^^^^^^^^^^
+16 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+17 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.AnthropicResponse` imported but unused
+  --> backend/adapter/enhanced_server.py:16:51
+   |
+14 | from backend.adapter.models import (
+15 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+16 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+   |                                                   ^^^^^^^^^^^^^^^^^
+17 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+18 | )
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.TokenCountRequest` imported but unused
+  --> backend/adapter/enhanced_server.py:17:5
+   |
+15 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+16 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+17 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |     ^^^^^^^^^^^^^^^^^
+18 | )
+19 | from backend.adapter.config import get_enhanced_codegen_config, get_server_config
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.TokenCountResponse` imported but unused
+  --> backend/adapter/enhanced_server.py:17:24
+   |
+15 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+16 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+17 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |                        ^^^^^^^^^^^^^^^^^^
+18 | )
+19 | from backend.adapter.config import get_enhanced_codegen_config, get_server_config
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.GeminiResponse` imported but unused
+  --> backend/adapter/enhanced_server.py:17:59
+   |
+15 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+16 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+17 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |                                                           ^^^^^^^^^^^^^^
+18 | )
+19 | from backend.adapter.config import get_enhanced_codegen_config, get_server_config
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.response_transformer.clean_content` imported but unused
+  --> backend/adapter/enhanced_server.py:32:22
+   |
+30 | from backend.adapter.response_transformer import (
+31 |     create_chat_response, create_text_response,
+32 |     estimate_tokens, clean_content
+   |                      ^^^^^^^^^^^^^
+33 | )
+34 | from backend.adapter.enhanced_streaming import (
+   |
+help: Remove unused import: `backend.adapter.response_transformer.clean_content`
+
+F401 [*] `backend.adapter.anthropic_streaming.collect_anthropic_streaming_response` imported but unused
+  --> backend/adapter/enhanced_server.py:39:42
+   |
+37 | from backend.adapter.anthropic_transformer import create_anthropic_response
+38 | from backend.adapter.anthropic_streaming import (
+39 |     create_anthropic_streaming_response, collect_anthropic_streaming_response
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+40 | )
+41 | from backend.adapter.gemini_transformer import create_gemini_response
+   |
+help: Remove unused import: `backend.adapter.anthropic_streaming.collect_anthropic_streaming_response`
+
+F401 [*] `backend.adapter.gemini_streaming.collect_gemini_streaming_response` imported but unused
+  --> backend/adapter/enhanced_server.py:43:39
+   |
+41 | from backend.adapter.gemini_transformer import create_gemini_response
+42 | from backend.adapter.gemini_streaming import (
+43 |     create_gemini_streaming_response, collect_gemini_streaming_response
+   |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+44 | )
+45 | from backend.adapter.system_message_manager import get_system_message_manager
+   |
+help: Remove unused import: `backend.adapter.gemini_streaming.collect_gemini_streaming_response`
+
+F401 [*] `json` imported but unused
+ --> backend/adapter/enhanced_streaming.py:7:8
+  |
+6 | import asyncio
+7 | import json
+  |        ^^^^
+8 | import logging
+9 | import time
+  |
+help: Remove unused import: `json`
+
+F401 [*] `backend.adapter.models.ChatResponseStream` imported but unused
+  --> backend/adapter/enhanced_streaming.py:13:36
+   |
+11 | from fastapi.responses import StreamingResponse
+12 |
+13 | from backend.adapter.models import ChatResponseStream
+   |                                    ^^^^^^^^^^^^^^^^^^
+14 | from backend.adapter.response_transformer import (
+15 |     create_chat_stream_chunk, format_sse_chunk, format_sse_done,
+   |
+help: Remove unused import: `backend.adapter.models.ChatResponseStream`
+
+F401 [*] `typing.Dict` imported but unused
+ --> backend/adapter/enhanced_transformer.py:7:27
+  |
+6 | import logging
+7 | from typing import Tuple, Dict, Optional, Any
+  |                           ^^^^
+8 |
+9 | from backend.adapter.models import (
+  |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+ --> backend/adapter/enhanced_transformer.py:7:33
+  |
+6 | import logging
+7 | from typing import Tuple, Dict, Optional, Any
+  |                                 ^^^^^^^^
+8 |
+9 | from backend.adapter.models import (
+  |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+ --> backend/adapter/enhanced_transformer.py:7:43
+  |
+6 | import logging
+7 | from typing import Tuple, Dict, Optional, Any
+  |                                           ^^^
+8 |
+9 | from backend.adapter.models import (
+  |
+help: Remove unused import
+
+F401 [*] `backend.adapter.request_transformer.extract_generation_params` imported but unused
+  --> backend/adapter/enhanced_transformer.py:14:5
+   |
+12 | from backend.adapter.request_transformer import (
+13 |     chat_request_to_prompt, text_request_to_prompt,
+14 |     extract_generation_params
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | )
+16 | from backend.adapter.anthropic_transformer import (
+   |
+help: Remove unused import: `backend.adapter.request_transformer.extract_generation_params`
+
+F401 [*] `backend.adapter.anthropic_transformer.extract_anthropic_generation_params` imported but unused
+  --> backend/adapter/enhanced_transformer.py:17:34
+   |
+15 | )
+16 | from backend.adapter.anthropic_transformer import (
+17 |     anthropic_request_to_prompt, extract_anthropic_generation_params
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | )
+19 | from backend.adapter.gemini_transformer import (
+   |
+help: Remove unused import: `backend.adapter.anthropic_transformer.extract_anthropic_generation_params`
+
+F401 [*] `backend.adapter.gemini_transformer.extract_gemini_generation_params` imported but unused
+  --> backend/adapter/enhanced_transformer.py:20:31
+   |
+18 | )
+19 | from backend.adapter.gemini_transformer import (
+20 |     gemini_request_to_prompt, extract_gemini_generation_params
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+21 | )
+22 | from backend.adapter.model_mapper import ModelMapper
+   |
+help: Remove unused import: `backend.adapter.gemini_transformer.extract_gemini_generation_params`
+
+F401 [*] `typing.AsyncGenerator` imported but unused
+  --> backend/adapter/gemini_streaming.py:9:20
+   |
+ 7 | import asyncio
+ 8 | import logging
+ 9 | from typing import AsyncGenerator
+   |                    ^^^^^^^^^^^^^^
+10 | from fastapi.responses import StreamingResponse
+11 | from backend.adapter.codegen_client import CodegenClient
+   |
+help: Remove unused import: `typing.AsyncGenerator`
+
+F541 [*] f-string without any placeholders
+  --> backend/adapter/gemini_streaming.py:48:21
+   |
+46 |             full_content += chunk
+47 |             
+48 |         logger.info(f"✅ Response collection completed")
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+49 |         logger.info(f"   📊 Total chunks: {chunk_count}")
+50 |         logger.info(f"   📏 Final content length: {len(full_content)} characters")
+   |
+help: Remove extraneous `f` prefix
+
+F401 [*] `typing.List` imported but unused
+ --> backend/adapter/gemini_transformer.py:6:20
+  |
+4 | """
+5 |
+6 | from typing import List, Dict, Any
+  |                    ^^^^
+7 | from backend.adapter.models import (
+8 |     GeminiRequest, GeminiResponse, GeminiContent, GeminiPart, 
+  |
+help: Remove unused import: `typing.List`
+
+F541 [*] f-string without any placeholders
+  --> backend/adapter/main.py:30:11
+   |
+29 |     print(f"✅ Credentials configured for org: {org_id}")
+30 |     print(f"🌐 Server starting at: http://localhost:8001")
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+31 |     
+32 |     # Start the server
+   |
+help: Remove extraneous `f` prefix
+
+F401 [*] `typing.Optional` imported but unused
+ --> backend/adapter/request_transformer.py:6:26
+  |
+4 | """
+5 |
+6 | from typing import List, Optional
+  |                          ^^^^^^^^
+7 | from backend.adapter.models import Message, ChatRequest, TextRequest
+8 | from backend.adapter.system_message_manager import get_system_message_manager
+  |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `time` imported but unused
+ --> backend/adapter/response_transformer.py:6:8
+  |
+4 | """
+5 |
+6 | import time
+  |        ^^^^
+7 | import uuid
+8 | from typing import Optional
+  |
+help: Remove unused import: `time`
+
+F401 [*] `uuid` imported but unused
+ --> backend/adapter/response_transformer.py:7:8
+  |
+6 | import time
+7 | import uuid
+  |        ^^^^
+8 | from typing import Optional
+9 | from backend.adapter.models import (
+  |
+help: Remove unused import: `uuid`
+
+F401 [*] `os` imported but unused
+  --> backend/adapter/server.py:18:8
+   |
+16 | from fastapi.staticfiles import StaticFiles
+17 | import uvicorn
+18 | import os
+   |        ^^
+19 | from pathlib import Path
+   |
+help: Remove unused import: `os`
+
+F401 [*] `backend.adapter.models.ChatResponse` imported but unused
+  --> backend/adapter/server.py:22:31
+   |
+21 | from backend.adapter.models import (
+22 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+   |                               ^^^^^^^^^^^^
+23 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+24 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.TextResponse` imported but unused
+  --> backend/adapter/server.py:22:45
+   |
+21 | from backend.adapter.models import (
+22 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+   |                                             ^^^^^^^^^^^^
+23 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+24 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.AnthropicResponse` imported but unused
+  --> backend/adapter/server.py:23:51
+   |
+21 | from backend.adapter.models import (
+22 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+23 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+   |                                                   ^^^^^^^^^^^^^^^^^
+24 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+25 | )
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.models.GeminiResponse` imported but unused
+  --> backend/adapter/server.py:24:59
+   |
+22 |     ChatRequest, TextRequest, ChatResponse, TextResponse,
+23 |     ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
+24 |     TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+   |                                                           ^^^^^^^^^^^^^^
+25 | )
+26 | from backend.adapter.config import get_codegen_config, get_server_config
+   |
+help: Remove unused import
+
+F401 [*] `backend.adapter.response_transformer.clean_content` imported but unused
+  --> backend/adapter/server.py:34:22
+   |
+32 | from backend.adapter.response_transformer import (
+33 |     create_chat_response, create_text_response,
+34 |     estimate_tokens, clean_content
+   |                      ^^^^^^^^^^^^^
+35 | )
+36 | from backend.adapter.streaming import create_streaming_response, collect_streaming_response
+   |
+help: Remove unused import: `backend.adapter.response_transformer.clean_content`
+
+F401 [*] `json` imported but unused
+  --> backend/adapter/streaming.py:8:8
+   |
+ 7 | import asyncio
+ 8 | import json
+   |        ^^^^
+ 9 | import logging
+10 | import time
+   |
+help: Remove unused import: `json`
+
+F401 [*] `backend.adapter.models.ChatResponseStream` imported but unused
+  --> backend/adapter/streaming.py:13:36
+   |
+11 | from typing import AsyncGenerator
+12 | from fastapi.responses import StreamingResponse
+13 | from backend.adapter.models import ChatResponseStream
+   |                                    ^^^^^^^^^^^^^^^^^^
+14 | from backend.adapter.response_transformer import (
+15 |     create_chat_stream_chunk, format_sse_chunk, format_sse_done,
+   |
+help: Remove unused import: `backend.adapter.models.ChatResponseStream`
+
+F401 [*] `os` imported but unused
+  --> backend/adapter/system_message_manager.py:8:8
+   |
+ 6 | import json
+ 7 | import logging
+ 8 | import os
+   |        ^^
+ 9 | from datetime import datetime
+10 | from pathlib import Path
+   |
+help: Remove unused import: `os`
+
+F401 [*] `json` imported but unused
+  --> backend/adapter/usage_example.py:9:8
+   |
+ 7 | import openai
+ 8 | import asyncio
+ 9 | import json
+   |        ^^^^
+10 |
+11 | # Configure OpenAI client to use our adapter
+   |
+help: Remove unused import: `json`
+
+E402 Module level import not at top of file
+  --> backend/adapter/usage_example.py:16:1
+   |
+15 | # Alternative using the new OpenAI client (v1.0+)
+16 | from openai import OpenAI
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+17 |
+18 | client = OpenAI(
+   |
+
+F401 [*] `time` imported but unused
+ --> backend/adapter/webhook_handler.py:7:8
+  |
+5 | import logging
+6 | import asyncio
+7 | import time
+  |        ^^^^
+8 | from datetime import datetime
+9 | from typing import Dict, Any, Optional, Callable
+  |
+help: Remove unused import: `time`
+
+F401 [*] `asyncio` imported but unused
+ --> backend/adapters/base_adapter.py:5:8
+  |
+3 | """
+4 |
+5 | import asyncio
+  |        ^^^^^^^
+6 | import logging
+7 | from abc import ABC, abstractmethod
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `asyncio` imported but unused
+ --> backend/adapters/rest_api_adapter.py:6:8
+  |
+4 | """
+5 |
+6 | import asyncio
+  |        ^^^^^^^
+7 | import aiohttp
+8 | import json
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `typing.Optional` imported but unused
+  --> backend/adapters/rest_api_adapter.py:10:31
+   |
+ 8 | import json
+ 9 | import logging
+10 | from typing import Dict, Any, Optional, AsyncGenerator
+   |                               ^^^^^^^^
+11 | from datetime import datetime
+   |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `json` imported but unused
+ --> backend/adapters/web_chat_adapter.py:7:8
+  |
+6 | import asyncio
+7 | import json
+  |        ^^^^
+8 | import logging
+9 | import random
+  |
+help: Remove unused import: `json`
+
+F401 [*] `string` imported but unused
+  --> backend/adapters/web_chat_adapter.py:10:8
+   |
+ 8 | import logging
+ 9 | import random
+10 | import string
+   |        ^^^^^^
+11 | from typing import Dict, Any, Optional, AsyncGenerator, List
+12 | from datetime import datetime
+   |
+help: Remove unused import: `string`
+
+F401 [*] `typing.Optional` imported but unused
+  --> backend/adapters/web_chat_adapter.py:11:31
+   |
+ 9 | import random
+10 | import string
+11 | from typing import Dict, Any, Optional, AsyncGenerator, List
+   |                               ^^^^^^^^
+12 | from datetime import datetime
+13 | from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+   |
+help: Remove unused import
+
+F401 [*] `typing.List` imported but unused
+  --> backend/adapters/web_chat_adapter.py:11:57
+   |
+ 9 | import random
+10 | import string
+11 | from typing import Dict, Any, Optional, AsyncGenerator, List
+   |                                                         ^^^^
+12 | from datetime import datetime
+13 | from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+   |
+help: Remove unused import
+
+F401 [*] `playwright.async_api.Browser` imported but unused
+  --> backend/adapters/web_chat_adapter.py:13:52
+   |
+11 | from typing import Dict, Any, Optional, AsyncGenerator, List
+12 | from datetime import datetime
+13 | from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+   |                                                    ^^^^^^^
+14 |
+15 | from .base_adapter import BaseAdapter, AdapterResponse, AdapterError
+   |
+help: Remove unused import
+
+F401 [*] `playwright.async_api.BrowserContext` imported but unused
+  --> backend/adapters/web_chat_adapter.py:13:61
+   |
+11 | from typing import Dict, Any, Optional, AsyncGenerator, List
+12 | from datetime import datetime
+13 | from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+   |                                                             ^^^^^^^^^^^^^^
+14 |
+15 | from .base_adapter import BaseAdapter, AdapterResponse, AdapterError
+   |
+help: Remove unused import
+
+F401 [*] `playwright.async_api.Page` imported but unused
+  --> backend/adapters/web_chat_adapter.py:13:77
+   |
+11 | from typing import Dict, Any, Optional, AsyncGenerator, List
+12 | from datetime import datetime
+13 | from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+   |                                                                             ^^^^
+14 |
+15 | from .base_adapter import BaseAdapter, AdapterResponse, AdapterError
+   |
+help: Remove unused import
+
+E722 Do not use bare `except`
+   --> backend/adapters/web_chat_adapter.py:295:17
+    |
+293 |                     logger.info(f"Chat interface ready with selector: {selector}")
+294 |                     return
+295 |                 except:
+    |                 ^^^^^^
+296 |                     continue
+    |
+
+E722 Do not use bare `except`
+   --> backend/adapters/web_chat_adapter.py:427:17
+    |
+425 |                         if text_content and text_content.strip():
+426 |                             return text_content.strip()
+427 |                 except:
+    |                 ^^^^^^
+428 |                     continue
+    |
+
+F841 Local variable `page_content` is assigned to but never used
+   --> backend/adapters/web_chat_adapter.py:435:13
+    |
+433 |         try:
+434 |             # Get all text content and try to extract the response
+435 |             page_content = await self.page.text_content('body')
+    |             ^^^^^^^^^^^^
+436 |             # This is a simplified approach - in practice, you'd need more sophisticated parsing
+437 |             return "Response captured from web interface"
+    |
+help: Remove assignment to unused variable `page_content`
+
+E722 Do not use bare `except`
+   --> backend/adapters/web_chat_adapter.py:438:9
+    |
+436 |             # This is a simplified approach - in practice, you'd need more sophisticated parsing
+437 |             return "Response captured from web interface"
+438 |         except:
+    |         ^^^^^^
+439 |             raise AdapterError("No response received within timeout", "RESPONSE_TIMEOUT")
+    |
+
+F401 [*] `typing.Optional` imported but unused
+ --> backend/adapters/zai_sdk_adapter.py:8:31
+  |
+6 | import asyncio
+7 | import logging
+8 | from typing import Dict, Any, Optional, AsyncGenerator, List
+  |                               ^^^^^^^^
+9 | from datetime import datetime
+  |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `fastapi.Request` imported but unused
+ --> backend/api/chat.py:6:47
+  |
+4 | """
+5 |
+6 | from fastapi import APIRouter, HTTPException, Request
+  |                                               ^^^^^^^
+7 | from fastapi.responses import StreamingResponse
+8 | from pydantic import BaseModel
+  |
+help: Remove unused import: `fastapi.Request`
+
+F401 [*] `pathlib.Path` imported but unused
+  --> backend/api/config.py:11:21
+   |
+ 9 | import logging
+10 | import os
+11 | from pathlib import Path
+   |                     ^^^^
+12 |
+13 | from ..config.yaml_parser import (
+   |
+help: Remove unused import: `pathlib.Path`
+
+F401 [*] `..config.yaml_parser.WebInterfaceAbstraction` imported but unused
+  --> backend/api/config.py:17:5
+   |
+15 |     YAMLConfigManager, 
+16 |     YAMLConfig,
+17 |     WebInterfaceAbstraction
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+18 | )
+   |
+help: Remove unused import: `..config.yaml_parser.WebInterfaceAbstraction`
+
+E722 Do not use bare `except`
+   --> backend/api/config.py:442:9
+    |
+440 |             abstraction_file = f"{config_name}_abstraction.json"
+441 |             abstraction = config_manager.load_abstraction(abstraction_file)
+442 |         except:
+    |         ^^^^^^
+443 |             pass  # Abstraction is optional
+    |
+
+F401 [*] `asyncio` imported but unused
+ --> backend/config/default_endpoints.py:7:8
+  |
+5 | import logging
+6 | from typing import Dict, List, Any, Optional
+7 | import asyncio
+  |        ^^^^^^^
+8 |
+9 | logger = logging.getLogger(__name__)
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `typing.Dict` imported but unused
+  --> backend/database.py:8:30
+   |
+ 6 | import os
+ 7 | import logging
+ 8 | from typing import Optional, Dict, Any, List
+   |                              ^^^^
+ 9 | from sqlalchemy import create_engine, MetaData
+10 | from sqlalchemy.orm import sessionmaker, Session
+   |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+  --> backend/database.py:8:36
+   |
+ 6 | import os
+ 7 | import logging
+ 8 | from typing import Optional, Dict, Any, List
+   |                                    ^^^
+ 9 | from sqlalchemy import create_engine, MetaData
+10 | from sqlalchemy.orm import sessionmaker, Session
+   |
+help: Remove unused import
+
+F401 [*] `sqlalchemy.MetaData` imported but unused
+  --> backend/database.py:9:39
+   |
+ 7 | import logging
+ 8 | from typing import Optional, Dict, Any, List
+ 9 | from sqlalchemy import create_engine, MetaData
+   |                                       ^^^^^^^^
+10 | from sqlalchemy.orm import sessionmaker, Session
+11 | from sqlalchemy.pool import StaticPool
+   |
+help: Remove unused import: `sqlalchemy.MetaData`
+
+F401 [*] `sqlalchemy.orm.Session` imported but unused
+  --> backend/database.py:10:42
+   |
+ 8 | from typing import Optional, Dict, Any, List
+ 9 | from sqlalchemy import create_engine, MetaData
+10 | from sqlalchemy.orm import sessionmaker, Session
+   |                                          ^^^^^^^
+11 | from sqlalchemy.pool import StaticPool
+12 | from contextlib import contextmanager
+   |
+help: Remove unused import: `sqlalchemy.orm.Session`
+
+F401 [*] `.models.endpoints.EndpointConfiguration` imported but unused
+  --> backend/database.py:16:41
+   |
+14 | from .models.base import Base
+15 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+16 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+   |                                         ^^^^^^^^^^^^^^^^^^^^^
+17 |
+18 | logger = logging.getLogger(__name__)
+   |
+help: Remove unused import
+
+F401 [*] `.models.endpoints.EndpointSession` imported but unused
+  --> backend/database.py:16:64
+   |
+14 | from .models.base import Base
+15 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+16 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+   |                                                                ^^^^^^^^^^^^^^^
+17 |
+18 | logger = logging.getLogger(__name__)
+   |
+help: Remove unused import
+
+E712 Avoid equality comparisons to `True`; use `EndpointProvider.is_default:` for truth checks
+  --> backend/database.py:87:17
+   |
+85 |             # Check if default providers already exist
+86 |             existing_providers = session.query(EndpointProvider).filter(
+87 |                 EndpointProvider.is_default == True
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+88 |             ).all()
+   |
+help: Replace with `EndpointProvider.is_default`
+
+F401 [*] `asyncio` imported but unused
+ --> backend/discovery/service_registry.py:5:8
+  |
+3 | """
+4 | import logging
+5 | import asyncio
+  |        ^^^^^^^
+6 | from typing import Dict, List, Optional, Any
+7 | import aiohttp
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `typing.List` imported but unused
+ --> backend/discovery/service_registry.py:6:26
+  |
+4 | import logging
+5 | import asyncio
+6 | from typing import Dict, List, Optional, Any
+  |                          ^^^^
+7 | import aiohttp
+8 | from playwright.async_api import async_playwright
+  |
+help: Remove unused import: `typing.List`
+
+F401 [*] `aiohttp` imported but unused
+ --> backend/discovery/service_registry.py:7:8
+  |
+5 | import asyncio
+6 | from typing import Dict, List, Optional, Any
+7 | import aiohttp
+  |        ^^^^^^^
+8 | from playwright.async_api import async_playwright
+9 | import re
+  |
+help: Remove unused import: `aiohttp`
+
+F401 [*] `re` imported but unused
+  --> backend/discovery/service_registry.py:9:8
+   |
+ 7 | import aiohttp
+ 8 | from playwright.async_api import async_playwright
+ 9 | import re
+   |        ^^
+10 | from urllib.parse import urlparse
+   |
+help: Remove unused import: `re`
+
+E722 Do not use bare `except`
+   --> backend/discovery/service_registry.py:149:9
+    |
+147 |                 domain = domain[4:]
+148 |             return domain
+149 |         except:
+    |         ^^^^^^
+150 |             return url.lower()
+    |
+
+E722 Do not use bare `except`
+   --> backend/discovery/service_registry.py:265:21
+    |
+263 |                             found_selectors[selector_type] = selector
+264 |                             break
+265 |                     except:
+    |                     ^^^^^^
+266 |                         continue
+    |
+
+F841 Local variable `login_paths` is assigned to but never used
+   --> backend/discovery/service_registry.py:346:13
+    |
+345 |             # Common login URL patterns
+346 |             login_paths = ["/login", "/auth/login", "/signin", "/auth"]
+    |             ^^^^^^^^^^^
+347 |             
+348 |             # Try to guess based on known patterns
+    |
+help: Remove assignment to unused variable `login_paths`
+
+E722 Do not use bare `except`
+   --> backend/discovery/service_registry.py:365:9
+    |
+363 |                 return f"{base_url}/login"
+364 |                 
+365 |         except:
+    |         ^^^^^^
+366 |             return f"{url}/login"
+    |
+
+F401 [*] `json` imported but unused
+  --> backend/endpoint_manager.py:8:8
+   |
+ 6 | import asyncio
+ 7 | import logging
+ 8 | import json
+   |        ^^^^
+ 9 | from typing import Dict, Any, Optional, List, Type
+10 | from datetime import datetime
+   |
+help: Remove unused import: `json`
+
+F401 [*] `typing.Type` imported but unused
+  --> backend/endpoint_manager.py:9:47
+   |
+ 7 | import logging
+ 8 | import json
+ 9 | from typing import Dict, Any, Optional, List, Type
+   |                                               ^^^^
+10 | from datetime import datetime
+11 | from dataclasses import dataclass, asdict
+   |
+help: Remove unused import: `typing.Type`
+
+F401 [*] `.models.providers.EndpointInstance` imported but unused
+  --> backend/endpoint_manager.py:14:49
+   |
+13 | from .database import get_database_manager
+14 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+   |                                                 ^^^^^^^^^^^^^^^^
+15 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+16 | from .servers import EndpointFactory, BaseEndpoint
+   |
+help: Remove unused import: `.models.providers.EndpointInstance`
+
+F401 [*] `.models.endpoints.Endpoint` imported but unused
+  --> backend/endpoint_manager.py:15:31
+   |
+13 | from .database import get_database_manager
+14 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+15 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+   |                               ^^^^^^^^
+16 | from .servers import EndpointFactory, BaseEndpoint
+17 | from .adapters.base_adapter import BaseAdapter, AdapterResponse
+   |
+help: Remove unused import
+
+F401 [*] `.models.endpoints.EndpointConfiguration` imported but unused
+  --> backend/endpoint_manager.py:15:41
+   |
+13 | from .database import get_database_manager
+14 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+15 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+   |                                         ^^^^^^^^^^^^^^^^^^^^^
+16 | from .servers import EndpointFactory, BaseEndpoint
+17 | from .adapters.base_adapter import BaseAdapter, AdapterResponse
+   |
+help: Remove unused import
+
+F401 [*] `.models.endpoints.EndpointSession` imported but unused
+  --> backend/endpoint_manager.py:15:64
+   |
+13 | from .database import get_database_manager
+14 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+15 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+   |                                                                ^^^^^^^^^^^^^^^
+16 | from .servers import EndpointFactory, BaseEndpoint
+17 | from .adapters.base_adapter import BaseAdapter, AdapterResponse
+   |
+help: Remove unused import
+
+F401 [*] `.models.endpoints.EndpointStatus` imported but unused
+  --> backend/endpoint_manager.py:15:81
+   |
+13 | from .database import get_database_manager
+14 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+15 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+   |                                                                                 ^^^^^^^^^^^^^^
+16 | from .servers import EndpointFactory, BaseEndpoint
+17 | from .adapters.base_adapter import BaseAdapter, AdapterResponse
+   |
+help: Remove unused import
+
+F401 [*] `.servers.EndpointFactory` imported but unused
+  --> backend/endpoint_manager.py:16:22
+   |
+14 | from .models.providers import EndpointProvider, EndpointInstance, ProviderType
+15 | from .models.endpoints import Endpoint, EndpointConfiguration, EndpointSession, EndpointStatus
+16 | from .servers import EndpointFactory, BaseEndpoint
+   |                      ^^^^^^^^^^^^^^^
+17 | from .adapters.base_adapter import BaseAdapter, AdapterResponse
+18 | from .adapters.rest_api_adapter import RestApiAdapter
+   |
+help: Remove unused import: `.servers.EndpointFactory`
+
+E712 Avoid equality comparisons to `True`; use `EndpointProvider.is_default:` for truth checks
+  --> backend/endpoint_manager.py:83:21
+   |
+81 |             with self.db_manager.get_session() as session:
+82 |                 providers = session.query(EndpointProvider).filter(
+83 |                     EndpointProvider.is_default == True
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+84 |                 ).all()
+   |
+help: Replace with `EndpointProvider.is_default`
+
+F401 [*] `ssl` imported but unused
+  --> backend/enhanced_server.py:16:8
+   |
+14 | import threading
+15 | import time
+16 | import ssl
+   |        ^^^
+17 | import ipaddress
+18 | from pathlib import Path
+   |
+help: Remove unused import: `ssl`
+
+E402 Module level import not at top of file
+  --> backend/enhanced_server.py:33:1
+   |
+31 | sys.path.append(str(Path(__file__).parent.parent))
+32 |
+33 | from backend.interceptor.ubuntu_dns import UbuntuDNSManager
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+34 |
+35 | # Global DNS manager instance for cleanup
+   |
+
+F401 [*] `datetime.datetime` imported but unused
+  --> backend/interceptor/ubuntu_ssl.py:11:22
+   |
+ 9 | from pathlib import Path
+10 | from typing import Optional, Tuple
+11 | from datetime import datetime, timedelta
+   |                      ^^^^^^^^
+12 | import tempfile
+   |
+help: Remove unused import
+
+F401 [*] `datetime.timedelta` imported but unused
+  --> backend/interceptor/ubuntu_ssl.py:11:32
+   |
+ 9 | from pathlib import Path
+10 | from typing import Optional, Tuple
+11 | from datetime import datetime, timedelta
+   |                                ^^^^^^^^^
+12 | import tempfile
+   |
+help: Remove unused import
+
+F401 [*] `.database.get_database_manager` imported but unused
+  --> backend/main.py:14:38
+   |
+12 | from fastapi.responses import HTMLResponse
+13 |
+14 | from .database import init_database, get_database_manager
+   |                                      ^^^^^^^^^^^^^^^^^^^^
+15 | from .endpoint_manager import get_endpoint_manager
+16 | from .api.endpoints import router as endpoints_router
+   |
+help: Remove unused import: `.database.get_database_manager`
+
+F401 [*] `typing.Optional` imported but unused
+  --> backend/main.py:21:20
+   |
+19 | from .middleware.request_interceptor import UniversalRequestInterceptor
+20 | from .config.default_endpoints import DefaultEndpointsConfig
+21 | from typing import Optional
+   |                    ^^^^^^^^
+22 |
+23 | # Configure logging
+   |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `typing.Optional` imported but unused
+ --> backend/models/base.py:7:20
+  |
+5 | import uuid
+6 | from datetime import datetime
+7 | from typing import Optional, Dict, Any
+  |                    ^^^^^^^^
+8 | from sqlalchemy import Column, String, DateTime, Boolean, Text, JSON
+9 | from sqlalchemy.ext.declarative import declarative_base
+  |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `sqlalchemy.String` imported but unused
+  --> backend/models/base.py:8:32
+   |
+ 6 | from datetime import datetime
+ 7 | from typing import Optional, Dict, Any
+ 8 | from sqlalchemy import Column, String, DateTime, Boolean, Text, JSON
+   |                                ^^^^^^
+ 9 | from sqlalchemy.ext.declarative import declarative_base
+10 | from sqlalchemy.dialects.postgresql import UUID
+   |
+help: Remove unused import
+
+F401 [*] `sqlalchemy.Text` imported but unused
+  --> backend/models/base.py:8:59
+   |
+ 6 | from datetime import datetime
+ 7 | from typing import Optional, Dict, Any
+ 8 | from sqlalchemy import Column, String, DateTime, Boolean, Text, JSON
+   |                                                           ^^^^
+ 9 | from sqlalchemy.ext.declarative import declarative_base
+10 | from sqlalchemy.dialects.postgresql import UUID
+   |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+ --> backend/models/endpoints.py:6:20
+  |
+5 | import enum
+6 | from typing import Optional, Dict, Any, List
+  |                    ^^^^^^^^
+7 | from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean, Float
+8 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import
+
+F401 [*] `typing.Dict` imported but unused
+ --> backend/models/endpoints.py:6:30
+  |
+5 | import enum
+6 | from typing import Optional, Dict, Any, List
+  |                              ^^^^
+7 | from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean, Float
+8 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+ --> backend/models/endpoints.py:6:36
+  |
+5 | import enum
+6 | from typing import Optional, Dict, Any, List
+  |                                    ^^^
+7 | from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean, Float
+8 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import
+
+F401 [*] `typing.List` imported but unused
+ --> backend/models/endpoints.py:6:41
+  |
+5 | import enum
+6 | from typing import Optional, Dict, Any, List
+  |                                         ^^^^
+7 | from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean, Float
+8 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+ --> backend/models/providers.py:6:20
+  |
+5 | import enum
+6 | from typing import Optional, Dict, Any
+  |                    ^^^^^^^^
+7 | from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean
+8 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import
+
+F401 [*] `typing.Dict` imported but unused
+ --> backend/models/providers.py:6:30
+  |
+5 | import enum
+6 | from typing import Optional, Dict, Any
+  |                              ^^^^
+7 | from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean
+8 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+ --> backend/models/providers.py:6:36
+  |
+5 | import enum
+6 | from typing import Optional, Dict, Any
+  |                                    ^^^
+7 | from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean
+8 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import
+
+F401 [*] `asyncio` imported but unused
+ --> backend/routing/priority_router.py:6:8
+  |
+4 | import logging
+5 | from typing import Optional, Dict, Any, List
+6 | import asyncio
+  |        ^^^^^^^
+7 | from datetime import datetime, timedelta
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `typing.Tuple` imported but unused
+ --> backend/routing/url_matcher.py:6:42
+  |
+4 | import re
+5 | import logging
+6 | from typing import Dict, List, Optional, Tuple
+  |                                          ^^^^^
+7 | from urllib.parse import urlparse
+  |
+help: Remove unused import: `typing.Tuple`
+
+E722 Do not use bare `except`
+   --> backend/routing/url_matcher.py:208:9
+    |
+206 |             domain = domain.split('.')[0]  # Get main domain part
+207 |             return f"{domain}-endpoint"
+208 |         except:
+    |         ^^^^^^
+209 |             return "custom-endpoint"
+    |
+
+F401 [*] `ssl` imported but unused
+  --> backend/server.py:16:8
+   |
+14 | import threading
+15 | import time
+16 | import ssl
+   |        ^^^
+17 | import ipaddress
+18 | from pathlib import Path
+   |
+help: Remove unused import: `ssl`
+
+F401 [*] `datetime.datetime` imported but unused
+  --> backend/servers/base_endpoint.py:11:22
+   |
+ 9 | import logging
+10 | import time
+11 | from datetime import datetime
+   |                      ^^^^^^^^
+12 | from enum import Enum
+   |
+help: Remove unused import: `datetime.datetime`
+
+F401 [*] `json` imported but unused
+  --> backend/servers/web_chat_endpoint.py:9:8
+   |
+ 7 | import logging
+ 8 | from typing import Dict, Any, Optional, AsyncGenerator
+ 9 | import json
+   |        ^^^^
+10 | import time
+11 | from urllib.parse import urlparse
+   |
+help: Remove unused import: `json`
+
+F401 [*] `urllib.parse.urlparse` imported but unused
+  --> backend/servers/web_chat_endpoint.py:11:26
+   |
+ 9 | import json
+10 | import time
+11 | from urllib.parse import urlparse
+   |                          ^^^^^^^^
+12 |
+13 | from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+   |
+help: Remove unused import: `urllib.parse.urlparse`
+
+E722 Do not use bare `except`
+   --> backend/servers/web_chat_endpoint.py:261:17
+    |
+259 |                     if await username_input.is_visible():
+260 |                         break
+261 |                 except:
+    |                 ^^^^^^
+262 |                     continue
+    |
+
+E722 Do not use bare `except`
+   --> backend/servers/web_chat_endpoint.py:275:17
+    |
+273 |                     if await password_input.is_visible():
+274 |                         break
+275 |                 except:
+    |                 ^^^^^^
+276 |                     continue
+    |
+
+E722 Do not use bare `except`
+   --> backend/servers/web_chat_endpoint.py:289:17
+    |
+287 |                     if await login_button.is_visible():
+288 |                         break
+289 |                 except:
+    |                 ^^^^^^
+290 |                     continue
+    |
+
+E722 Do not use bare `except`
+   --> backend/servers/web_chat_endpoint.py:309:9
+    |
+307 |             count = await responses.count()
+308 |             return count
+309 |         except:
+    |         ^^^^^^
+310 |             return 0
+    |
+
+E722 Do not use bare `except`
+   --> backend/servers/web_chat_endpoint.py:354:21
+    |
+352 |                         await self.page.wait_for_selector(self.chat_input_selector, timeout=5000)
+353 |                         self.is_logged_in = True
+354 |                     except:
+    |                     ^^^^^^
+355 |                         await self._perform_login()
+    |
+
+E722 Do not use bare `except`
+   --> backend/servers/web_chat_endpoint.py:407:13
+    |
+405 |                     await asyncio.sleep(1)
+406 |                     return True
+407 |             except:
+    |             ^^^^^^
+408 |                 pass
+    |
+
+F401 [*] `.core.ZAIError` imported but unused
+ --> backend/zai_sdk/client.py:5:44
+  |
+3 | from typing import Dict, Generator, List, Optional
+4 |
+5 | from .core import AuthManager, HTTPClient, ZAIError
+  |                                            ^^^^^^^^
+6 | from .models import ChatCompletionResponse, ChatResponse, MCPFeature, Model, StreamingChunk
+7 | from .operations import ChatOperations, ModelOperations
+  |
+help: Remove unused import: `.core.ZAIError`
+
+E722 Do not use bare `except`
+   --> backend/zai_sdk/core/http_client.py:145:17
+    |
+143 |                     error_detail = e.response.text
+144 |                     error_msg += f" - Response: {error_detail}"
+145 |                 except:
+    |                 ^^^^^^
+146 |                     pass
+147 |             raise ZAIError(error_msg)
+    |
+
+F401 [*] `typing.Union` imported but unused
+ --> backend/zai_sdk/models.py:6:47
+  |
+4 | import uuid
+5 | from dataclasses import dataclass, field
+6 | from typing import Any, Dict, List, Optional, Union
+  |                                               ^^^^^
+  |
+help: Remove unused import: `typing.Union`
+
+F401 [*] `json` imported but unused
+ --> backend/zai_sdk/operations/streaming.py:3:8
+  |
+1 | """Streaming operations for Z.AI API."""
+2 |
+3 | import json
+  |        ^^^^
+4 | import time
+5 | from typing import Any, Dict, Generator, List, Optional
+  |
+help: Remove unused import: `json`
+
+F401 [*] `pathlib.Path` imported but unused
+  --> deploy.py:10:21
+   |
+ 8 | import subprocess
+ 9 | import shutil
+10 | from pathlib import Path
+   |                     ^^^^
+11 |
+12 | def run_command(command, description=""):
+   |
+help: Remove unused import: `pathlib.Path`
+
+F841 Local variable `endpoints` is assigned to but never used
+  --> final_analysis_report.py:89:13
+   |
+87 |             health = requests.get(f"{BASE_URL}/health").json()
+88 |             status = requests.get(f"{BASE_URL}/status").json()
+89 |             endpoints = requests.get(f"{BASE_URL}/api/endpoints/").json()
+   |             ^^^^^^^^^
+90 |             models = requests.get(f"{BASE_URL}/v1/models").json()
+   |
+help: Remove assignment to unused variable `endpoints`
+
+E722 Do not use bare `except`
+   --> final_analysis_report.py:299:9
+    |
+297 |             health = requests.get(f"{BASE_URL}/health", timeout=5)
+298 |             system_running = health.status_code == 200
+299 |         except:
+    |         ^^^^^^
+300 |             system_running = False
+    |
+
+E722 Do not use bare `except`
+   --> final_analysis_report.py:314:9
+    |
+312 |             create_response = requests.post(f"{BASE_URL}/api/endpoints/", json=test_endpoint)
+313 |             api_accepts_requests = create_response.status_code in [200, 400]  # 400 is fine, means validation works
+314 |         except:
+    |         ^^^^^^
+315 |             api_accepts_requests = False
+    |
+
+E722 Do not use bare `except`
+   --> final_analysis_report.py:325:9
+    |
+323 |             model_response = requests.post(f"{BASE_URL}/v1/chat/completions", json=chat_request)
+324 |             model_mapping_works = model_response.status_code in [200, 503]  # 503 means no endpoints, but model accepted
+325 |         except:
+    |         ^^^^^^
+326 |             model_mapping_works = False
+    |
+
+F541 [*] f-string without any placeholders
+   --> final_analysis_report.py:437:11
+    |
+435 |         json.dump(report, f, indent=2)
+436 |     
+437 |     print(f"\n📄 Detailed report saved to: comprehensive_analysis_report.json")
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+438 |     print("\n✅ CONCLUSION: PR #78 successfully implements the Universal AI Endpoint Management System")
+439 |     print("🎊 All required functionality is present and working correctly!")
+    |
+help: Remove extraneous `f` prefix
+
+F401 [*] `os` imported but unused
+ --> setup.py:6:8
+  |
+4 | """
+5 |
+6 | import os
+  |        ^^
+7 | import sys
+8 | import subprocess
+  |
+help: Remove unused import: `os`
+
+F401 `fastapi` imported but unused; consider using `importlib.util.find_spec` to test for availability
+   --> setup.py:101:16
+    |
+ 99 |     # Test imports
+100 |     try:
+101 |         import fastapi
+    |                ^^^^^^^
+102 |         import sqlalchemy
+103 |         import playwright
+    |
+help: Remove unused import: `fastapi`
+
+F401 `sqlalchemy` imported but unused; consider using `importlib.util.find_spec` to test for availability
+   --> setup.py:102:16
+    |
+100 |     try:
+101 |         import fastapi
+102 |         import sqlalchemy
+    |                ^^^^^^^^^^
+103 |         import playwright
+104 |         import aiohttp
+    |
+help: Remove unused import: `sqlalchemy`
+
+F401 `playwright` imported but unused; consider using `importlib.util.find_spec` to test for availability
+   --> setup.py:103:16
+    |
+101 |         import fastapi
+102 |         import sqlalchemy
+103 |         import playwright
+    |                ^^^^^^^^^^
+104 |         import aiohttp
+105 |         print("✓ All core dependencies can be imported")
+    |
+help: Remove unused import: `playwright`
+
+F401 `aiohttp` imported but unused; consider using `importlib.util.find_spec` to test for availability
+   --> setup.py:104:16
+    |
+102 |         import sqlalchemy
+103 |         import playwright
+104 |         import aiohttp
+    |                ^^^^^^^
+105 |         print("✓ All core dependencies can be imported")
+106 |     except ImportError as e:
+    |
+help: Remove unused import: `aiohttp`
+
+F401 [*] `time` imported but unused
+  --> tests/quick_validation.py:9:8
+   |
+ 7 | import requests
+ 8 | import sys
+ 9 | import time
+   |        ^^^^
+10 |
+11 | def test_server_health():
+   |
+help: Remove unused import: `time`
+
+F401 [*] `json` imported but unused
+  --> tests/validate_deployment.py:8:8
+   |
+ 7 | import requests
+ 8 | import json
+   |        ^^^^
+ 9 | import sys
+10 | import time
+   |
+help: Remove unused import: `json`
+
+F401 [*] `typing.List` imported but unused
+  --> ui_validation_report.py:18:31
+   |
+16 | import time
+17 | import json
+18 | from typing import Dict, Any, List
+   |                               ^^^^
+19 |
+20 | BASE_URL = "http://localhost:8000"
+   |
+help: Remove unused import: `typing.List`
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:320:15
+    |
+319 |         # Detailed breakdown
+320 |         print(f"\n📋 DETAILED RESULTS:")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^
+321 |         categories = {}
+322 |         for result in self.results:
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:348:15
+    |
+346 |             print("\n❌ UI STATUS: POOR - Significant UI issues detected")
+347 |         
+348 |         print(f"\n🔍 KEY UI HIGHLIGHTS:")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+349 |         print(f"  • Trading bot-style dashboard with metrics")
+350 |         print(f"  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:349:15
+    |
+348 |         print(f"\n🔍 KEY UI HIGHLIGHTS:")
+349 |         print(f"  • Trading bot-style dashboard with metrics")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+350 |         print(f"  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)")
+351 |         print(f"  • Interactive endpoint management")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:350:15
+    |
+348 |         print(f"\n🔍 KEY UI HIGHLIGHTS:")
+349 |         print(f"  • Trading bot-style dashboard with metrics")
+350 |         print(f"  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+351 |         print(f"  • Interactive endpoint management")
+352 |         print(f"  • YAML configuration editor with AI validation")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:351:15
+    |
+349 |         print(f"  • Trading bot-style dashboard with metrics")
+350 |         print(f"  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)")
+351 |         print(f"  • Interactive endpoint management")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+352 |         print(f"  • YAML configuration editor with AI validation")
+353 |         print(f"  • Real-time chat testing interface")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:352:15
+    |
+350 |         print(f"  • Multi-tab interface (Dashboard, Endpoints, Chat, Monitoring)")
+351 |         print(f"  • Interactive endpoint management")
+352 |         print(f"  • YAML configuration editor with AI validation")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+353 |         print(f"  • Real-time chat testing interface")
+354 |         print(f"  • Performance monitoring and metrics")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:353:15
+    |
+351 |         print(f"  • Interactive endpoint management")
+352 |         print(f"  • YAML configuration editor with AI validation")
+353 |         print(f"  • Real-time chat testing interface")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+354 |         print(f"  • Performance monitoring and metrics")
+355 |         print(f"  • Complete API documentation (Swagger + ReDoc)")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:354:15
+    |
+352 |         print(f"  • YAML configuration editor with AI validation")
+353 |         print(f"  • Real-time chat testing interface")
+354 |         print(f"  • Performance monitoring and metrics")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+355 |         print(f"  • Complete API documentation (Swagger + ReDoc)")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> ui_validation_report.py:355:15
+    |
+353 |         print(f"  • Real-time chat testing interface")
+354 |         print(f"  • Performance monitoring and metrics")
+355 |         print(f"  • Complete API documentation (Swagger + ReDoc)")
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+356 |         
+357 |         return {
+    |
+help: Remove extraneous `f` prefix
+
+F401 [*] `json` imported but unused
+  --> validate_real_system.py:9:8
+   |
+ 7 | import asyncio
+ 8 | import aiohttp
+ 9 | import json
+   |        ^^^^
+10 | import logging
+11 | import os
+   |
+help: Remove unused import: `json`
+
+F401 [*] `os` imported but unused
+  --> validate_real_system.py:11:8
+   |
+ 9 | import json
+10 | import logging
+11 | import os
+   |        ^^
+12 | import time
+13 | from typing import Dict, Any, Optional
+   |
+help: Remove unused import: `os`
+
+F401 [*] `time` imported but unused
+  --> validate_real_system.py:12:8
+   |
+10 | import logging
+11 | import os
+12 | import time
+   |        ^^^^
+13 | from typing import Dict, Any, Optional
+14 | from datetime import datetime
+   |
+help: Remove unused import: `time`
+
+F401 [*] `typing.Dict` imported but unused
+  --> validate_real_system.py:13:20
+   |
+11 | import os
+12 | import time
+13 | from typing import Dict, Any, Optional
+   |                    ^^^^
+14 | from datetime import datetime
+   |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+  --> validate_real_system.py:13:26
+   |
+11 | import os
+12 | import time
+13 | from typing import Dict, Any, Optional
+   |                          ^^^
+14 | from datetime import datetime
+   |
+help: Remove unused import
+
+F401 [*] `datetime.datetime` imported but unused
+  --> validate_real_system.py:14:22
+   |
+12 | import time
+13 | from typing import Dict, Any, Optional
+14 | from datetime import datetime
+   |                      ^^^^^^^^
+15 |
+16 | # Configure logging
+   |
+help: Remove unused import: `datetime.datetime`
+
+F841 Local variable `endpoints` is assigned to but never used
+   --> validate_real_system.py:282:9
+    |
+280 |         # Test 4: List Endpoints
+281 |         logger.info("\n📋 Testing Endpoint Management...")
+282 |         endpoints = await self.test_list_endpoints()
+    |         ^^^^^^^^^
+283 |         
+284 |         # Test 5: Create Mock Endpoint
+    |
+help: Remove assignment to unused variable `endpoints`
+
+E722 Do not use bare `except`
+   --> validate_real_system.py:344:9
+    |
+342 |                         logger.info("✅ Server is ready!")
+343 |                         return True
+344 |         except:
+    |         ^^^^^^
+345 |             pass
+    |
+
+Found 164 errors.
+[*] 127 fixable with the `--fix` option (8 hidden fixes can be enabled with the `--unsafe-fixes` option).

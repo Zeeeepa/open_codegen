@@ -6,12 +6,8 @@ Tests the entire Universal AI Endpoint Manager with actual functionality
 
 import asyncio
 import aiohttp
-import json
 import logging
-import os
-import time
-from typing import Dict, Any, Optional
-from datetime import datetime
+from typing import Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -279,7 +275,7 @@ class SystemValidator:
         
         # Test 4: List Endpoints
         logger.info("\n📋 Testing Endpoint Management...")
-        endpoints = await self.test_list_endpoints()
+        await self.test_list_endpoints()
         
         # Test 5: Create Mock Endpoint
         logger.info("\n➕ Testing Endpoint Creation...")

@@ -7,7 +7,6 @@ import os
 import sys
 import subprocess
 import shutil
-from pathlib import Path
 
 def run_command(command, description=""):
     """Run a command and handle errors"""

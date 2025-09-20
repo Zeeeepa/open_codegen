@@ -4,10 +4,8 @@ Codegen SDK client wrapper with error handling and response management.
 
 import asyncio
 import logging
-import time
-from typing import Optional, AsyncGenerator
+from typing import AsyncGenerator
 from codegen.agents import Agent
-from codegen_api_client.exceptions import ApiException
 from backend.adapter.config import CodegenConfig
 
 logger = logging.getLogger(__name__)

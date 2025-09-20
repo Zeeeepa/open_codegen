@@ -2,11 +2,8 @@
 Service Registry - Automatic detection and configuration for popular AI services
 """
 import logging
-import asyncio
-from typing import Dict, List, Optional, Any
-import aiohttp
+from typing import Dict, Optional, Any
 from playwright.async_api import async_playwright
-import re
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)

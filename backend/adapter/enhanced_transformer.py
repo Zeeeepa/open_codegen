@@ -4,20 +4,19 @@ Adds support for model mapping and prompt templates.
 """
 
 import logging
-from typing import Tuple, Dict, Optional, Any
+from typing import Tuple
 
 from backend.adapter.models import (
     ChatRequest, TextRequest, AnthropicRequest, GeminiRequest
 )
 from backend.adapter.request_transformer import (
-    chat_request_to_prompt, text_request_to_prompt,
-    extract_generation_params
+    chat_request_to_prompt, text_request_to_prompt
 )
 from backend.adapter.anthropic_transformer import (
-    anthropic_request_to_prompt, extract_anthropic_generation_params
+    anthropic_request_to_prompt
 )
 from backend.adapter.gemini_transformer import (
-    gemini_request_to_prompt, extract_gemini_generation_params
+    gemini_request_to_prompt
 )
 from backend.adapter.model_mapper import ModelMapper
 from backend.adapter.config import EnhancedCodegenConfig

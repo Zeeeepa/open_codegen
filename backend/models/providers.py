@@ -3,7 +3,6 @@ Provider models for the Universal AI Endpoint Management System
 """
 
 import enum
-from typing import Optional, Dict, Any
 from sqlalchemy import Column, String, Enum, Integer, ForeignKey, Text, JSON, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID

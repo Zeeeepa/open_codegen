@@ -4,10 +4,9 @@ Converts between Anthropic API format and Codegen SDK.
 Enhanced with comprehensive content block and tool support.
 """
 
-from typing import List, Dict, Any, Union
+from typing import Dict, Any
 from backend.adapter.models import (
-    AnthropicRequest, AnthropicResponse, AnthropicUsage, AnthropicMessage,
-    ContentBlockText, ContentBlockToolUse, TokenCountRequest, TokenCountResponse
+    AnthropicRequest, AnthropicResponse, AnthropicUsage, ContentBlockText
 )
 from backend.adapter.response_transformer import estimate_tokens, clean_content
 import uuid
@@ -38,12 +37,12 @@ def parse_tool_result_content(content):
                 else:
                     try:
                         result += json.dumps(item) + "\n"
-                    except:
+                    except (TypeError, ValueError):
                         result += str(item) + "\n"
             else:
                 try:
                     result += str(item) + "\n"
-                except:
+                except (TypeError, ValueError):
                     result += "Unparseable content\n"
         return result.strip()
         
@@ -52,13 +51,13 @@ def parse_tool_result_content(content):
             return content.get("text", "")
         try:
             return json.dumps(content)
-        except:
+        except (TypeError, ValueError):
             return str(content)
             
     # Fallback for any other type
     try:
         return str(content)
-    except:
+    except (TypeError, ValueError):
         return "Unparseable content"
 
 

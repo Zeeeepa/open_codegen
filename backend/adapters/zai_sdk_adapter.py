@@ -5,7 +5,7 @@ Uses the Z.ai Python SDK for direct API communication instead of browser automat
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional, AsyncGenerator, List
+from typing import Dict, Any, AsyncGenerator, List
 from datetime import datetime
 
 from .base_adapter import BaseAdapter, AdapterResponse, AdapterError

@@ -3,7 +3,7 @@
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -175,7 +175,7 @@ class Chat:
     enable_thinking: bool = True
     timestamp: int = field(default_factory=lambda: int(time.time() * 1000))
     
-    def add_message(self, content: str, role: str = "user", models: List[str] = None) -> Message:
+    def add_message(self, content: str, role: str = "user", models: Optional[List[str]] = None) -> Message:
         """
         Add a message to the chat.
         

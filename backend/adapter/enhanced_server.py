@@ -12,9 +12,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.adapter.models import (
-    ChatRequest, TextRequest, ChatResponse, TextResponse,
-    ErrorResponse, ErrorDetail, AnthropicRequest, AnthropicResponse,
-    TokenCountRequest, TokenCountResponse, GeminiRequest, GeminiResponse
+    ChatRequest, TextRequest, ErrorResponse, ErrorDetail, AnthropicRequest, GeminiRequest
 )
 from backend.adapter.config import get_enhanced_codegen_config, get_server_config
 from backend.adapter.auth import get_auth
@@ -29,18 +27,18 @@ from backend.adapter.enhanced_transformer import (
 from backend.adapter.enhanced_client import create_enhanced_client
 from backend.adapter.response_transformer import (
     create_chat_response, create_text_response,
-    estimate_tokens, clean_content
+    estimate_tokens
 )
 from backend.adapter.enhanced_streaming import (
     create_enhanced_streaming_response, collect_enhanced_streaming_response
 )
 from backend.adapter.anthropic_transformer import create_anthropic_response
 from backend.adapter.anthropic_streaming import (
-    create_anthropic_streaming_response, collect_anthropic_streaming_response
+    create_anthropic_streaming_response
 )
 from backend.adapter.gemini_transformer import create_gemini_response
 from backend.adapter.gemini_streaming import (
-    create_gemini_streaming_response, collect_gemini_streaming_response
+    create_gemini_streaming_response
 )
 from backend.adapter.system_message_manager import get_system_message_manager
 from backend.adapter.webhook_handler import WebhookHandler

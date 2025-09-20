@@ -2,7 +2,6 @@
 Base adapter interface for the Universal AI Endpoint Management System
 """
 
-import asyncio
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List, AsyncGenerator

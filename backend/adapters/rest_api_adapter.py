@@ -3,11 +3,10 @@ REST API adapter for the Universal AI Endpoint Management System
 Handles OpenAI-compatible APIs, Codegen API, and other REST endpoints
 """
 
-import asyncio
 import aiohttp
 import json
 import logging
-from typing import Dict, Any, Optional, AsyncGenerator
+from typing import Dict, Any, AsyncGenerator
 from datetime import datetime
 
 from .base_adapter import BaseAdapter, AdapterResponse, AdapterError
