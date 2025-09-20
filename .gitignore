@@ -156,3 +156,4 @@ Thumbs.db
 server.log
 backend/server.log
 backend/data/system_messages.json
+endpoint_manager.db
