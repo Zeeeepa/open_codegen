@@ -22,26 +22,32 @@ class DefaultEndpointsConfig:
         """
         return [
             {
-                "name": "zai-web",
-                "provider_type": "web_chat",
-                "base_url": "https://z.ai/chat",
+                "name": "zai-sdk",
+                "provider_type": "zai_sdk",
+                "base_url": "https://chat.z.ai",
                 "priority": 100,  # Highest priority as requested
                 "enabled": True,
                 "auto_configured": True,
-                "description": "Z.ai web chat interface - highest priority default endpoint",
+                "description": "Z.ai Python SDK - highest priority default endpoint with automatic authentication",
                 "config": {
-                    "login_url": "https://z.ai/login",
-                    "username": os.getenv("ZAI_USERNAME", ""),
-                    "password": os.getenv("ZAI_PASSWORD", ""),
-                    "chat_input_selector": "textarea[placeholder*='message'], textarea[placeholder*='Message'], #chat-input, .chat-input",
-                    "send_button_selector": "button[type='submit'], button:contains('Send'), [aria-label*='Send']",
-                    "response_selector": ".message.assistant, .response-content, .ai-message, [data-role='assistant']",
-                    "new_chat_selector": "button:contains('New Chat'), .new-chat-button, [aria-label*='New']",
-                    "browser_config": {
-                        "headless": True,
-                        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                        "viewport": {"width": 1920, "height": 1080},
-                        "timeout": 30000
+                    "base_url": "https://chat.z.ai",
+                    "timeout_seconds": 180,
+                    "auto_auth": True,  # Automatic guest token authentication
+                    "verbose": False,  # Set to True for debugging
+                    "model_mapping": {
+                        "gpt-3.5-turbo": "glm-4.5v",
+                        "gpt-4": "0727-360B-API",
+                        "gpt-4-turbo": "0727-360B-API",
+                        "claude-3-sonnet": "0727-360B-API",
+                        "claude-3-haiku": "glm-4.5v",
+                        "claude-3.5-sonnet": "0727-360B-API"
+                    },
+                    "default_models": ["glm-4.5v", "0727-360B-API"],
+                    "default_params": {
+                        "enable_thinking": True,
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "max_tokens": 4000
                     }
                 }
             },
@@ -129,8 +135,8 @@ class DefaultEndpointsConfig:
                 endpoint_name = endpoint_config["name"]
                 
                 # Check if endpoint already exists
-                existing_endpoints = endpoint_manager.get_active_endpoints_server()
-                if any(ep.get('name') == endpoint_name for ep in existing_endpoints):
+                existing_adapters = list(endpoint_manager.active_adapters.keys())
+                if endpoint_name in existing_adapters:
                     logger.info(f"Default endpoint {endpoint_name} already exists, skipping")
                     results[endpoint_name] = True
                     continue
@@ -147,13 +153,16 @@ class DefaultEndpointsConfig:
                     results[endpoint_name] = False
                     continue
                 
-                # Add the endpoint
-                success = await endpoint_manager.add_endpoint_server(
-                    name=endpoint_name,
-                    provider_type=endpoint_config["provider_type"],
-                    config=endpoint_config["config"],
-                    priority=endpoint_config.get("priority", 50)
-                )
+                # Add the endpoint using the adapter system
+                full_config = {
+                    'name': endpoint_name,
+                    'provider_type': endpoint_config["provider_type"],
+                    'priority': endpoint_config.get("priority", 50),
+                    'description': endpoint_config.get("description", ""),
+                    **endpoint_config["config"]
+                }
+                
+                success = await endpoint_manager.add_endpoint(full_config)
                 
                 if success:
                     logger.info(f"Successfully initialized default endpoint: {endpoint_name}")
@@ -185,6 +194,11 @@ class DefaultEndpointsConfig:
             # For REST API, we need API key
             api_key = config.get("api_key", "")
             return bool(api_key)
+        
+        elif provider_type == "zai_sdk":
+            # For Z.ai SDK with auto_auth, no credentials needed
+            # It uses automatic guest token authentication
+            return True
         
         return True  # For other types, assume no credentials needed
     
@@ -267,9 +281,9 @@ DB_ECHO=false
 
 # Default Endpoints Configuration
 
-# Z.ai Configuration (Highest Priority - 100)
-ZAI_USERNAME=your_email@example.com
-ZAI_PASSWORD=your_password_here
+# Z.ai SDK Configuration (Highest Priority - 100)
+# No credentials needed - uses automatic guest token authentication
+# The Z.ai SDK automatically handles authentication
 
 # Codegen API Configuration (High Priority - 90)
 CODEGEN_BASE_URL=https://codegen-sh--rest-api.modal.run
