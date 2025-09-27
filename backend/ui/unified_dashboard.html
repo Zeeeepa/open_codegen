@@ -419,6 +419,7 @@
         .zai { background: linear-gradient(135deg, #5f27cd, #a55eea); }
         .codegen { background: linear-gradient(135deg, #00d2d3, #01a3a4); }
         .talkai { background: linear-gradient(135deg, #ff9ff3, #f368e0); }
+        .copilot { background: linear-gradient(135deg, #24292e, #586069); }
 
         @media (max-width: 768px) {
             .providers-grid {
@@ -445,13 +446,13 @@
                 Unified AI Provider Dashboard
             </div>
             <div class="dashboard-subtitle">
-                Manage and monitor 13 AI providers with intelligent load balancing
+                Manage and monitor 14 AI providers with intelligent load balancing
             </div>
         </div>
 
         <div class="stats-bar">
             <div class="stat-item">
-                <div class="stat-value" id="totalProviders">13</div>
+                <div class="stat-value" id="totalProviders">14</div>
                 <div class="stat-label">Total Providers</div>
             </div>
             <div class="stat-item">
@@ -663,6 +664,19 @@
                 icon: 'fas fa-microphone',
                 endpoint: 'http://localhost:8012',
                 models: ['MBZUAI-IFM/K2-Think', 'MBZUAI-IFM/K2-Think-Reasoning'],
+                enabled: false,
+                status: 'offline',
+                responseTime: 0,
+                successRate: 0,
+                totalRequests: 0
+            },
+            {
+                id: 'copilot-proxy',
+                name: 'GitHub Copilot Proxy',
+                type: 'copilot',
+                icon: 'fab fa-github',
+                endpoint: 'http://localhost:8013',
+                models: ['copilot-codex', 'copilot-chat', 'copilot-code'],
                 enabled: false,
                 status: 'offline',
                 responseTime: 0,

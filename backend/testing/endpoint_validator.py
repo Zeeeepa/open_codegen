@@ -140,6 +140,13 @@ class EndpointValidator:
                 "endpoint": "http://localhost:8012",
                 "models": ["MBZUAI-IFM/K2-Think", "MBZUAI-IFM/K2-Think-Reasoning"],
                 "auth_header": "Bearer sk-talkai-test-key"
+            },
+            {
+                "id": "copilot-proxy",
+                "name": "GitHub Copilot Proxy",
+                "endpoint": "http://localhost:8013",
+                "models": ["copilot-codex", "copilot-chat", "copilot-code"],
+                "auth_header": "Bearer copilot-test-key"
             }
         ]
     
@@ -185,7 +192,7 @@ class EndpointValidator:
     
     async def validate_all_endpoints(self) -> Dict[str, Any]:
         """Validate all provider endpoints with comprehensive testing"""
-        logger.info("🚀 Starting comprehensive endpoint validation for 13 providers...")
+        logger.info("🚀 Starting comprehensive endpoint validation for 14 providers...")
         
         start_time = time.time()
         
@@ -473,7 +480,7 @@ async def main():
     """Main validation function"""
     validator = EndpointValidator()
     
-    print("🚀 Starting comprehensive validation of 13 AI providers...")
+    print("🚀 Starting comprehensive validation of 14 AI providers...")
     print("This will test each provider with 5 different queries to validate coherent responses.\n")
     
     # Run validation
