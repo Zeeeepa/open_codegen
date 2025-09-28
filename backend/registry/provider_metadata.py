@@ -16,6 +16,8 @@ class ProviderType(Enum):
     GROK = "grok"
     ZAI = "zai"
     CODEGEN = "codegen"
+    TALKAI = "talkai"
+    COPILOT = "copilot"
 
 
 class ProviderStatus(Enum):
