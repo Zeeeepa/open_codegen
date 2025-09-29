@@ -65,23 +65,9 @@ class ServiceRegistry:
         self._initialize_services()
     
     def _initialize_services(self):
-        """Initialize all 14 AI provider services"""
+        """Initialize all 14 AI provider services with correct entry points"""
         services_config = [
-            # Original 12 repositories
-            {
-                "name": "qwen-api",
-                "service_type": ServiceType.PYTHON,
-                "start_command": "python main.py",
-                "working_directory": "apis/qwen-api",
-                "models": ["qwen-turbo", "qwen-plus", "qwen-max"]
-            },
-            {
-                "name": "qwenchat2api", 
-                "service_type": ServiceType.PYTHON,
-                "start_command": "python main.py",
-                "working_directory": "apis/qwenchat2api",
-                "models": ["qwen-turbo", "qwen-plus"]
-            },
+            # Services with actual code files
             {
                 "name": "k2think2api3",
                 "service_type": ServiceType.PYTHON,
@@ -106,23 +92,23 @@ class ServiceRegistry:
             {
                 "name": "grok2api",
                 "service_type": ServiceType.PYTHON,
-                "start_command": "python main.py",
+                "start_command": "python app.py",  # Uses app.py, not main.py
                 "working_directory": "apis/grok2api",
                 "models": ["grok-2", "grok-beta"]
             },
             {
                 "name": "openai-proxy-z",
-                "service_type": ServiceType.PYTHON,
-                "start_command": "python main.py",
+                "service_type": ServiceType.GO,  # This is a Go service, not Python
+                "start_command": "go run main.go",
                 "working_directory": "apis/OpenAI-Compatible-API-Proxy-for-Z",
                 "models": ["glm-4.5", "glm-4.5v"]
             },
             {
-                "name": "zai-python-sdk",
+                "name": "z-ai2api",
                 "service_type": ServiceType.PYTHON,
-                "start_command": "python examples/chat_example.py",
-                "working_directory": "apis/zai-python-sdk",
-                "models": ["glm-4.5", "glm-4.5v"]
+                "start_command": "python app.py",  # Uses app.py, not npm start
+                "working_directory": "apis/Z.ai2api",
+                "models": ["glm-4.5"]
             },
             {
                 "name": "z-ai2api-python",
@@ -139,21 +125,6 @@ class ServiceRegistry:
                 "models": ["glm-4.5", "glm-4.5v"]
             },
             {
-                "name": "z-ai2api",
-                "service_type": ServiceType.TYPESCRIPT,
-                "start_command": "npm start",
-                "working_directory": "apis/Z.ai2api",
-                "models": ["glm-4.5"]
-            },
-            {
-                "name": "ztoapits",
-                "service_type": ServiceType.TYPESCRIPT,
-                "start_command": "npm start",
-                "working_directory": "apis/ZtoApits",
-                "models": ["glm-4.5", "glm-4.5v"]
-            },
-            # Additional providers (13th and 14th)
-            {
                 "name": "talkai",
                 "service_type": ServiceType.PYTHON,
                 "start_command": "python main.py",
@@ -166,7 +137,36 @@ class ServiceRegistry:
                 "start_command": "python main.py",
                 "working_directory": "apis/copilot-proxy",
                 "models": ["gpt-4", "gpt-3.5-turbo", "copilot-codex"]
-            }
+            },
+            # Documentation-only repositories (disabled for now)
+            # {
+            #     "name": "qwen-api",
+            #     "service_type": ServiceType.PYTHON,
+            #     "start_command": "echo 'Documentation only'",
+            #     "working_directory": "apis/qwen-api",
+            #     "models": ["qwen-turbo", "qwen-plus", "qwen-max"]
+            # },
+            # {
+            #     "name": "qwenchat2api", 
+            #     "service_type": ServiceType.PYTHON,
+            #     "start_command": "echo 'Documentation only'",
+            #     "working_directory": "apis/qwenchat2api",
+            #     "models": ["qwen-turbo", "qwen-plus"]
+            # },
+            # {
+            #     "name": "zai-python-sdk",
+            #     "service_type": ServiceType.PYTHON,
+            #     "start_command": "echo 'SDK only'",
+            #     "working_directory": "apis/zai-python-sdk",
+            #     "models": ["glm-4.5", "glm-4.5v"]
+            # },
+            # {
+            #     "name": "ztoapits",
+            #     "service_type": ServiceType.TYPESCRIPT,
+            #     "start_command": "echo 'No package.json'",
+            #     "working_directory": "apis/ZtoApits",
+            #     "models": ["glm-4.5", "glm-4.5v"]
+            # }
         ]
         
         for i, config in enumerate(services_config):
