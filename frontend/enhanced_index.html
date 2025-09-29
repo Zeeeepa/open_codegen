@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Provider Dashboard - Enhanced</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .control-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .control-panel h3 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .chat-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .chat-section h3 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .provider-selector {
+            margin-bottom: 20px;
+        }
+
+        .provider-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .provider-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .chat-input textarea {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .chat-response {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 150px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid #4f46e5;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card h3 {
+            color: #374151;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4f46e5;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .providers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .provider-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .provider-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .provider-card.healthy {
+            border-color: #10b981;
+        }
+
+        .provider-card.unhealthy {
+            border-color: #ef4444;
+        }
+
+        .provider-card.stopped {
+            border-color: #6b7280;
+        }
+
+        .provider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .provider-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-healthy {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-unhealthy {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-stopped {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .status-starting {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .provider-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .models-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .model-tag {
+            background: #f3f4f6;
+            color: #374151;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            background: #f9fafb;
+            padding: 20px 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .providers-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .provider-details {
+                grid-template-columns: 1fr;
+            }
+
+            .control-buttons {
+                flex-direction: column;
+            }
+
+            .chat-input {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Provider Dashboard - Enhanced</h1>
+            <p>Real-time management and testing for all 14 AI service providers</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h3>🎛️ System Controls</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-success" onclick="startAllProviders()">Start All Providers</button>
+                    <button class="btn btn-danger" onclick="stopAllProviders()">Stop All Providers</button>
+                    <button class="btn btn-primary" onclick="testAllProviders()">Test All Providers</button>
+                    <button class="btn btn-secondary" onclick="refreshData()">Refresh Data</button>
+                </div>
+                <div id="system-status"></div>
+            </div>
+
+            <!-- Chat Testing Section -->
+            <div class="chat-section">
+                <h3>💬 Provider Chat Testing</h3>
+                <div class="provider-selector">
+                    <label for="provider-select">Select Provider:</label>
+                    <select id="provider-select">
+                        <option value="">Auto-select (Load Balanced)</option>
+                    </select>
+                </div>
+                <div class="chat-input">
+                    <textarea id="chat-message" placeholder="Enter your message to test the AI provider...">Hello! Can you tell me about yourself?</textarea>
+                    <button class="btn btn-primary" onclick="sendMessage()">Send Message</button>
+                </div>
+                <div id="chat-response" class="chat-response">Response will appear here...</div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Providers</h3>
+                    <div class="value" id="total-providers">14</div>
+                    <div class="label">AI Services</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Healthy</h3>
+                    <div class="value" id="healthy-providers">0</div>
+                    <div class="label">Online & Ready</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Response Time</h3>
+                    <div class="value" id="avg-response">--</div>
+                    <div class="label">Average</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Requests</h3>
+                    <div class="value" id="total-requests">0</div>
+                    <div class="label">Total Today</div>
+                </div>
+            </div>
+
+            <!-- Providers Grid -->
+            <div class="providers-section">
+                <h2 class="section-title">🔧 Provider Services</h2>
+                <div class="providers-grid" id="providers-grid">
+                    <!-- Providers will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🚀 Powered by OpenAI API Gateway • Real-time monitoring and load balancing • Connected to live endpoints</p>
+        </div>
+    </div>
+
+    <script src="static/js/enhanced_dashboard.js"></script>
+</body>
+</html>

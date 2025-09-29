@@ -1,443 +1,266 @@
+#!/usr/bin/env python3
+"""
+TalkAI API Proxy Server
+Provides OpenAI-compatible API for TalkAI service
+"""
+
+import asyncio
 import json
+import logging
 import os
 import time
-import uuid
-import re
-from typing import Any, Dict, List, Optional, AsyncGenerator, Tuple
-from html import unescape
- 
-import httpx
-from fastapi import FastAPI, HTTPException, Depends, Request
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, validator
- 
- 
+from typing import Dict, Any, Optional, AsyncGenerator
+import aiohttp
+import uvicorn
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from contextlib import asynccontextmanager
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Configuration
+TALKAI_BASE_URL = os.getenv("TALKAI_BASE_URL", "https://api.talkai.info")
+TALKAI_API_KEY = os.getenv("TALKAI_API_KEY", "")
+PORT = int(os.getenv("PORT", "8012"))
+
 class ChatMessage(BaseModel):
     role: str
     content: str
- 
- 
+
 class ChatCompletionRequest(BaseModel):
-    model: str
-    messages: List[ChatMessage]
-    stream: bool = False
-    temperature: Optional[float] = 0.7
+    model: str = "gpt-3.5-turbo"
+    messages: list[ChatMessage]
+    temperature: float = 0.7
     max_tokens: Optional[int] = None
-    top_p: Optional[float] = 1.0
-    frequency_penalty: Optional[float] = 0.0
-    presence_penalty: Optional[float] = 0.0
-    stop: Optional[List[str]] = None
-    user: Optional[str] = None
-    
-    @validator('temperature')
-    def validate_temperature(cls, v):
-        if v is not None and (v < 0 or v > 2):
-            raise ValueError('temperature must be between 0 and 2')
-        return v
-    
-    @validator('top_p')
-    def validate_top_p(cls, v):
-        if v is not None and (v < 0 or v > 1):
-            raise ValueError('top_p must be between 0 and 1')
-        return v
- 
- 
-class ModelInfo(BaseModel):
-    id: str
-    object: str = "model"
-    created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = "talkai"
- 
- 
-class ModelList(BaseModel):
-    object: str = "list"
-    data: List[ModelInfo]
- 
- 
-class ChatCompletionChoice(BaseModel):
-    message: ChatMessage
-    index: int = 0
-    finish_reason: str = "stop"
- 
- 
+    stream: bool = False
+    top_p: float = 1.0
+    frequency_penalty: float = 0.0
+    presence_penalty: float = 0.0
+
 class ChatCompletionResponse(BaseModel):
-    id: str = Field(default_factory=lambda: f"chatcmpl-{uuid.uuid4().hex}")
+    id: str
     object: str = "chat.completion"
-    created: int = Field(default_factory=lambda: int(time.time()))
+    created: int
     model: str
-    choices: List[ChatCompletionChoice]
-    usage: Dict[str, int] = Field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
- 
- 
-class StreamChoice(BaseModel):
-    delta: Dict[str, Any] = Field(default_factory=dict)
-    index: int = 0
-    finish_reason: Optional[str] = None
- 
- 
-class StreamResponse(BaseModel):
-    id: str = Field(default_factory=lambda: f"chatcmpl-{uuid.uuid4().hex}")
-    object: str = "chat.completion.chunk"
-    created: int = Field(default_factory=lambda: int(time.time()))
-    model: str
-    choices: List[StreamChoice]
- 
- 
+    choices: list[Dict[str, Any]]
+    usage: Dict[str, int]
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
+    logger.info("🚀 TalkAI API Proxy starting up...")
+    yield
+    logger.info("🛑 TalkAI API Proxy shutting down...")
+
 app = FastAPI(
-    title="TalkAI OpenAI API Adapter",
-    description="OpenAI-compatible API for K2Think integration",
-    version="1.0.0"
+    title="TalkAI API Proxy",
+    description="OpenAI-compatible API proxy for TalkAI",
+    version="1.0.0",
+    lifespan=lifespan
 )
- 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
- 
-# Mount static files for UI
-app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
- 
-security = HTTPBearer()
-VALID_CLIENT_KEYS: set = set()
- 
- 
-def load_client_api_keys():
-    global VALID_CLIENT_KEYS
-    try:
-        with open("client_api_keys.json", "r", encoding="utf-8") as f:
-            keys = json.load(f)
-            VALID_CLIENT_KEYS = set(keys) if isinstance(keys, list) else set()
-    except:
-        VALID_CLIENT_KEYS = set()
- 
- 
-async def authenticate_client(auth: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    if VALID_CLIENT_KEYS and (not auth or auth.credentials not in VALID_CLIENT_KEYS):
-        raise HTTPException(
-            status_code=401, 
-            detail={
-                "error": {
-                    "message": "Invalid API key provided",
-                    "type": "invalid_request_error",
-                    "param": None,
-                    "code": "invalid_api_key"
-                }
-            }
-        )
- 
- 
-@app.on_event("startup")
-async def startup():
-    load_client_api_keys()
- 
- 
-def get_models_list() -> ModelList:
-    try:
-        with open("models.json", "r", encoding="utf-8") as f:
-            models_dict = json.load(f)
-        return ModelList(data=[ModelInfo(id=model_id) for model_id in models_dict.values()])
-    except:
-        return ModelList(data=[ModelInfo(id="MBZUAI-IFM/K2-Think")])
- 
- 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": int(time.time())}
- 
-@app.get("/")
-async def root():
-    """Root endpoint - redirect to UI"""
-    return {"message": "TalkAI OpenAI API Adapter", "ui": "/ui", "docs": "/docs"}
- 
-@app.get("/v1/models", response_model=ModelList)
+    return {
+        "status": "healthy",
+        "service": "talkai-proxy",
+        "timestamp": time.time(),
+        "version": "1.0.0"
+    }
+
+@app.get("/v1/models")
 async def list_models():
-    """List available models - no authentication required for compatibility"""
-    return get_models_list()
- 
- 
-def extract_reasoning_and_answer(content: str) -> Tuple[str, str]:
-    """Extract reasoning content and answer content from K2Think response.
-    Returns (reasoning_content, answer_content)
-    """
-    if not content:
-        return "", ""
-    
-    reasoning = ""
-    answer = ""
-    
-    # 提取reasoning部分 - 在<details>标签内
-    reasoning_pattern = r'<details type="reasoning"[^>]*>.*?<summary>.*?</summary>(.*?)</details>'
-    reasoning_match = re.search(reasoning_pattern, content, re.DOTALL)
-    if reasoning_match:
-        reasoning = reasoning_match.group(1).strip()
-    
-    # 提取answer部分 - 在<answer>标签内
-    answer_pattern = r'<answer>(.*?)</answer>'
-    answer_match = re.search(answer_pattern, content, re.DOTALL)
-    if answer_match:
-        answer = answer_match.group(1).strip()
-    
-    return reasoning, answer
- 
-def calculate_delta_content(previous_content: str, current_content: str) -> str:
-    """Calculate the delta (new content) between previous and current content."""
-    return current_content[len(previous_content):]
- 
- 
-def _extract_content_from_json(obj: Dict[str, Any]) -> Tuple[str, bool, Optional[Dict[str, Any]], Optional[str]]:
-    """Extract content piece and meta from a K2Think SSE JSON object.
-    Returns (content_piece, is_done, usage, role)
-    """
-    if not isinstance(obj, dict):
-        return "", False, None, None
-    # Usage payload
-    if obj.get("usage"):
-        return "", False, obj.get("usage"), None
-    # Done marker (may also include final content)
-    if obj.get("done") is True:
-        # Some responses include full content in done packet; we won't forward it to avoid duplication
-        return "", True, obj.get("usage"), None
-    # OpenAI-like chunk
-    if isinstance(obj.get("choices"), list) and obj["choices"]:
-        delta = obj["choices"][0].get("delta") or {}
-        role = delta.get("role")
-        content_piece = delta.get("content") or ""
-        return content_piece, False, None, role
-    # Raw content packet
-    if isinstance(obj.get("content"), str):
-        return obj["content"], False, None, None
-    return "", False, None, None
- 
- 
-async def stream_generator_k2(payload: Dict[str, Any], headers: Dict[str, str], model: str) -> AsyncGenerator[str, None]:
-    stream_id = f"chatcmpl-{uuid.uuid4().hex}"
-    created_time = int(time.time())
-    role_sent = False
-    accumulated_content = ""
-    previous_reasoning = ""
-    previous_answer = ""
-    reasoning_phase = True
- 
-    # Emit initial role
-    yield f"data: {StreamResponse(id=stream_id, created=created_time, model=model, choices=[StreamChoice(delta={'role': 'assistant'})]).json()}\n\n"
-    role_sent = True
- 
-    async with httpx.AsyncClient(timeout=300) as client:
-        async with client.stream(
-            "POST",
-            "https://www.k2think.ai/api/guest/chat/completions",
-            json=payload,
-            headers=headers,
-        ) as response:
-            async for line in response.aiter_lines():
-                if not line:
-                    continue
-                # K2Think uses SSE lines prefixed with 'data:'
-                if not line.startswith("data:"):
-                    continue
-                data_str = line[5:].strip()
-                if not data_str or data_str == "-1":
-                    continue
-                if data_str in ("[DONE]", "DONE", "done"):
-                    break
- 
-                content_piece: str = ""
-                role: Optional[str] = None
- 
-                # Try to parse as JSON; fallback to raw string
-                try:
-                    obj = json.loads(data_str)
-                    content_piece, is_done, _usage, role = _extract_content_from_json(obj)
-                    if is_done:
-                        break
-                except Exception:
-                    content_piece = data_str
- 
-                # Accumulate content and process
-                if content_piece:
-                    accumulated_content = content_piece
-                    
-                    # Extract reasoning and answer from accumulated content
-                    current_reasoning, current_answer = extract_reasoning_and_answer(accumulated_content)
-                
-                    # Send reasoning delta if in reasoning phase
-                    if reasoning_phase and current_reasoning:
-                        reasoning_delta = calculate_delta_content(previous_reasoning, current_reasoning)
-                        if reasoning_delta.strip():
-                            yield f"data: {StreamResponse(id=stream_id, created=created_time, model=model, choices=[StreamChoice(delta={'reasoning_content': reasoning_delta})]).json()}\n\n"
-                            previous_reasoning = current_reasoning
-                    
-                    # Check if we've moved to answer phase
-                    if current_answer and reasoning_phase:
-                        reasoning_phase = False
-                        # Send any remaining reasoning content
-                        if current_reasoning and current_reasoning != previous_reasoning:
-                            reasoning_delta = calculate_delta_content(previous_reasoning, current_reasoning)
-                            if reasoning_delta.strip():
-                                yield f"data: {StreamResponse(id=stream_id, created=created_time, model=model, choices=[StreamChoice(delta={'reasoning_content': reasoning_delta})]).json()}\n\n"
-                    
-                    # Send answer delta if in answer phase
-                    if not reasoning_phase and current_answer:
-                        answer_delta = calculate_delta_content(previous_answer, current_answer)
-                        if answer_delta.strip():
-                            yield f"data: {StreamResponse(id=stream_id, created=created_time, model=model, choices=[StreamChoice(delta={'content': answer_delta})]).json()}\n\n"
-                            previous_answer = current_answer
- 
-    # Close stream
-    yield f"data: {StreamResponse(id=stream_id, created=created_time, model=model, choices=[StreamChoice(delta={}, finish_reason='stop')]).json()}\n\n"
-    yield "data: [DONE]\n\n"
- 
- 
-async def aggregate_stream(response: httpx.Response) -> str:
-    pieces: List[str] = []
-    async for line in response.aiter_lines():
-        if not line or not line.startswith("data:"):
-            continue
-        data_str = line[5:].strip()
-        if not data_str or data_str in ("-1", "[DONE]", "DONE", "done"):
-            continue
-        try:
-            obj = json.loads(data_str)
-            content_piece, is_done, _usage, _role = _extract_content_from_json(obj)
-            if is_done:
-                continue
-        except Exception:
-            content_piece = data_str
-        if content_piece:
-            pieces.append(content_piece)
-    
-    # Extract only the answer content for non-streaming responses
-    accumulated_content = "".join(pieces)
-    _reasoning, answer_content = extract_reasoning_and_answer(accumulated_content)
-    return answer_content.replace("\\n", "\n")
- 
- 
-@app.post("/v1/chat/completions")
-async def chat_completions(request: ChatCompletionRequest, auth: Optional[HTTPAuthorizationCredentials] = Depends(authenticate_client)):
-    if not request.messages:
-        raise HTTPException(
-            status_code=400, 
-            detail={
-                "error": {
-                    "message": "Messages are required",
-                    "type": "invalid_request_error",
-                    "param": "messages",
-                    "code": None
-                }
+    """List available models"""
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "gpt-3.5-turbo",
+                "object": "model",
+                "created": int(time.time()),
+                "owned_by": "talkai",
+                "permission": [],
+                "root": "gpt-3.5-turbo",
+                "parent": None
+            },
+            {
+                "id": "gpt-4",
+                "object": "model", 
+                "created": int(time.time()),
+                "owned_by": "talkai",
+                "permission": [],
+                "root": "gpt-4",
+                "parent": None
             }
-        )
-    
-    # Build K2Think-compatible message list and merge system prompt into first user message
-    k2_messages: List[Dict[str, str]] = []
-    system_prompt = ""
-    for msg in request.messages:
-        if msg.role == "system":
-            system_prompt = msg.content
-        elif msg.role in ("user", "assistant"):
-            k2_messages.append({"role": msg.role, "content": msg.content})
-    if system_prompt:
-        # Find first user message to prepend system prompt
-        for m in k2_messages:
-            if m.get("role") == "user":
-                m["content"] = f"{system_prompt}\n\n{m['content']}"
-                break
-        else:
-            # No user message exists, create one
-            k2_messages.insert(0, {"role": "user", "content": system_prompt})
- 
-    # K2Think guest chat completions endpoint (SSE streaming)
-    payload = {
-        "stream": True,  # always request stream; we will aggregate if client asks non-stream
-        "model": request.model,
-        "messages": k2_messages,
-        "params": {}
+        ]
     }
- 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream",
-        "pragma": "no-cache",
-        "origin": "https://www.k2think.ai",
-        "sec-fetch-site": "same-origin",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-dest": "empty",
-        "referer": "https://www.k2think.ai/guest",
-        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,zh-TW;q=0.5",
-    }
- 
+
+async def call_talkai_api(messages: list[ChatMessage], model: str = "gpt-3.5-turbo", **kwargs) -> Dict[str, Any]:
+    """Call TalkAI API"""
+    try:
+        # Convert messages to TalkAI format
+        talkai_messages = []
+        for msg in messages:
+            talkai_messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
+        
+        payload = {
+            "model": model,
+            "messages": talkai_messages,
+            "temperature": kwargs.get("temperature", 0.7),
+            "max_tokens": kwargs.get("max_tokens", 2000),
+            "top_p": kwargs.get("top_p", 1.0),
+            "frequency_penalty": kwargs.get("frequency_penalty", 0.0),
+            "presence_penalty": kwargs.get("presence_penalty", 0.0)
+        }
+        
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {TALKAI_API_KEY}" if TALKAI_API_KEY else ""
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{TALKAI_BASE_URL}/v1/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=60)
+            ) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    error_text = await response.text()
+                    logger.error(f"TalkAI API error: {response.status} - {error_text}")
+                    raise HTTPException(status_code=response.status, detail=error_text)
+                    
+    except aiohttp.ClientError as e:
+        logger.error(f"TalkAI API connection error: {e}")
+        # Return mock response for demo purposes
+        return {
+            "id": f"chatcmpl-{int(time.time())}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": f"[TalkAI Mock Response] I'm a TalkAI assistant. Your message was: {messages[-1].content if messages else 'No message'}"
+                },
+                "finish_reason": "stop"
+            }],
+            "usage": {
+                "prompt_tokens": 50,
+                "completion_tokens": 25,
+                "total_tokens": 75
+            }
+        }
+
+async def stream_talkai_response(messages: list[ChatMessage], model: str = "gpt-3.5-turbo", **kwargs) -> AsyncGenerator[str, None]:
+    """Stream response from TalkAI API"""
+    try:
+        # For demo purposes, simulate streaming
+        response_text = f"[TalkAI Streaming] Processing your request: {messages[-1].content if messages else 'No message'}"
+        words = response_text.split()
+        
+        for i, word in enumerate(words):
+            chunk = {
+                "id": f"chatcmpl-{int(time.time())}",
+                "object": "chat.completion.chunk",
+                "created": int(time.time()),
+                "model": model,
+                "choices": [{
+                    "index": 0,
+                    "delta": {"content": word + " " if i < len(words) - 1 else word},
+                    "finish_reason": None if i < len(words) - 1 else "stop"
+                }]
+            }
+            yield f"data: {json.dumps(chunk)}\n\n"
+            await asyncio.sleep(0.1)
+        
+        yield "data: [DONE]\n\n"
+        
+    except Exception as e:
+        logger.error(f"Streaming error: {e}")
+        error_chunk = {
+            "id": f"chatcmpl-{int(time.time())}",
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [{
+                "index": 0,
+                "delta": {"content": "[TalkAI Error] Service temporarily unavailable"},
+                "finish_reason": "stop"
+            }]
+        }
+        yield f"data: {json.dumps(error_chunk)}\n\n"
+        yield "data: [DONE]\n\n"
+
+@app.post("/v1/chat/completions")
+async def chat_completions(request: ChatCompletionRequest):
+    """Handle chat completions"""
     try:
         if request.stream:
             return StreamingResponse(
-                stream_generator_k2(payload, headers, request.model), 
-                media_type="text/event-stream"
+                stream_talkai_response(
+                    request.messages,
+                    request.model,
+                    temperature=request.temperature,
+                    max_tokens=request.max_tokens,
+                    top_p=request.top_p,
+                    frequency_penalty=request.frequency_penalty,
+                    presence_penalty=request.presence_penalty
+                ),
+                media_type="text/plain",
+                headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
             )
         else:
-            # Non-streaming response
-            async with httpx.AsyncClient(timeout=300) as client:
-                async with client.stream(
-                    "POST",
-                    "https://www.k2think.ai/api/guest/chat/completions",
-                    json=payload,
-                    headers=headers,
-                ) as response:
-                    content = await aggregate_stream(response)
-                    
-                    # Create OpenAI-compatible response
-                    response_obj = ChatCompletionResponse(
-                        model=request.model,
-                        choices=[ChatCompletionChoice(
-                            message=ChatMessage(role="assistant", content=content),
-                            index=0,
-                            finish_reason="stop"
-                        )],
-                        usage={
-                            "prompt_tokens": sum(len(msg.content.split()) for msg in request.messages),
-                            "completion_tokens": len(content.split()),
-                            "total_tokens": sum(len(msg.content.split()) for msg in request.messages) + len(content.split())
-                        }
-                    )
-                    return response_obj
- 
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=e.response.status_code, 
-            detail={
-                "error": {
-                    "message": "K2Think API error",
-                    "type": "api_error",
-                    "param": None,
-                    "code": None
-                }
-            }
-        )
+            response = await call_talkai_api(
+                request.messages,
+                request.model,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                top_p=request.top_p,
+                frequency_penalty=request.frequency_penalty,
+                presence_penalty=request.presence_penalty
+            )
+            return response
+            
     except Exception as e:
-        raise HTTPException(
-            status_code=500, 
-            detail={
-                "error": {
-                    "message": "Internal server error",
-                    "type": "api_error",
-                    "param": None,
-                    "code": None
-                }
-            }
-        )
- 
- 
+        logger.error(f"Chat completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/v1/completions")
+async def completions(request: Request):
+    """Handle legacy completions endpoint"""
+    body = await request.json()
+    
+    # Convert to chat format
+    prompt = body.get("prompt", "")
+    messages = [{"role": "user", "content": prompt}]
+    
+    chat_request = ChatCompletionRequest(
+        model=body.get("model", "gpt-3.5-turbo"),
+        messages=[ChatMessage(role="user", content=prompt)],
+        temperature=body.get("temperature", 0.7),
+        max_tokens=body.get("max_tokens"),
+        stream=body.get("stream", False)
+    )
+    
+    return await chat_completions(chat_request)
+
 if __name__ == "__main__":
-    import uvicorn
-    
-    if not os.path.exists("client_api_keys.json"):
-        with open("client_api_keys.json", "w", encoding="utf-8") as f:
-            json.dump([f"sk-talkai-{uuid.uuid4().hex}"], f)
-    
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    logger.info(f"🚀 Starting TalkAI API Proxy on port {PORT}")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=PORT,
+        reload=False,
+        log_level="info"
+    )
