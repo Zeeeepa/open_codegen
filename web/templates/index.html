@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal AI API Gateway</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .provider-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #dee2e6;
+        }
+        .provider-card.enabled {
+            border-left-color: #28a745;
+        }
+        .provider-card.disabled {
+            border-left-color: #dc3545;
+            opacity: 0.7;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-healthy { background-color: #28a745; }
+        .status-unhealthy { background-color: #dc3545; }
+        .status-unknown { background-color: #6c757d; }
+        .gateway-flow {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: #ffc107;
+            margin: 0 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-network-wired me-2"></i>
+                Universal AI API Gateway
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/chat">
+                    <i class="fas fa-comments me-1"></i>
+                    Chat Interface
+                </a>
+                <a class="nav-link" href="/admin">
+                    <i class="fas fa-cog me-1"></i>
+                    Admin
+                </a>
+                <a class="nav-link" href="/docs">
+                    <i class="fas fa-book me-1"></i>
+                    API Docs
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Gateway Flow Visualization -->
+        <div class="gateway-flow text-center">
+            <h2 class="mb-4">🚀 Universal AI API Gateway</h2>
+            <div class="row align-items-center">
+                <div class="col-md-2">
+                    <div class="mb-2"><strong>ANY API Call</strong></div>
+                    <small>OpenAI<br>Gemini<br>Anthropic</small>
+                </div>
+                <div class="col-md-1">
+                    <i class="fas fa-arrow-right flow-arrow"></i>
+                </div>
+                <div class="col-md-2">
+                    <div class="mb-2"><strong>Universal Parser</strong></div>
+                    <small>Format Detector<br>Bidirectional<br>Converter</small>
+                </div>
+                <div class="col-md-1">
+                    <i class="fas fa-arrow-right flow-arrow"></i>
+                </div>
+                <div class="col-md-2">
+                    <div class="mb-2"><strong>WebChat Interface</strong></div>
+                    <small>Chat Interface<br>Load Balancer<br>Provider Router</small>
+                </div>
+                <div class="col-md-1">
+                    <i class="fas fa-arrow-right flow-arrow"></i>
+                </div>
+                <div class="col-md-2">
+                    <div class="mb-2"><strong>9 Providers</strong></div>
+                    <small>z.ai, k2, grok<br>qwen, copilot<br>ChatGPT, Bing<br>codegen, talkai</small>
+                </div>
+                <div class="col-md-1">
+                    <i class="fas fa-arrow-right flow-arrow"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-heartbeat me-2"></i>
+                            System Status
+                        </h5>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshStatus()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="system-status">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading system status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Provider Management -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-server me-2"></i>
+                            Provider Management
+                        </h5>
+                        <div>
+                            <button class="btn btn-sm btn-success me-2" onclick="enableAllProviders()">
+                                <i class="fas fa-play"></i>
+                                Enable All
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="disableAllProviders()">
+                                <i class="fas fa-pause"></i>
+                                Disable All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="providers-list">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading providers...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-comments fa-3x text-primary mb-3"></i>
+                        <h5>Chat Interface</h5>
+                        <p class="text-muted">Test providers with real-time chat</p>
+                        <a href="/chat" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-1"></i>
+                            Open Chat
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-cog fa-3x text-success mb-3"></i>
+                        <h5>Admin Panel</h5>
+                        <p class="text-muted">Configure providers and settings</p>
+                        <a href="/admin" class="btn btn-success">
+                            <i class="fas fa-arrow-right me-1"></i>
+                            Open Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-book fa-3x text-info mb-3"></i>
+                        <h5>API Documentation</h5>
+                        <p class="text-muted">View OpenAPI documentation</p>
+                        <a href="/docs" class="btn btn-info">
+                            <i class="fas fa-arrow-right me-1"></i>
+                            View Docs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load system status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshStatus();
+            loadProviders();
+        });
+
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                const statusHtml = `
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="status-indicator status-${data.gateway === 'healthy' ? 'healthy' : 'unhealthy'}"></div>
+                                <strong>Gateway</strong>
+                                <div class="text-muted">${data.gateway}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="status-indicator status-${data.load_balancer === 'healthy' ? 'healthy' : 'unhealthy'}"></div>
+                                <strong>Load Balancer</strong>
+                                <div class="text-muted">${data.load_balancer}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <strong>Providers</strong>
+                                <div class="mt-2">
+                                    ${Object.entries(data.providers || {}).map(([name, status]) => 
+                                        `<span class="badge bg-${status === 'healthy' ? 'success' : status === 'unhealthy' ? 'danger' : 'secondary'} me-1">${name}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('system-status').innerHTML = statusHtml;
+            } catch (error) {
+                document.getElementById('system-status').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Failed to load system status: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadProviders() {
+            try {
+                const response = await fetch('/api/providers');
+                const providers = await response.json();
+                
+                const providersHtml = Object.entries(providers).map(([name, config]) => `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card provider-card ${config.enabled ? 'enabled' : 'disabled'}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <div class="status-indicator status-${config.healthy ? 'healthy' : 'unhealthy'}"></div>
+                                        ${name.toUpperCase()}
+                                    </h6>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" ${config.enabled ? 'checked' : ''} 
+                                               onchange="toggleProvider('${name}', this.checked)">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Priority: ${config.priority}</small>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="testProvider('${name}')">
+                                        <i class="fas fa-vial"></i>
+                                        Test
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="configureProvider('${name}')">
+                                        <i class="fas fa-cog"></i>
+                                        Config
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('providers-list').innerHTML = `<div class="row">${providersHtml}</div>`;
+            } catch (error) {
+                document.getElementById('providers-list').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Failed to load providers: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function toggleProvider(name, enabled) {
+            try {
+                const response = await fetch(`/api/providers/${name}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                
+                if (response.ok) {
+                    loadProviders(); // Refresh the list
+                } else {
+                    throw new Error('Failed to toggle provider');
+                }
+            } catch (error) {
+                alert(`Failed to toggle ${name}: ${error.message}`);
+                loadProviders(); // Refresh to reset the switch
+            }
+        }
+
+        async function testProvider(name) {
+            try {
+                const response = await fetch(`/api/providers/${name}/test`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ ${name} test successful!\nResponse time: ${result.response_time.toFixed(2)}s\nResponse: ${result.response}`);
+                } else {
+                    alert(`❌ ${name} test failed: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`Failed to test ${name}: ${error.message}`);
+            }
+        }
+
+        function configureProvider(name) {
+            window.location.href = `/admin?provider=${name}`;
+        }
+
+        async function enableAllProviders() {
+            // Implementation for enabling all providers
+            alert('Enable all providers - feature coming soon!');
+        }
+
+        async function disableAllProviders() {
+            // Implementation for disabling all providers
+            alert('Disable all providers - feature coming soon!');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface - Universal AI API Gateway</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        .message.user {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        .message.assistant {
+            background-color: white;
+            border: 1px solid #dee2e6;
+        }
+        .provider-badge {
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 0.75rem;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-comments me-2"></i>
+                Chat Interface
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>
+                            Chat Messages
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="chat-container" class="chat-container">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-robot fa-3x mb-3"></i>
+                                <p>Start a conversation with any AI provider!</p>
+                            </div>
+                        </div>
+                        
+                        <div id="typing-indicator" class="typing-indicator">
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span id="typing-text">AI is thinking...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 border-top">
+                            <div class="input-group">
+                                <input type="text" id="message-input" class="form-control" 
+                                       placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                                <button class="btn btn-primary" onclick="sendMessage()">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            Chat Settings
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="provider-select" class="form-label">Provider</label>
+                            <select id="provider-select" class="form-select">
+                                <option value="">Auto (Load Balanced)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="format-select" class="form-label">Send As</label>
+                            <select id="format-select" class="form-select">
+                                <option value="openai">OpenAI Call</option>
+                                <option value="anthropic">Anthropic Call</option>
+                                <option value="gemini">Gemini Call</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearChat()">
+                            <i class="fas fa-trash me-1"></i>
+                            Clear Chat
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Provider Status
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="provider-status">
+                            <div class="text-center">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 mb-0">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let messageHistory = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProviders();
+            loadProviderStatus();
+        });
+
+        async function loadProviders() {
+            try {
+                const response = await fetch('/api/providers');
+                const providers = await response.json();
+                
+                const select = document.getElementById('provider-select');
+                select.innerHTML = '<option value="">Auto (Load Balanced)</option>';
+                
+                Object.entries(providers).forEach(([name, config]) => {
+                    if (config.enabled) {
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name.toUpperCase();
+                        select.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load providers:', error);
+            }
+        }
+
+        async function loadProviderStatus() {
+            try {
+                const response = await fetch('/api/providers');
+                const providers = await response.json();
+                
+                const statusHtml = Object.entries(providers).map(([name, config]) => `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-${config.enabled ? (config.healthy ? 'success' : 'warning') : 'secondary'}">
+                            ${name.toUpperCase()}
+                        </span>
+                        <small class="text-muted">P${config.priority}</small>
+                    </div>
+                `).join('');
+                
+                document.getElementById('provider-status').innerHTML = statusHtml;
+            } catch (error) {
+                document.getElementById('provider-status').innerHTML = 
+                    '<div class="alert alert-danger alert-sm">Failed to load status</div>';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                const provider = document.getElementById('provider-select').value;
+                const format = document.getElementById('format-select').value;
+                
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        provider: provider || null,
+                        format: format
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addMessage(result.response.content || result.response, 'assistant', result.provider);
+                } else {
+                    addMessage(`Error: ${result.error}`, 'assistant', 'error');
+                }
+            } catch (error) {
+                addMessage(`Network error: ${error.message}`, 'assistant', 'error');
+            } finally {
+                hideTypingIndicator();
+            }
+        }
+
+        function addMessage(content, role, provider = null) {
+            const container = document.getElementById('chat-container');
+            
+            // Remove welcome message if it exists
+            const welcome = container.querySelector('.text-center.text-muted');
+            if (welcome) {
+                welcome.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            let html = '';
+            if (provider && role === 'assistant') {
+                const badgeClass = provider === 'error' ? 'bg-danger' : 'bg-info';
+                html += `<div class="provider-badge"><span class="badge ${badgeClass}">${provider.toUpperCase()}</span></div>`;
+            }
+            html += `<div>${content}</div>`;
+            
+            messageDiv.innerHTML = html;
+            container.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+            
+            // Store in history
+            messageHistory.push({ role, content, provider, timestamp: new Date() });
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typing-indicator').style.display = 'block';
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typing-indicator').style.display = 'none';
+        }
+
+        function clearChat() {
+            const container = document.getElementById('chat-container');
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-robot fa-3x mb-3"></i>
+                    <p>Start a conversation with any AI provider!</p>
+                </div>
+            `;
+            messageHistory = [];
+        }
+
+        // Auto-refresh provider status every 30 seconds
+        setInterval(loadProviderStatus, 30000);
+    </script>
+</body>
+</html>
