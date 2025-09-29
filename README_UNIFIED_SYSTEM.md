@@ -48,27 +48,44 @@ This system creates a **true OpenAI API interception layer** that:
 
 ## 🚀 **QUICK START**
 
-### 1. Clone with All AI Providers
+### ⚡ **Option 1: Automatic Setup (Recommended)**
 ```bash
-# Clone the repository with all submodules (AI providers)
-git clone --recursive https://github.com/Zeeeepa/open_codegen.git
+# Clone and checkout the enhanced branch
+git clone https://github.com/Zeeeepa/open_codegen.git
 cd open_codegen
+git checkout codegen-bot/api-interception-system-1758999258
 
-# If you already cloned without --recursive, run:
-git submodule update --init --recursive
+# Start the system (automatically populates all API code!)
+python scripts/start_unified_system.py
 ```
+**✨ The system automatically detects missing API code and populates all repositories!**
 
-### 2. Install Dependencies
+### 🔧 **Option 2: Manual API Population**
 ```bash
-pip install -r requirements.txt
-```
+# If you need to manually populate API repositories
+python scripts/auto_populate_apis.py
 
-### 3. Start the Complete System
-```bash
+# Then start the system
 python scripts/start_unified_system.py
 ```
 
-### 4. Access the System
+### 🪝 **Option 3: Setup Git Hooks (Optional)**
+```bash
+# Setup automatic API population on git pull/checkout
+python scripts/setup_git_hooks.py
+```
+
+### 📦 **Option 4: Legacy Submodule Method**
+```bash
+# Traditional Git submodule approach
+git clone --recursive https://github.com/Zeeeepa/open_codegen.git
+cd open_codegen
+git checkout codegen-bot/api-interception-system-1758999258
+git submodule update --init --recursive --remote
+python scripts/start_unified_system.py
+```
+
+### 🌐 **Access the System**
 - **API Gateway**: http://localhost:7999
 - **Dashboard**: Open `frontend/enhanced_index.html` in browser
 - **OpenAI API**: http://localhost:7999/v1/chat/completions

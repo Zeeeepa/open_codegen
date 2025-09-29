@@ -39,6 +39,10 @@ class UnifiedSystemManager:
         logger.info("🚀 Starting Unified AI Provider Gateway System...")
         
         try:
+            # Step 0: Auto-populate API repositories if needed
+            logger.info("🔍 Checking API repositories...")
+            await self._ensure_api_repositories()
+            
             # Step 1: Initialize service registry
             logger.info("📋 Initializing service registry...")
             self.service_registry.save_config()
@@ -152,6 +156,45 @@ class UnifiedSystemManager:
         except KeyboardInterrupt:
             logger.info("🛑 Received shutdown signal...")
             await self.shutdown_system()
+    
+    async def _ensure_api_repositories(self):
+        """Ensure all API repositories are populated with actual code"""
+        import subprocess
+        
+        # Check if key API directories have the expected files
+        critical_apis = [
+            ("apis/grok2api", "app.py"),
+            ("apis/k2think2api2", "main.py"),
+            ("apis/OpenAI-Compatible-API-Proxy-for-Z", "main.go"),
+            ("apis/Z.ai2api", "app.py")
+        ]
+        
+        missing_apis = []
+        for api_dir, main_file in critical_apis:
+            if not Path(api_dir, main_file).exists():
+                missing_apis.append(api_dir)
+        
+        if missing_apis:
+            logger.warning(f"⚠️  Missing API code files in: {', '.join(missing_apis)}")
+            logger.info("🔄 Auto-populating API repositories...")
+            
+            try:
+                # Run the auto-population script
+                result = subprocess.run([
+                    sys.executable, "scripts/auto_populate_apis.py"
+                ], capture_output=True, text=True, timeout=300)
+                
+                if result.returncode == 0:
+                    logger.info("✅ API repositories populated successfully!")
+                else:
+                    logger.error(f"❌ Failed to populate APIs: {result.stderr}")
+                    logger.info("💡 You can manually run: python scripts/auto_populate_apis.py")
+            except subprocess.TimeoutExpired:
+                logger.error("⏰ API population timed out")
+            except Exception as e:
+                logger.error(f"💥 Error populating APIs: {e}")
+        else:
+            logger.info("✅ All API repositories have required code files")
     
     async def shutdown_system(self):
         """Gracefully shutdown the system"""
