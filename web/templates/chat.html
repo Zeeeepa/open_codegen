@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface - Universal AI API Gateway</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        .message.user {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        .message.assistant {
+            background-color: white;
+            border: 1px solid #dee2e6;
+        }
+        .provider-badge {
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 0.75rem;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .status-updating {
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-comments me-2"></i>
+                Chat Interface
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>
+                            Chat Messages
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="chat-container" class="chat-container">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-robot fa-3x mb-3"></i>
+                                <p>Start a conversation with any AI provider!</p>
+                            </div>
+                        </div>
+                        
+                        <div id="typing-indicator" class="typing-indicator">
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span id="typing-text">AI is thinking...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 border-top">
+                            <div class="input-group">
+                                <input type="text" id="message-input" class="form-control" 
+                                       placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                                <button class="btn btn-primary" onclick="sendMessage()">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            Chat Settings
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="provider-select" class="form-label">Provider</label>
+                            <select id="provider-select" class="form-select">
+                                <option value="">Auto (Load Balanced)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="format-select" class="form-label">Send As</label>
+                            <select id="format-select" class="form-select">
+                                <option value="openai">OpenAI Call</option>
+                                <option value="anthropic">Anthropic Call</option>
+                                <option value="gemini">Gemini Call</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearChat()">
+                            <i class="fas fa-trash me-1"></i>
+                            Clear Chat
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Provider Status
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="provider-status">
+                            <div class="text-center">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 mb-0">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let messageHistory = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProviders();
+            loadProviderStatus();
+        });
+
+        async function loadProviders() {
+            try {
+                const response = await fetch('/api/providers');
+                const providers = await response.json();
+                
+                const select = document.getElementById('provider-select');
+                select.innerHTML = '<option value="">Auto (Load Balanced)</option>';
+                
+                Object.entries(providers).forEach(([name, config]) => {
+                    if (config.enabled) {
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name.toUpperCase();
+                        select.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load providers:', error);
+            }
+        }
+
+        async function loadProviderStatus() {
+            const statusContainer = document.getElementById('provider-status');
+            
+            // Show loading state
+            statusContainer.classList.add('status-updating');
+            
+            try {
+                const response = await fetch('/api/providers');
+                const providers = await response.json();
+                
+                const statusHtml = Object.entries(providers).map(([name, config]) => `
+                    <div class="d-flex justify-content-between align-items-center mb-2 fade-in">
+                        <span class="badge bg-${config.enabled ? (config.healthy ? 'success' : 'warning') : 'secondary'}">
+                            ${name.toUpperCase()}
+                            ${config.healthy ? '✓' : (config.enabled ? '⚠' : '○')}
+                        </span>
+                        <small class="text-muted">P${config.priority}</small>
+                    </div>
+                `).join('');
+                
+                // Add refresh timestamp
+                const timestamp = new Date().toLocaleTimeString();
+                const finalHtml = statusHtml + `
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Updated: ${timestamp}
+                        </small>
+                    </div>
+                `;
+                
+                statusContainer.innerHTML = finalHtml;
+                statusContainer.classList.remove('status-updating');
+            } catch (error) {
+                statusContainer.innerHTML = `
+                    <div class="alert alert-danger alert-sm">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Failed to load status
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="loadProviderStatus()">
+                            <i class="fas fa-retry"></i> Retry
+                        </button>
+                    </div>
+                `;
+                statusContainer.classList.remove('status-updating');
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) {
+                showErrorAlert('Please enter a message');
+                return;
+            }
+            
+            // Validate provider selection
+            const provider = document.getElementById('provider-select').value;
+            const format = document.getElementById('format-select').value;
+            
+            if (provider && provider !== 'auto') {
+                const isProviderHealthy = await validateProvider(provider);
+                if (!isProviderHealthy) {
+                    const proceed = confirm(`Provider "${provider}" appears to be unhealthy. Continue anyway?`);
+                    if (!proceed) return;
+                }
+            }
+            
+            // Disable input during processing
+            input.disabled = true;
+            document.querySelector('button[onclick="sendMessage()"]').disabled = true;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        provider: provider || null,
+                        format: format
+                    })
+                });
+                
+                const responseTime = Date.now() - startTime;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const content = result.response.content || result.response;
+                    const actualProvider = result.provider || 'auto';
+                    
+                    // Add response time info for debugging
+                    const responseInfo = `Response time: ${responseTime}ms`;
+                    addMessage(content, 'assistant', actualProvider, responseInfo);
+                    
+                    // Update message history
+                    updateMessageHistory(message, content, actualProvider, responseTime);
+                } else {
+                    const errorMsg = result.error || 'Unknown error occurred';
+                    addMessage(`❌ Error: ${errorMsg}`, 'assistant', 'error');
+                    showErrorAlert(`Request failed: ${errorMsg}`);
+                }
+            } catch (error) {
+                const errorMsg = `Network error: ${error.message}`;
+                addMessage(`🔌 ${errorMsg}`, 'assistant', 'error');
+                showErrorAlert(errorMsg);
+                
+                // Suggest retry
+                setTimeout(() => {
+                    if (confirm('Request failed. Would you like to retry?')) {
+                        input.value = message;
+                        sendMessage();
+                    }
+                }, 1000);
+            } finally {
+                hideTypingIndicator();
+                // Re-enable input
+                input.disabled = false;
+                document.querySelector('button[onclick="sendMessage()"]').disabled = false;
+                input.focus();
+            }
+        }
+        
+        async function validateProvider(providerName) {
+            try {
+                const response = await fetch(`/api/providers/${providerName}/test`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.warn(`Provider validation failed for ${providerName}:`, error);
+                return false;
+            }
+        }
+        
+        function showErrorAlert(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+        
+        function updateMessageHistory(userMessage, assistantResponse, provider, responseTime) {
+            const historyEntry = {
+                timestamp: new Date().toISOString(),
+                user_message: userMessage,
+                assistant_response: assistantResponse,
+                provider: provider,
+                response_time: responseTime,
+                format: document.getElementById('format-select').value
+            };
+            
+            messageHistory.push(historyEntry);
+            
+            // Keep only last 50 messages to prevent memory issues
+            if (messageHistory.length > 50) {
+                messageHistory = messageHistory.slice(-50);
+            }
+        }
+
+        function addMessage(content, role, provider = null, responseInfo = null) {
+            const container = document.getElementById('chat-container');
+            
+            // Remove welcome message if it exists
+            const welcome = container.querySelector('.text-center.text-muted');
+            if (welcome) {
+                welcome.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            let html = '';
+            if (provider && role === 'assistant') {
+                const badgeClass = provider === 'error' ? 'bg-danger' : 'bg-info';
+                html += `<div class="provider-badge">
+                    <span class="badge ${badgeClass}">${provider.toUpperCase()}</span>
+                    ${responseInfo ? `<small class="text-muted ms-2">${responseInfo}</small>` : ''}
+                </div>`;
+            }
+            html += `<div>${content}</div>`;
+            
+            messageDiv.innerHTML = html;
+            container.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+            
+            // Store in history (simplified for display)
+            messageHistory.push({ role, content, provider, timestamp: new Date() });
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typing-indicator').style.display = 'block';
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typing-indicator').style.display = 'none';
+        }
+
+        function clearChat() {
+            const container = document.getElementById('chat-container');
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-robot fa-3x mb-3"></i>
+                    <p>Start a conversation with any AI provider!</p>
+                </div>
+            `;
+            messageHistory = [];
+        }
+
+        // Auto-refresh provider status every 30 seconds
+        setInterval(loadProviderStatus, 30000);
+    </script>
+</body>
+</html>

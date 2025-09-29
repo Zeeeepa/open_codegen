@@ -1,24 +1,26 @@
-# Universal AI Endpoint Management System Dependencies
+# Universal AI API Gateway Dependencies
 
 # Core Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.5.0
 
-# Database
-sqlalchemy>=2.0.0
-alembic>=1.13.0
-
-# HTTP Client
+# HTTP Client & Networking
 aiohttp>=3.9.0
 httpx>=0.25.0
 requests>=2.28.2
+websockets>=12.0
+curl-cffi>=0.5.10
 
-# Browser Automation (for legacy web chat adapters)
+# Browser Automation (for Grok, ChatGPT providers)
 playwright>=1.40.0
 
-# Z.ai SDK Dependencies (integrated into project)
-# requests>=2.28.2 (already included above)
+# Web Framework (for Flask-based providers)
+flask>=3.0.0
+werkzeug>=3.0.1
+
+# Scheduling (for token refresh)
+apscheduler>=3.10.4
 
 # Authentication & Security
 cryptography>=41.0.0
@@ -32,6 +34,7 @@ pydantic-settings>=2.1.0
 # Utilities
 python-multipart>=0.0.6
 jinja2>=3.1.0
+aiofiles>=23.2.1
 
 # Original Dependencies
 codegen>=0.1.0
@@ -45,7 +48,10 @@ black>=23.0.0
 isort>=5.12.0
 flake8>=6.0.0
 
+# Monitoring & Metrics
+prometheus-client>=0.19.0
+structlog>=23.2.0
+
 # Optional: For enhanced features
 redis>=5.0.0  # For session storage
 celery>=5.3.0  # For background tasks
-prometheus-client>=0.19.0  # For metrics

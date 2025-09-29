@@ -1,0 +1,113 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "workers": 1,
+    "reload": false
+  },
+  "gateway": {
+    "timeout": 300,
+    "max_retries": 3,
+    "enable_streaming": true,
+    "enable_logging": true
+  },
+  "providers": {
+    "zai": {
+      "enabled": true,
+      "priority": 1,
+      "timeout": 60,
+      "credentials": {
+        "base_url": "https://chat.z.ai",
+        "username": "",
+        "password": ""
+      }
+    },
+    "k2": {
+      "enabled": true,
+      "priority": 2,
+      "timeout": 60,
+      "credentials": {
+        "base_url": "https://www.k2think.ai",
+        "username": "",
+        "password": ""
+      }
+    },
+    "qwen": {
+      "enabled": true,
+      "priority": 3,
+      "timeout": 60,
+      "credentials": {
+        "base_url": "https://chat.qwen.ai",
+        "username": "",
+        "password": ""
+      }
+    },
+    "grok": {
+      "enabled": true,
+      "priority": 4,
+      "timeout": 60,
+      "credentials": {
+        "base_url": "https://grok.com",
+        "username": "",
+        "password": ""
+      }
+    },
+    "chatgpt": {
+      "enabled": true,
+      "priority": 5,
+      "timeout": 60,
+      "credentials": {
+        "api_key": ""
+      }
+    },
+    "bing": {
+      "enabled": true,
+      "priority": 6,
+      "timeout": 60,
+      "credentials": {}
+    },
+    "codegen": {
+      "enabled": true,
+      "priority": 7,
+      "timeout": 300,
+      "credentials": {
+        "api_token": "sk-ce027fa7-3c8d-4beb-8c86-ed8ae982ac99",
+        "org_id": "323",
+        "base_url": "https://codegen-sh--rest-api.modal.run"
+      }
+    },
+    "copilot": {
+      "enabled": false,
+      "priority": 8,
+      "timeout": 60,
+      "credentials": {
+        "github_token": "your_github_token_here"
+      }
+    },
+    "talkai": {
+      "enabled": false,
+      "priority": 9,
+      "timeout": 60,
+      "credentials": {}
+    }
+  },
+  "load_balancing": {
+    "strategy": "priority",
+    "health_check_interval": 60,
+    "failure_threshold": 3,
+    "recovery_time": 300
+  },
+  "flareprox": {
+    "enabled": false,
+    "api_token": "",
+    "account_id": "",
+    "zone_id": ""
+  },
+  "security": {
+    "api_keys": [],
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 60
+    }
+  }
+}
