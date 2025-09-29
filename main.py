@@ -54,7 +54,7 @@ def main():
         
         # Start web server
         print("🌐 Starting web interface...")
-        web_server = WebServer()
+        web_server = WebServer(initializer.api_gateway)
         
         print("✅ System ready!")
         print("🎮 Web Interface: http://localhost:8000")

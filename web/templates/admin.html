@@ -24,24 +24,57 @@
     </nav>
 
     <div class="container mt-4">
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle me-2"></i>
-            <strong>Admin Panel Coming Soon!</strong> 
-            This will include provider configuration, credentials management, and system settings.
+        <!-- Success/Error Messages -->
+        <div id="alert-container"></div>
+        
+        <!-- Provider Configuration Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-server me-2"></i>Provider Configuration</h5>
+                        <button class="btn btn-primary btn-sm" onclick="saveAllConfigurations()">
+                            <i class="fas fa-save me-1"></i>Save All Changes
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="providers-config" class="row">
+                            <!-- Provider configuration cards will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div class="row">
+        <!-- System Settings Section -->
+        <div class="row mt-4">
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5><i class="fas fa-server me-2"></i>Provider Configuration</h5>
+                        <h5><i class="fas fa-cogs me-2"></i>System Settings</h5>
                     </div>
                     <div class="card-body">
-                        <p>Configure provider credentials, priorities, and settings.</p>
-                        <button class="btn btn-success" disabled>
-                            <i class="fas fa-cog me-1"></i>
-                            Configure Providers
-                        </button>
+                        <form id="system-settings-form">
+                            <div class="mb-3">
+                                <label for="default-timeout" class="form-label">Default Timeout (seconds)</label>
+                                <input type="number" class="form-control" id="default-timeout" min="1" max="300" value="60">
+                            </div>
+                            <div class="mb-3">
+                                <label for="max-retries" class="form-label">Max Retries</label>
+                                <input type="number" class="form-control" id="max-retries" min="0" max="10" value="3">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="enable-logging" checked>
+                                    <label class="form-check-label" for="enable-logging">
+                                        Enable Detailed Logging
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-success" onclick="saveSystemSettings()">
+                                <i class="fas fa-save me-1"></i>Save Settings
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -49,18 +82,358 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5><i class="fas fa-shield-alt me-2"></i>Security Settings</h5>
+                        <h5><i class="fas fa-chart-bar me-2"></i>System Statistics</h5>
                     </div>
                     <div class="card-body">
-                        <p>Manage API keys, rate limiting, and access controls.</p>
-                        <button class="btn btn-success" disabled>
-                            <i class="fas fa-shield-alt me-1"></i>
-                            Security Settings
+                        <div id="system-stats">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <h4 id="total-requests" class="text-primary">0</h4>
+                                    <small class="text-muted">Total Requests</small>
+                                </div>
+                                <div class="col-4">
+                                    <h4 id="success-rate" class="text-success">0%</h4>
+                                    <small class="text-muted">Success Rate</small>
+                                </div>
+                                <div class="col-4">
+                                    <h4 id="avg-response-time" class="text-info">0ms</h4>
+                                    <small class="text-muted">Avg Response</small>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-info mt-3" onclick="refreshStats()">
+                            <i class="fas fa-sync me-1"></i>Refresh Stats
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Configuration Backup/Restore -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-database me-2"></i>Configuration Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Backup Configuration</h6>
+                                <p class="text-muted">Export current configuration to file</p>
+                                <button class="btn btn-outline-primary" onclick="exportConfiguration()">
+                                    <i class="fas fa-download me-1"></i>Export Config
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Restore Configuration</h6>
+                                <p class="text-muted">Import configuration from file</p>
+                                <input type="file" class="form-control mb-2" id="config-file" accept=".json">
+                                <button class="btn btn-outline-success" onclick="importConfiguration()">
+                                    <i class="fas fa-upload me-1"></i>Import Config
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let providersData = {};
+        
+        // Load admin panel data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProviderConfigurations();
+            loadSystemSettings();
+            refreshStats();
+        });
+
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alert-container');
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        async function loadProviderConfigurations() {
+            try {
+                const response = await fetch('/api/providers');
+                providersData = await response.json();
+                
+                const configHtml = Object.entries(providersData).map(([name, config]) => `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <div class="status-indicator status-${config.healthy ? 'healthy' : 'unhealthy'}" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; background-color: ${config.healthy ? '#28a745' : '#dc3545'};"></div>
+                                    ${name.toUpperCase()}
+                                </h6>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" ${config.enabled ? 'checked' : ''} 
+                                           onchange="toggleProviderConfig('${name}', this.checked)">
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Priority</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           value="${config.priority}" min="1" max="999"
+                                           onchange="updateProviderPriority('${name}', this.value)">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">API Key</label>
+                                    <input type="password" class="form-control form-control-sm" 
+                                           placeholder="Enter API key..." 
+                                           onchange="updateProviderApiKey('${name}', this.value)">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Endpoint URL</label>
+                                    <input type="url" class="form-control form-control-sm" 
+                                           placeholder="https://api.${name}.com/v1"
+                                           onchange="updateProviderEndpoint('${name}', this.value)">
+                                </div>
+                                <div class="d-flex gap-2 mt-3">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="testProviderConfig('${name}')">
+                                        <i class="fas fa-vial"></i> Test
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="resetProviderConfig('${name}')">
+                                        <i class="fas fa-undo"></i> Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('providers-config').innerHTML = configHtml;
+            } catch (error) {
+                showAlert('Failed to load provider configurations: ' + error.message, 'danger');
+            }
+        }
+
+        async function toggleProviderConfig(name, enabled) {
+            try {
+                const response = await fetch(`/api/providers/${name}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                
+                if (response.ok) {
+                    providersData[name].enabled = enabled;
+                    showAlert(`${name} ${enabled ? 'enabled' : 'disabled'} successfully`);
+                } else {
+                    throw new Error('Failed to toggle provider');
+                }
+            } catch (error) {
+                showAlert(`Failed to toggle ${name}: ${error.message}`, 'danger');
+                loadProviderConfigurations(); // Refresh to reset state
+            }
+        }
+
+        function updateProviderPriority(name, priority) {
+            if (providersData[name]) {
+                providersData[name].priority = parseInt(priority);
+                showAlert(`${name} priority updated to ${priority}`, 'info');
+            }
+        }
+
+        function updateProviderApiKey(name, apiKey) {
+            if (providersData[name]) {
+                providersData[name].apiKey = apiKey;
+                showAlert(`${name} API key updated`, 'info');
+            }
+        }
+
+        function updateProviderEndpoint(name, endpoint) {
+            if (providersData[name]) {
+                providersData[name].endpoint = endpoint;
+                showAlert(`${name} endpoint updated`, 'info');
+            }
+        }
+
+        async function testProviderConfig(name) {
+            try {
+                const response = await fetch(`/api/providers/${name}/test`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(`✅ ${name} test successful! Response time: ${result.response_time.toFixed(2)}s`);
+                } else {
+                    showAlert(`❌ ${name} test failed: ${result.error}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Failed to test ${name}: ${error.message}`, 'danger');
+            }
+        }
+
+        function resetProviderConfig(name) {
+            if (confirm(`Reset ${name} configuration to defaults?`)) {
+                loadProviderConfigurations();
+                showAlert(`${name} configuration reset to defaults`);
+            }
+        }
+
+        async function saveAllConfigurations() {
+            try {
+                const response = await fetch('/api/admin/save-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ providers: providersData })
+                });
+                
+                if (response.ok) {
+                    showAlert('All configurations saved successfully!');
+                } else {
+                    throw new Error('Failed to save configurations');
+                }
+            } catch (error) {
+                showAlert('Failed to save configurations: ' + error.message, 'danger');
+            }
+        }
+
+        async function loadSystemSettings() {
+            try {
+                const response = await fetch('/api/admin/system-settings');
+                if (response.ok) {
+                    const settings = await response.json();
+                    document.getElementById('default-timeout').value = settings.timeout || 60;
+                    document.getElementById('max-retries').value = settings.retries || 3;
+                    document.getElementById('enable-logging').checked = settings.logging !== false;
+                }
+            } catch (error) {
+                console.error('Failed to load system settings:', error);
+            }
+        }
+
+        async function saveSystemSettings() {
+            try {
+                const settings = {
+                    timeout: parseInt(document.getElementById('default-timeout').value),
+                    retries: parseInt(document.getElementById('max-retries').value),
+                    logging: document.getElementById('enable-logging').checked
+                };
+                
+                const response = await fetch('/api/admin/system-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    showAlert('System settings saved successfully!');
+                } else {
+                    throw new Error('Failed to save system settings');
+                }
+            } catch (error) {
+                showAlert('Failed to save system settings: ' + error.message, 'danger');
+            }
+        }
+
+        async function refreshStats() {
+            try {
+                const response = await fetch('/api/providers');
+                const providers = await response.json();
+                
+                let totalRequests = 0;
+                let totalSuccessful = 0;
+                let totalResponseTime = 0;
+                let activeProviders = 0;
+                
+                Object.values(providers).forEach(provider => {
+                    if (provider.stats && provider.enabled) {
+                        totalRequests += provider.stats.requests_total || 0;
+                        totalSuccessful += provider.stats.requests_successful || 0;
+                        totalResponseTime += provider.stats.avg_response_time || 0;
+                        activeProviders++;
+                    }
+                });
+                
+                const successRate = totalRequests > 0 ? (totalSuccessful / totalRequests * 100).toFixed(1) : 0;
+                const avgResponseTime = activeProviders > 0 ? (totalResponseTime / activeProviders * 1000).toFixed(0) : 0;
+                
+                document.getElementById('total-requests').textContent = totalRequests;
+                document.getElementById('success-rate').textContent = successRate + '%';
+                document.getElementById('avg-response-time').textContent = avgResponseTime + 'ms';
+            } catch (error) {
+                console.error('Failed to refresh stats:', error);
+            }
+        }
+
+        function exportConfiguration() {
+            const config = {
+                providers: providersData,
+                systemSettings: {
+                    timeout: parseInt(document.getElementById('default-timeout').value),
+                    retries: parseInt(document.getElementById('max-retries').value),
+                    logging: document.getElementById('enable-logging').checked
+                },
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gateway-config-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showAlert('Configuration exported successfully!');
+        }
+
+        function importConfiguration() {
+            const fileInput = document.getElementById('config-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showAlert('Please select a configuration file', 'warning');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    
+                    if (config.providers) {
+                        providersData = config.providers;
+                        loadProviderConfigurations();
+                    }
+                    
+                    if (config.systemSettings) {
+                        document.getElementById('default-timeout').value = config.systemSettings.timeout || 60;
+                        document.getElementById('max-retries').value = config.systemSettings.retries || 3;
+                        document.getElementById('enable-logging').checked = config.systemSettings.logging !== false;
+                    }
+                    
+                    showAlert('Configuration imported successfully!');
+                } catch (error) {
+                    showAlert('Invalid configuration file: ' + error.message, 'danger');
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
 </body>
 </html>

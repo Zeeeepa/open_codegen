@@ -41,6 +41,48 @@
             border-radius: 8px;
             margin-bottom: 1rem;
         }
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .status-updating {
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -185,23 +227,49 @@
         }
 
         async function loadProviderStatus() {
+            const statusContainer = document.getElementById('provider-status');
+            
+            // Show loading state
+            statusContainer.classList.add('status-updating');
+            
             try {
                 const response = await fetch('/api/providers');
                 const providers = await response.json();
                 
                 const statusHtml = Object.entries(providers).map(([name, config]) => `
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2 fade-in">
                         <span class="badge bg-${config.enabled ? (config.healthy ? 'success' : 'warning') : 'secondary'}">
                             ${name.toUpperCase()}
+                            ${config.healthy ? '✓' : (config.enabled ? '⚠' : '○')}
                         </span>
                         <small class="text-muted">P${config.priority}</small>
                     </div>
                 `).join('');
                 
-                document.getElementById('provider-status').innerHTML = statusHtml;
+                // Add refresh timestamp
+                const timestamp = new Date().toLocaleTimeString();
+                const finalHtml = statusHtml + `
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Updated: ${timestamp}
+                        </small>
+                    </div>
+                `;
+                
+                statusContainer.innerHTML = finalHtml;
+                statusContainer.classList.remove('status-updating');
             } catch (error) {
-                document.getElementById('provider-status').innerHTML = 
-                    '<div class="alert alert-danger alert-sm">Failed to load status</div>';
+                statusContainer.innerHTML = `
+                    <div class="alert alert-danger alert-sm">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Failed to load status
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="loadProviderStatus()">
+                            <i class="fas fa-retry"></i> Retry
+                        </button>
+                    </div>
+                `;
+                statusContainer.classList.remove('status-updating');
             }
         }
 
@@ -215,7 +283,26 @@
             const input = document.getElementById('message-input');
             const message = input.value.trim();
             
-            if (!message) return;
+            if (!message) {
+                showErrorAlert('Please enter a message');
+                return;
+            }
+            
+            // Validate provider selection
+            const provider = document.getElementById('provider-select').value;
+            const format = document.getElementById('format-select').value;
+            
+            if (provider && provider !== 'auto') {
+                const isProviderHealthy = await validateProvider(provider);
+                if (!isProviderHealthy) {
+                    const proceed = confirm(`Provider "${provider}" appears to be unhealthy. Continue anyway?`);
+                    if (!proceed) return;
+                }
+            }
+            
+            // Disable input during processing
+            input.disabled = true;
+            document.querySelector('button[onclick="sendMessage()"]').disabled = true;
             
             // Add user message to chat
             addMessage(message, 'user');
@@ -225,8 +312,7 @@
             showTypingIndicator();
             
             try {
-                const provider = document.getElementById('provider-select').value;
-                const format = document.getElementById('format-select').value;
+                const startTime = Date.now();
                 
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -238,21 +324,102 @@
                     })
                 });
                 
+                const responseTime = Date.now() - startTime;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const result = await response.json();
                 
                 if (result.success) {
-                    addMessage(result.response.content || result.response, 'assistant', result.provider);
+                    const content = result.response.content || result.response;
+                    const actualProvider = result.provider || 'auto';
+                    
+                    // Add response time info for debugging
+                    const responseInfo = `Response time: ${responseTime}ms`;
+                    addMessage(content, 'assistant', actualProvider, responseInfo);
+                    
+                    // Update message history
+                    updateMessageHistory(message, content, actualProvider, responseTime);
                 } else {
-                    addMessage(`Error: ${result.error}`, 'assistant', 'error');
+                    const errorMsg = result.error || 'Unknown error occurred';
+                    addMessage(`❌ Error: ${errorMsg}`, 'assistant', 'error');
+                    showErrorAlert(`Request failed: ${errorMsg}`);
                 }
             } catch (error) {
-                addMessage(`Network error: ${error.message}`, 'assistant', 'error');
+                const errorMsg = `Network error: ${error.message}`;
+                addMessage(`🔌 ${errorMsg}`, 'assistant', 'error');
+                showErrorAlert(errorMsg);
+                
+                // Suggest retry
+                setTimeout(() => {
+                    if (confirm('Request failed. Would you like to retry?')) {
+                        input.value = message;
+                        sendMessage();
+                    }
+                }, 1000);
             } finally {
                 hideTypingIndicator();
+                // Re-enable input
+                input.disabled = false;
+                document.querySelector('button[onclick="sendMessage()"]').disabled = false;
+                input.focus();
+            }
+        }
+        
+        async function validateProvider(providerName) {
+            try {
+                const response = await fetch(`/api/providers/${providerName}/test`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.warn(`Provider validation failed for ${providerName}:`, error);
+                return false;
+            }
+        }
+        
+        function showErrorAlert(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+        
+        function updateMessageHistory(userMessage, assistantResponse, provider, responseTime) {
+            const historyEntry = {
+                timestamp: new Date().toISOString(),
+                user_message: userMessage,
+                assistant_response: assistantResponse,
+                provider: provider,
+                response_time: responseTime,
+                format: document.getElementById('format-select').value
+            };
+            
+            messageHistory.push(historyEntry);
+            
+            // Keep only last 50 messages to prevent memory issues
+            if (messageHistory.length > 50) {
+                messageHistory = messageHistory.slice(-50);
             }
         }
 
-        function addMessage(content, role, provider = null) {
+        function addMessage(content, role, provider = null, responseInfo = null) {
             const container = document.getElementById('chat-container');
             
             // Remove welcome message if it exists
@@ -267,7 +434,10 @@
             let html = '';
             if (provider && role === 'assistant') {
                 const badgeClass = provider === 'error' ? 'bg-danger' : 'bg-info';
-                html += `<div class="provider-badge"><span class="badge ${badgeClass}">${provider.toUpperCase()}</span></div>`;
+                html += `<div class="provider-badge">
+                    <span class="badge ${badgeClass}">${provider.toUpperCase()}</span>
+                    ${responseInfo ? `<small class="text-muted ms-2">${responseInfo}</small>` : ''}
+                </div>`;
             }
             html += `<div>${content}</div>`;
             
@@ -277,7 +447,7 @@
             // Scroll to bottom
             container.scrollTop = container.scrollHeight;
             
-            // Store in history
+            // Store in history (simplified for display)
             messageHistory.push({ role, content, provider, timestamp: new Date() });
         }
 

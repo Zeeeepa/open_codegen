@@ -25,13 +25,11 @@ class CodegenProvider(BaseProvider):
             codegen_config = get_enhanced_codegen_config()
             auth = get_auth()
             
-            # Initialize client
+            # Initialize client (initialization happens in constructor)
             self.client = EnhancedCodegenClient(
                 config=codegen_config,
                 auth=auth
             )
-            
-            await self.client.initialize()
             
             self.initialized = True
             self.stats["initialized_at"] = asyncio.get_event_loop().time()

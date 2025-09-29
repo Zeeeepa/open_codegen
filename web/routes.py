@@ -221,3 +221,135 @@ def setup_routes(app: FastAPI, templates: Jinja2Templates, api_gateway, config_m
                 }
             ]
         }
+    
+    # Admin API endpoints
+    @app.post("/api/admin/save-config")
+    async def save_admin_config(request: Request):
+        """Save admin configuration changes."""
+        try:
+            data = await request.json()
+            providers_config = data.get("providers", {})
+            
+            # Update provider configurations
+            for name, config in providers_config.items():
+                if hasattr(api_gateway.provider_manager, 'update_provider_config'):
+                    await api_gateway.provider_manager.update_provider_config(name, config)
+            
+            # Save to config file
+            config_manager.save_config({
+                "providers": providers_config,
+                "last_updated": "admin_panel"
+            })
+            
+            return {"success": True, "message": "Configuration saved successfully"}
+            
+        except Exception as e:
+            logger.error(f"Failed to save admin config: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": str(e)}
+            )
+    
+    @app.get("/api/admin/system-settings")
+    async def get_system_settings():
+        """Get current system settings."""
+        try:
+            config = config_manager.load_config()
+            return {
+                "timeout": config.get("default_timeout", 60),
+                "retries": config.get("max_retries", 3),
+                "logging": config.get("enable_logging", True)
+            }
+        except Exception as e:
+            logger.error(f"Failed to get system settings: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": str(e)}
+            )
+    
+    @app.post("/api/admin/system-settings")
+    async def save_system_settings(request: Request):
+        """Save system settings."""
+        try:
+            settings = await request.json()
+            
+            # Update configuration
+            config = config_manager.load_config()
+            config.update({
+                "default_timeout": settings.get("timeout", 60),
+                "max_retries": settings.get("retries", 3),
+                "enable_logging": settings.get("logging", True)
+            })
+            
+            config_manager.save_config(config)
+            
+            return {"success": True, "message": "System settings saved successfully"}
+            
+        except Exception as e:
+            logger.error(f"Failed to save system settings: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": str(e)}
+            )
+    
+    @app.post("/api/providers/bulk-enable")
+    async def bulk_enable_providers():
+        """Enable all providers."""
+        try:
+            providers = await api_gateway.get_available_providers()
+            enabled_count = 0
+            total_count = len(providers)
+            
+            for name in providers.keys():
+                try:
+                    # Enable each provider
+                    response = await api_gateway.provider_manager.toggle_provider(name, True)
+                    if response:
+                        enabled_count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to enable provider {name}: {e}")
+            
+            return {
+                "success": True,
+                "enabled_count": enabled_count,
+                "total_count": total_count,
+                "message": f"Enabled {enabled_count} out of {total_count} providers"
+            }
+            
+        except Exception as e:
+            logger.error(f"Bulk enable failed: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": str(e)}
+            )
+    
+    @app.post("/api/providers/bulk-disable")
+    async def bulk_disable_providers():
+        """Disable all providers."""
+        try:
+            providers = await api_gateway.get_available_providers()
+            disabled_count = 0
+            total_count = len(providers)
+            
+            for name in providers.keys():
+                try:
+                    # Disable each provider
+                    response = await api_gateway.provider_manager.toggle_provider(name, False)
+                    if response:
+                        disabled_count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to disable provider {name}: {e}")
+            
+            return {
+                "success": True,
+                "disabled_count": disabled_count,
+                "total_count": total_count,
+                "message": f"Disabled {disabled_count} out of {total_count} providers"
+            }
+            
+        except Exception as e:
+            logger.error(f"Bulk disable failed: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": str(e)}
+            )

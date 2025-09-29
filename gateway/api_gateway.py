@@ -126,15 +126,18 @@ class APIGateway:
             "timestamp": asyncio.get_event_loop().time()
         }
         
-        # Check provider health
+        # Check provider health with timeout
         for provider_name in self.provider_manager.get_provider_names():
             try:
                 provider = self.provider_manager.get_provider(provider_name)
                 if provider:
-                    is_healthy = await provider.health_check()
+                    # Add timeout to prevent hanging
+                    is_healthy = await asyncio.wait_for(provider.health_check(), timeout=2.0)
                     health_status["providers"][provider_name] = "healthy" if is_healthy else "unhealthy"
                 else:
                     health_status["providers"][provider_name] = "unavailable"
+            except asyncio.TimeoutError:
+                health_status["providers"][provider_name] = "timeout"
             except Exception as e:
                 health_status["providers"][provider_name] = f"error: {str(e)}"
         
@@ -148,12 +151,31 @@ class APIGateway:
         for provider_name in self.provider_manager.get_provider_names():
             provider = self.provider_manager.get_provider(provider_name)
             if provider:
-                providers[provider_name] = {
-                    "enabled": True,
-                    "priority": self.config.get("providers", {}).get(provider_name, {}).get("priority", 999),
-                    "healthy": await provider.health_check(),
-                    "stats": await provider.get_stats()
-                }
+                try:
+                    # Add timeouts to prevent hanging
+                    healthy = await asyncio.wait_for(provider.health_check(), timeout=2.0)
+                    stats = await asyncio.wait_for(provider.get_stats(), timeout=2.0)
+                    
+                    providers[provider_name] = {
+                        "enabled": True,
+                        "priority": self.config.get("providers", {}).get(provider_name, {}).get("priority", 999),
+                        "healthy": healthy,
+                        "stats": stats
+                    }
+                except asyncio.TimeoutError:
+                    providers[provider_name] = {
+                        "enabled": True,
+                        "priority": self.config.get("providers", {}).get(provider_name, {}).get("priority", 999),
+                        "healthy": False,
+                        "stats": {"error": "timeout"}
+                    }
+                except Exception as e:
+                    providers[provider_name] = {
+                        "enabled": True,
+                        "priority": self.config.get("providers", {}).get(provider_name, {}).get("priority", 999),
+                        "healthy": False,
+                        "stats": {"error": str(e)}
+                    }
             else:
                 providers[provider_name] = {
                     "enabled": False,

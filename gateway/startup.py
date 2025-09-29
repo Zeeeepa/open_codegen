@@ -21,6 +21,7 @@ class SystemInitializer:
     def __init__(self):
         self.config_manager = ConfigManager()
         self.provider_manager = None
+        self.api_gateway = None
         
     def check_dependencies(self) -> bool:
         """Check if all required dependencies are installed."""
@@ -112,6 +113,12 @@ class SystemInitializer:
                 return False
             
             logger.info(f"✅ Initialized {success_count}/{total_count} providers")
+            
+            # Create API Gateway with initialized provider manager
+            from gateway.api_gateway import APIGateway
+            self.api_gateway = APIGateway(config)
+            self.api_gateway.provider_manager = self.provider_manager  # Use the initialized one
+            
             return True
             
         except Exception as e:

@@ -23,11 +23,11 @@ logger = logging.getLogger(__name__)
 class WebServer:
     """Main web server for the Universal AI API Gateway."""
     
-    def __init__(self):
+    def __init__(self, api_gateway=None):
         self.config_manager = ConfigManager()
         self.config = self.config_manager.load_config()
+        self.api_gateway = api_gateway  # Use provided API gateway
         self.app = self._create_app()
-        self.api_gateway = None
         
     def _create_app(self) -> FastAPI:
         """Create FastAPI application."""
@@ -59,8 +59,9 @@ class WebServer:
         template_dir.mkdir(parents=True, exist_ok=True)
         templates = Jinja2Templates(directory=str(template_dir))
         
-        # Initialize API Gateway
-        self.api_gateway = APIGateway(self.config)
+        # Initialize API Gateway if not provided
+        if not self.api_gateway:
+            self.api_gateway = APIGateway(self.config)
         
         # Setup routes
         setup_routes(app, templates, self.api_gateway, self.config_manager)
