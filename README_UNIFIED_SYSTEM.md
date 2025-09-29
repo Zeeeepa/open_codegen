@@ -48,17 +48,27 @@ This system creates a **true OpenAI API interception layer** that:
 
 ## 🚀 **QUICK START**
 
-### 1. Install Dependencies
+### 1. Clone with All AI Providers
+```bash
+# Clone the repository with all submodules (AI providers)
+git clone --recursive https://github.com/Zeeeepa/open_codegen.git
+cd open_codegen
+
+# If you already cloned without --recursive, run:
+git submodule update --init --recursive
+```
+
+### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Start the Complete System
+### 3. Start the Complete System
 ```bash
 python scripts/start_unified_system.py
 ```
 
-### 3. Access the System
+### 4. Access the System
 - **API Gateway**: http://localhost:7999
 - **Dashboard**: Open `frontend/enhanced_index.html` in browser
 - **OpenAI API**: http://localhost:7999/v1/chat/completions
