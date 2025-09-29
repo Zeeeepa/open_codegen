@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 AI Provider Gateway Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .service-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .service-type {
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .service-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-stopped { background: #dc3545; }
+        .status-starting { background: #ffc107; }
+        .status-running { background: #28a745; }
+        .status-error { background: #dc3545; }
+
+        .service-info {
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-start {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #218838;
+        }
+
+        .btn-stop {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #c82333;
+        }
+
+        .btn-test {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-test:hover {
+            background: #0056b3;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+
+        .test-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .test-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,123,255,0.4);
+        }
+
+        @media (max-width: 768px) {
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Provider Gateway</h1>
+            <p>Unified control panel for all AI API services</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-services">0</div>
+                <div class="stat-label">Total Services</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="running-services">0</div>
+                <div class="stat-label">Running</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stopped-services">0</div>
+                <div class="stat-label">Stopped</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="error-services">0</div>
+                <div class="stat-label">Errors</div>
+            </div>
+        </div>
+
+        <div class="services-grid" id="services-grid">
+            <!-- Services will be loaded here -->
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadServices()" title="Refresh">
+        🔄
+    </button>
+
+    <script>
+        let services = {};
+
+        async function loadServices() {
+            try {
+                const response = await fetch('/api/services');
+                services = await response.json();
+                renderServices();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading services:', error);
+            }
+        }
+
+        function renderServices() {
+            const grid = document.getElementById('services-grid');
+            grid.innerHTML = '';
+
+            Object.values(services).forEach(service => {
+                const card = createServiceCard(service);
+                grid.appendChild(card);
+            });
+        }
+
+        function createServiceCard(service) {
+            const card = document.createElement('div');
+            card.className = 'service-card';
+            card.innerHTML = `
+                <div class="service-header">
+                    <div class="service-name">${service.name}</div>
+                    <div class="service-type">${service.type}</div>
+                </div>
+                
+                <div class="service-status">
+                    <div class="status-indicator status-${service.status}"></div>
+                    <span>${service.status.charAt(0).toUpperCase() + service.status.slice(1)}</span>
+                </div>
+                
+                <div class="service-info">
+                    Port: ${service.port}<br>
+                    ${service.last_test ? 
+                        service.last_test.success ? 
+                            `Last test: ✅ ${service.last_test.response_time ? (service.last_test.response_time * 1000).toFixed(0) + 'ms' : 'OK'}` :
+                            `Last test: ❌ ${service.last_test.error || 'Failed'}`
+                        : 'Not tested yet'
+                    }
+                </div>
+                
+                <div class="service-actions">
+                    <button class="btn btn-start" onclick="startService('${service.name}')" 
+                            ${service.status === 'running' ? 'disabled' : ''}>
+                        Start
+                    </button>
+                    <button class="btn btn-stop" onclick="stopService('${service.name}')"
+                            ${service.status === 'stopped' ? 'disabled' : ''}>
+                        Stop
+                    </button>
+                    <button class="btn btn-test" onclick="testService('${service.name}')">
+                        Test
+                    </button>
+                </div>
+                
+                <div id="result-${service.name}"></div>
+            `;
+            return card;
+        }
+
+        async function startService(serviceName) {
+            const resultDiv = document.getElementById(`result-${serviceName}`);
+            resultDiv.innerHTML = '<div class="loading"></div>';
+            
+            try {
+                const response = await fetch(`/api/services/${serviceName}/start`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                showResult(serviceName, result);
+                setTimeout(loadServices, 2000); // Refresh after 2 seconds
+            } catch (error) {
+                showResult(serviceName, {success: false, message: error.message});
+            }
+        }
+
+        async function stopService(serviceName) {
+            const resultDiv = document.getElementById(`result-${serviceName}`);
+            resultDiv.innerHTML = '<div class="loading"></div>';
+            
+            try {
+                const response = await fetch(`/api/services/${serviceName}/stop`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                showResult(serviceName, result);
+                setTimeout(loadServices, 1000); // Refresh after 1 second
+            } catch (error) {
+                showResult(serviceName, {success: false, message: error.message});
+            }
+        }
+
+        async function testService(serviceName) {
+            const resultDiv = document.getElementById(`result-${serviceName}`);
+            resultDiv.innerHTML = '<div class="loading"></div>';
+            
+            try {
+                const response = await fetch(`/api/services/${serviceName}/test`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                showResult(serviceName, result);
+                setTimeout(loadServices, 1000); // Refresh to update last test info
+            } catch (error) {
+                showResult(serviceName, {success: false, message: error.message});
+            }
+        }
+
+        function showResult(serviceName, result) {
+            const resultDiv = document.getElementById(`result-${serviceName}`);
+            const className = result.success ? 'test-success' : 'test-error';
+            const icon = result.success ? '✅' : '❌';
+            
+            resultDiv.innerHTML = `
+                <div class="test-result ${className}">
+                    ${icon} ${result.message}
+                    ${result.response_time ? ` (${(result.response_time * 1000).toFixed(0)}ms)` : ''}
+                </div>
+            `;
+            
+            // Clear result after 5 seconds
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function updateStats() {
+            const total = Object.keys(services).length;
+            const running = Object.values(services).filter(s => s.status === 'running').length;
+            const stopped = Object.values(services).filter(s => s.status === 'stopped').length;
+            const errors = Object.values(services).filter(s => s.status === 'error').length;
+
+            document.getElementById('total-services').textContent = total;
+            document.getElementById('running-services').textContent = running;
+            document.getElementById('stopped-services').textContent = stopped;
+            document.getElementById('error-services').textContent = errors;
+        }
+
+        // Load services on page load
+        loadServices();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadServices, 30000);
+    </script>
+</body>
+</html>

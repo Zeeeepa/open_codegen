@@ -1,0 +1,47 @@
+[submodule "apis/qwen-api"]
+	path = apis/qwen-api
+	url = https://github.com/Zeeeepa/qwen-api.git
+
+[submodule "apis/qwenchat2api"]
+	path = apis/qwenchat2api
+	url = https://github.com/Zeeeepa/qwenchat2api.git
+
+[submodule "apis/k2think2api3"]
+	path = apis/k2think2api3
+	url = https://github.com/Zeeeepa/k2think2api3.git
+
+[submodule "apis/k2think2api2"]
+	path = apis/k2think2api2
+	url = https://github.com/Zeeeepa/k2think2api2.git
+
+[submodule "apis/k2Think2Api"]
+	path = apis/k2Think2Api
+	url = https://github.com/Zeeeepa/k2Think2Api.git
+
+[submodule "apis/grok2api"]
+	path = apis/grok2api
+	url = https://github.com/Zeeeepa/grok2api.git
+
+[submodule "apis/OpenAI-Compatible-API-Proxy-for-Z"]
+	path = apis/OpenAI-Compatible-API-Proxy-for-Z
+	url = https://github.com/Zeeeepa/OpenAI-Compatible-API-Proxy-for-Z.git
+
+[submodule "apis/zai-python-sdk"]
+	path = apis/zai-python-sdk
+	url = https://github.com/Zeeeepa/zai-python-sdk.git
+
+[submodule "apis/z.ai2api_python"]
+	path = apis/z.ai2api_python
+	url = https://github.com/Zeeeepa/z.ai2api_python.git
+
+[submodule "apis/ZtoApi"]
+	path = apis/ZtoApi
+	url = https://github.com/Zeeeepa/ZtoApi.git
+
+[submodule "apis/Z.ai2api"]
+	path = apis/Z.ai2api
+	url = https://github.com/Zeeeepa/Z.ai2api.git
+
+[submodule "apis/ZtoApits"]
+	path = apis/ZtoApits
+	url = https://github.com/Zeeeepa/ZtoApits.git
